@@ -327,6 +327,9 @@ void askconnect_accept_f()
 ConCommand askconnect_accept( "askconnect_accept", askconnect_accept_f, "Accept a redirect request by the server.", FCVAR_DONTRECORD );
 #endif
 
+// these convars needed for some CS:S v34 AC's, or it will ban/kick
+static ConVar cl_particles_show_bbox("cl_particles_show_bbox", "0", FCVAR_CLIENTDLL | FCVAR_CHEAT);
+
 #ifndef SWDS
 extern IVEngineClient *engineClient;
 // ---------------------------------------------------------------------------------------- //
