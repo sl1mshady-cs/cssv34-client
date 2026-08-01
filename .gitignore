@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/build
+/waf3-2.0.26-84a26fddc7f40e4e4f00569f36be455a/waflib
+/.lock-waf_win32_build
+/.lock-waf_win32_build
