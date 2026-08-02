@@ -91,8 +91,8 @@ CDialogGameInfo::CDialogGameInfo( vgui::Panel *parent, int serverIP, int port, c
 
 	// create a new server to watch
 	memset(&m_Server, 0, sizeof(m_Server) );
-	m_Server.m_NetAdr.SetIP(serverIP);
-	m_Server.m_NetAdr.SetPort(port);
+	m_Server.m_NetAdr.SetIPAndPort(serverIP, port);
+	m_Server.m_NetAdr.SetType(NA_IP);
 
 	// refresh immediately
 	RequestInfo();
@@ -115,6 +115,11 @@ CDialogGameInfo::~CDialogGameInfo()
 	//	return;
 
 	g_pServersInfo->RemoveResponse(this, this);
+}
+
+bool CDialogGameInfo::IsForThisServer(const netadr_t& adr)
+{
+	return m_Server.m_NetAdr.CompareAdr(adr);
 }
 
 //-----------------------------------------------------------------------------
@@ -396,10 +401,10 @@ void CDialogGameInfo::OnConnect()
 	// need to refresh server before attempting to connect, to make sure there is enough room on the server
 	m_iRequestRetry = 0;
 
-	ConnectToServer();
+	//ConnectToServer();
 
 	//TODO(nillerusr): restore this later
-	//RequestInfo();
+	RequestInfo();
 }
 
 //-----------------------------------------------------------------------------
@@ -512,8 +517,7 @@ void CDialogGameInfo::OnTick()
 //-----------------------------------------------------------------------------
 void CDialogGameInfo::ServerResponded( newgameserver_t &server )
 {
-	if( m_Server.m_NetAdr.GetPort() &&
-		m_Server.m_NetAdr.GetPort() != server.m_NetAdr.GetPort() )
+	if( !m_Server.m_NetAdr.CompareAdr(server.m_NetAdr) )
 	{
 		return; // this is not the guy we talked about
 	}

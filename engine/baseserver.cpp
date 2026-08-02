@@ -664,9 +664,7 @@ bool CBaseServer::ValidInfoChallenge( netadr_t & adr, const char *nugget )
 
 bool CBaseServer::ProcessConnectionlessPacket(netpacket_t * packet)
 {
-	master->ProcessConnectionlessPacket( packet );
-
-	bf_read msg = packet->message;	// handy shortcut 
+	bf_read& msg = packet->message;	// handy shortcut
 
 	char c = msg.ReadChar();
 

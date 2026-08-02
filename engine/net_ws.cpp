@@ -3302,10 +3302,7 @@ void NET_Init( bool bIsDedicated )
 		ipname.SetValue( ip );  // update the cvar right now, this will get overwritten by "stuffcmds" later
 	}
 
-	const int nProtocol = X360SecureNetwork() ? IPPROTO_VDP : IPPROTO_UDP;
-
-	// open client socket for masterserver
-	OpenSocketInternal( NS_CLIENT, clientport.GetInt(), PORT_SERVER, "client", nProtocol, true );
+	//const int nProtocol = X360SecureNetwork() ? IPPROTO_VDP : IPPROTO_UDP;
 
 	if ( bIsDedicated )
 	{

@@ -48,6 +48,8 @@ public:
 	virtual void PlayersFailedToRespond() {}
 	virtual void PlayersRefreshComplete() { }
 
+	virtual bool IsForThisServer(const netadr_t& adr);
+
 	// called when the current refresh list is complete
 	virtual void RefreshComplete( EMatchMakingServerResponse response );
 

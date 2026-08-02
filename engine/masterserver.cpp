@@ -19,6 +19,7 @@
 #include "eiface.h"
 #include "server.h"
 #include "utlmap.h"
+#include "net_ws_headers.h"
 
 extern ConVar sv_tags;
 extern ConVar sv_lan;
@@ -42,7 +43,7 @@ extern ConVar sv_lan;
 //-----------------------------------------------------------------------------
 // Purpose: Implements the master server interface
 //-----------------------------------------------------------------------------
-class CMaster : public IMaster, public IServersInfo
+class CMaster : public IMaster, public IServersInfo, public IConnectionlessPacketHandler
 {
 public:
 	CMaster( void );
@@ -53,13 +54,8 @@ public:
 	void Shutdown( void );
 	// Sets up master address
 	void ShutdownConnection(void);
-	void AddServer( struct netadr_s *adr );
-	void UseDefault ( void );
-	void PingServer( netadr_t &svadr );
 
-	void ProcessConnectionlessPacket( netpacket_t *packet );
-
-	void AddMaster_f( const CCommand &args );
+	bool ProcessConnectionlessPacket( netpacket_t *packet );
 
 	void RunFrame();
 	void RetryServersInfoRequest();
@@ -70,7 +66,6 @@ public:
 	// SeversInfo
 	void RequestInternetServerList( const char *gamedir, IServerListResponse *response );
 	void RequestLANServerList( const char *gamedir, IServerListResponse *response );
-	void AddServerAddresses( netadr_t **adr, int count );
 	void RequestServerInfo( const netadr_t &adr );
 	void StopRefresh();
 
@@ -78,6 +73,7 @@ public:
 	void PlayerDetails(uint32 unIP, uint16 usPort, IServerPlayersResponse* pRequestServersResponse);
 	virtual void RemoveResponse(IServerPingResponse* resp, IServerPlayersResponse* resp2);
 private:
+	SOCKET m_nSocket;
 
 	bool m_bInitialized;
 	bool m_bRefreshing;
@@ -89,9 +85,6 @@ private:
 	double m_flMasterRequestTime;
 
 	char m_szGameDir[256];
-
-	// If nomaster is true, the server will not send heartbeats to the master server
-	bool	m_bNoMasters;
 
 	CUtlMap<netadr_t, bool> m_serverAddresses;
 	CUtlMap<uint, double> m_serversRequestTime;
@@ -116,7 +109,6 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CMaster, IServersInfo, SERVERLIST_INTERFACE_V
 //-----------------------------------------------------------------------------
 CMaster::CMaster( void )
 {
-	m_bNoMasters		= false;
 	m_bInitialized = false;
 	m_iServersResponded = 0;
 
@@ -134,6 +126,31 @@ CMaster::~CMaster( void )
 
 void CMaster::RunFrame()
 {
+	{
+		static sockaddr fromAddr{};
+		static char buffer[2048];
+		int fromLen = sizeof(fromAddr);
+		int nBytes = 0;
+		while ((nBytes = recvfrom(m_nSocket, buffer, sizeof(buffer), 0, &fromAddr, &fromLen)) > 0)
+		{
+			if (*(unsigned int*)buffer == CONNECTIONLESS_HEADER)
+			{
+				static netpacket_t packet;
+				packet.data = (unsigned char*)buffer;
+				packet.from.SetFromSockadr(&fromAddr);
+				packet.message.StartReading(buffer, nBytes);
+				packet.message.ReadLong();
+				packet.pNext = nullptr;
+				packet.received = net_time;
+				packet.size = nBytes;
+				packet.source = NS_CLIENT;
+				packet.stream = false;
+				packet.wiresize = nBytes;
+				ProcessConnectionlessPacket(&packet);
+			}
+		}
+	}
+
 	if( !m_bRefreshing )
 		return;
 
@@ -218,7 +235,10 @@ void CMaster::ReplyInfo( const netadr_t &adr )
 	if ( nFlags & S2A_EDF_GAMETAGS)
 		buf.PutString( pchTags );
 
-	NET_SendPacket( NULL, NS_SERVER, adr, (unsigned char *)buf.Base(), buf.TellPut() );
+	sockaddr to;
+	adr.ToSockadr(&to);
+
+	sendto(m_nSocket, (const char*)buf.Base(), buf.TellPut(), 0, &to, sizeof(to));
 }
 
 newgameserver_t &CMaster::ProcessInfo(bf_read &buf)
@@ -282,7 +302,7 @@ newgameserver_t &CMaster::ProcessInfo(bf_read &buf)
 	return s;
 }
 
-void CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
+bool CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 {
 	static ALIGN4 char string[2048] ALIGN4_POST;    // Buffer for sending heartbeat
 
@@ -292,7 +312,7 @@ void CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 	char c = msg.ReadChar();
 
 	if ( c == 0  )
-		return;
+		return true;
 
 	switch( c )
 	{
@@ -306,8 +326,11 @@ void CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 			msg.WriteLong(CONNECTIONLESS_HEADER);
 			msg.WriteByte(A2S_PLAYER);
 			msg.WriteLong(challenge);
-			
-			NET_SendPacket(NULL, NS_CLIENT, packet->from, msg.GetData(), msg.GetNumBytesWritten());
+
+			sockaddr to;
+			packet->from.ToSockadr(&to);
+
+			sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 
 			break;
 		}
@@ -329,6 +352,9 @@ void CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 					FOR_EACH_VEC(m_ServerPlayers, i)
 					{
 						IServerPlayersResponse* resp = m_ServerPlayers[i];
+
+						if (!resp->IsForThisServer(packet->from)) continue;
+
 						resp->AddPlayerToList(str, score, duration);
 					}
 				}
@@ -337,6 +363,9 @@ void CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 			FOR_EACH_VEC(m_ServerPlayers, i)
 			{
 				IServerPlayersResponse* resp = m_ServerPlayers[i];
+
+				if (!resp->IsForThisServer(packet->from)) continue;
+
 				resp->PlayersRefreshComplete();
 			}
 		}
@@ -386,7 +415,10 @@ void CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 				msg.WriteString(va("\\gamedir\\%s", COM_GetModDirectory()));
 
 				netadr_t adr("78.154.103.37:10232");
-				NET_SendPacket(NULL, NS_CLIENT, adr, msg.GetData(), msg.GetNumBytesWritten());
+				sockaddr to;
+				adr.ToSockadr(&to);
+
+				sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 			}
 
 			break;
@@ -398,27 +430,17 @@ void CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 		}
 		case S2A_INFO_SRC:
 		{
-			if( !m_bRefreshing )
-				break;
-
 			newgameserver_t &s = ProcessInfo( msg );
 
-			unsigned short index = m_serverAddresses.Find(packet->from);
-			unsigned short rindex = m_serversRequestTime.Find(packet->from.GetIPHostByteOrder()+packet->from.GetPort());
+			unsigned short rindex = m_serversRequestTime.Find(packet->from.GetIPHostByteOrder() + packet->from.GetPort());
 
-			if( index == m_serverAddresses.InvalidIndex() ||
-				rindex == m_serversRequestTime.InvalidIndex() )
-				break;
+			if (rindex == m_serversRequestTime.InvalidIndex()) break;
 
 			double requestTime = m_serversRequestTime[rindex];
 
-			if( m_serverAddresses[index] ) // shit happens
-				return;
-
-			m_serverAddresses[index] = true;
-			s.m_nPing = (Plat_FloatTime()-requestTime)*1000.0;
+			s.m_nPing = (Plat_FloatTime() - requestTime) * 1000.0;
 			s.m_NetAdr = packet->from;
-			m_serverListResponse->ServerResponded( s );
+			s.m_bHadSuccessfulResponse = true;
 
 			FOR_EACH_VEC(m_ServerPings, i)
 			{
@@ -426,10 +448,25 @@ void CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 				resp->ServerResponded(s);
 			}
 
+			if (!m_bRefreshing)
+				break;
+
+			unsigned short index = m_serverAddresses.Find(packet->from);
+
+			if( index == m_serverAddresses.InvalidIndex() )
+				break;
+
+			if( m_serverAddresses[index] ) // shit happens
+				return true;
+
+			m_serverAddresses[index] = true;
+			m_serverListResponse->ServerResponded( s );
+
 			m_iServersResponded++;
 			break;
 		}
 	}
+	return true;
 }
 
 void CMaster::RequestServerInfo( const netadr_t &adr )
@@ -442,7 +479,10 @@ void CMaster::RequestServerInfo( const netadr_t &adr )
 	msg.WriteString( A2S_KEY_STRING );
 	m_serversRequestTime.Insert(adr.GetIPHostByteOrder()+adr.GetPort(), Plat_FloatTime());
 
-	NET_SendPacket( NULL, NS_CLIENT, adr, msg.GetData(), msg.GetNumBytesWritten() );
+	sockaddr to;
+	adr.ToSockadr(&to);
+
+	sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 }
 
 void CMaster::RetryServersInfoRequest()
@@ -461,7 +501,10 @@ void CMaster::RetryServersInfoRequest()
 void CMaster::PingServer(uint32 unIP, uint16 usPort, IServerPingResponse* pRequestServersResponse)
 {
 	netadr_t adr(unIP, usPort);
-	m_ServerPings.AddToTail(pRequestServersResponse);
+	if (m_ServerPings.Find(pRequestServersResponse) == m_ServerPings.InvalidIndex())
+	{
+		m_ServerPings.AddToTail(pRequestServersResponse);
+	}
 
 	static ALIGN4 char string[256] ALIGN4_POST;
 	bf_write msg(string, sizeof(string));
@@ -469,24 +512,41 @@ void CMaster::PingServer(uint32 unIP, uint16 usPort, IServerPingResponse* pReque
 	msg.WriteLong(CONNECTIONLESS_HEADER);
 	msg.WriteByte(A2S_INFO);
 	msg.WriteString(A2S_KEY_STRING);
-	m_serversRequestTime.Insert(adr.GetIPHostByteOrder() + adr.GetPort(), Plat_FloatTime());
+	
+	unsigned int index = m_serversRequestTime.Find(adr.GetIPHostByteOrder() + adr.GetPort());
+	if (index == m_serversRequestTime.InvalidIndex()) {
+		m_serversRequestTime.Insert(adr.GetIPHostByteOrder() + adr.GetPort(), Plat_FloatTime());
+	}
+	else {
+		m_serversRequestTime[index] = Plat_FloatTime();
+	}
 
-	NET_SendPacket(NULL, NS_CLIENT, adr, msg.GetData(), msg.GetNumBytesWritten());
+	sockaddr to;
+	adr.ToSockadr(&to);
+
+	sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 }
 
 void CMaster::PlayerDetails(uint32 unIP, uint16 usPort, IServerPlayersResponse* pRequestServersResponse)
 {
 	netadr_t adr(unIP, usPort);
-	m_ServerPlayers.AddToTail(pRequestServersResponse);
+
+	if (m_ServerPlayers.Find(pRequestServersResponse) == m_ServerPlayers.InvalidIndex())
+	{
+		m_ServerPlayers.AddToTail(pRequestServersResponse);
+	}
 
 	static ALIGN4 char string[256] ALIGN4_POST;
 	bf_write msg(string, sizeof(string));
 
 	msg.WriteLong(CONNECTIONLESS_HEADER);
-	msg.WriteByte(0x57);
-	msg.WriteString("000000000000");
+	msg.WriteByte(A2S_PLAYER);
+	msg.WriteLong(-1);
 
-	NET_SendPacket(NULL, NS_CLIENT, adr, msg.GetData(), msg.GetNumBytesWritten());
+	sockaddr to;
+	adr.ToSockadr(&to);
+
+	sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 }
 
 void CMaster::RemoveResponse(IServerPingResponse* resp, IServerPlayersResponse* resp2)
@@ -503,49 +563,6 @@ void CMaster::ShutdownConnection( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Add server to the master list
-// Input  : *adr - 
-//-----------------------------------------------------------------------------
-void CMaster::AddServer( netadr_t *adr )
-{
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Add built-in default master if woncomm.lst doesn't parse
-//-----------------------------------------------------------------------------
-void CMaster::UseDefault ( void )
-{
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Add/remove master servers
-//-----------------------------------------------------------------------------
-void CMaster::AddMaster_f ( const CCommand &args )
-{
-	CUtlString cmd( ( args.ArgC() > 1 ) ? args[ 1 ] : "" );
-
-	netadr_t adr;
-
-	if( !NET_StringToAdr(cmd.String(), &adr) )
-	{
-		Warning("Invalid address\n");
-		return;
-	}
-
-	this->AddServer(&adr);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void AddMaster_f( const CCommand &args )
-{
-	master->AddMaster_f( args );
-}
-
-static ConCommand setmaster("addmaster", AddMaster_f );
-
-//-----------------------------------------------------------------------------
 // Purpose: Adds master server console commands
 //-----------------------------------------------------------------------------
 void CMaster::Init( void )
@@ -556,8 +573,10 @@ void CMaster::Init( void )
 
 	// So we don't do this a send time.sv_mas
 	m_bInitialized = true;
+	m_nSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
-	UseDefault();
+	unsigned int opt = 1; // make it non-blocking
+	ioctlsocket(m_nSocket, FIONBIO, (unsigned long*)&opt);
 }
 
 //-----------------------------------------------------------------------------
@@ -565,12 +584,12 @@ void CMaster::Init( void )
 //-----------------------------------------------------------------------------
 void CMaster::Shutdown(void)
 {
+	closesocket(m_nSocket);
 }
 
 // ServersInfo
 void CMaster::RequestInternetServerList(const char *gamedir, IServerListResponse *response)
 {
-	if( m_bNoMasters ) return;
 	strncpy( m_szGameDir, gamedir, sizeof(m_szGameDir) );
 
 	if( response )
@@ -590,15 +609,13 @@ void CMaster::RequestInternetServerList(const char *gamedir, IServerListResponse
 	msg.WriteString(va("\\gamedir\\%s", COM_GetModDirectory()));
 
 	netadr_t adr("78.154.103.37:10232");
-	NET_SendPacket(NULL, NS_CLIENT, adr, msg.GetData(), msg.GetNumBytesWritten() );
+	sockaddr to;
+	adr.ToSockadr(&to);
+
+	sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 }
 
-void CMaster::RequestLANServerList(const char *gamedir, IServerListResponse *response)
-{
-
-}
-
-void CMaster::AddServerAddresses( netadr_t **adr, int count )
+void CMaster::RequestLANServerList(const char* gamedir, IServerListResponse* response)
 {
 
 }

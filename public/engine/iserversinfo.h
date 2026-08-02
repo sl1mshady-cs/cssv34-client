@@ -84,6 +84,8 @@ public:
 
 	// The server has finished responding to the player details request
 	virtual void PlayersRefreshComplete() = 0;
+
+	virtual bool IsForThisServer(const netadr_t& adr) = 0;
 };
 
 //-----------------------------------------------------------------------------

@@ -35,12 +35,6 @@ public:
 	virtual void Shutdown( void ) = 0;
 	// Server is shutting down
 	virtual void ShutdownConnection( void ) = 0;
-	// Add server to global master list
-	virtual void AddServer( struct netadr_s *adr ) = 0;
-	// Console command to set/remove master server
-	virtual void AddMaster_f( const CCommand &args ) = 0;
-
-	virtual void ProcessConnectionlessPacket( netpacket_t *packet ) = 0;
 
 	virtual void RunFrame( void ) = 0;
 };
