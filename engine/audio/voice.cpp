@@ -1036,7 +1036,7 @@ void Voice_UserDesiresStop()
 	}
 	else
 	{
-		VoiceRecord_Stop();
+		Voice_RecordStop();
 	}
 }
 

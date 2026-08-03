@@ -122,6 +122,7 @@
 #include "soundservice.h"
 #include "profile.h"
 #include "steam/isteamremotestorage.h"
+#include "clientticketmgr.h"
 #if defined( _X360 )
 #include "xbox/xbox_win32stubs.h"
 #include "audio_pch.h"
@@ -4341,6 +4342,8 @@ void Host_Init( bool bDedicated )
 	CMatRenderContextPtr pRenderContext( g_pMaterialSystem );
 	pRenderContext->SetNonInteractiveTempFullscreenBuffer( NULL, MATERIAL_NON_INTERACTIVE_MODE_STARTUP );
 	pRenderContext->SetNonInteractivePacifierTexture( NULL, 0, 0, 0 );
+
+	ticketmgr->Init();
 }
 
 //-----------------------------------------------------------------------------
