@@ -1,0 +1,14 @@
+@echo off
+
+set INCLUDE=
+set LIB=
+set LIBPATH=
+
+set VSCMD_VER=
+set VSINSTALLDIR=
+set VCINSTALLDIR=
+set VisualStudioVersion=
+
+waf.bat build -p -v
+waf.bat install
+pause
