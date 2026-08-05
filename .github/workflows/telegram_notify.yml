@@ -1,0 +1,17 @@
+name: Telegram Notify
+on:
+  push:
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram notify
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            New push into cssv34-client
+            Author: ${{ github.actor }}
+            Title: ${{ github.event.head_commit.message }}
+            Link: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
