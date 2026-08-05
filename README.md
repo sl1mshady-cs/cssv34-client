@@ -43,7 +43,6 @@ Windows (with Visual Studio):
 - If you need voice support, add `--enable-speex --enable-opus` at the end
 - Run waf_build.bat
 - Output files will be copied to `./__build__`
-- Note: if your game crashes (on shaderapidx9.dll), try to download and install DirectX End-user Runtime [here](https://www.microsoft.com/en-us/download/details.aspx?id=8109)
 
 Android, Linux, other platforms coming soon, just wait.
 
