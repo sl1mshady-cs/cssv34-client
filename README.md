@@ -30,6 +30,11 @@ Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client-relea
 - Fixed many bugs
 - Serverbrowser works without steam
 
+Known issues:
+- prediction (or collision) bug, when standing on entities, moving into entities, etc
+- rare "unknown shaders" bug (will crash), partially fixed
+- unknown crashes
+
 # How to Build?
 
 Windows (with Visual Studio):
