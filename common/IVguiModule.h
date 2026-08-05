@@ -15,7 +15,7 @@
 #include <vgui/VGUI.h>
 
 //-----------------------------------------------------------------------------
-// Purpose: Standard interface to loading vgui modules
+// Purpose: Standard interface to loading vgui  modules
 //-----------------------------------------------------------------------------
 abstract_class IVGuiModule : public IBaseInterface
 {
