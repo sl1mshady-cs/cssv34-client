@@ -1,4 +1,4 @@
-# Source Engine v34
+# CS:S v34 Engine (new)
 
 Information from [wikipedia](https://wikipedia.org/wiki/Source_(game_engine)):
 
@@ -11,6 +11,8 @@ Source code is based on TF2 2018 leak and patched to work with CS:S v34 servers.
 Don't use it for commercial purposes.
 
 This project is using waf buildsystem. If you have waf-related questions look https://waf.io/book
+
+Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client-releases/releases)
 
 # Features:
 - Android, OSX, FreeBSD, Windows, Linux( glibc, musl ) support
