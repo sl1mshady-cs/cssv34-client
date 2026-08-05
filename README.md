@@ -31,5 +31,18 @@ Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client-relea
 - Serverbrowser works without steam
 
 # How to Build?
-- [Building instructions(EN)](https://github.com/nillerusr/source-engine/wiki/Source-Engine-(EN))
-- [Building instructions(RU)](https://github.com/nillerusr/source-engine/wiki/Source-Engine-(RU))
+
+Windows (with Visual Studio):
+- Run waf_configure_cstrike_release.bat or waf_configure_cstrike_debug.bat
+(If you want target 32 bit, add `-4` at the end)
+(If you need voice support, add `--enable-speex --enable-opus` at the end)
+- Run waf_build.bat
+- Output files will be copied to `./__build__`
+
+Android, Linux, other platforms coming soon, just wait.
+
+# How to Run?
+
+You need to download content. Download it from: [here](https://drive.google.com/file/d/1Jtc9HfyoX88ENAxPzjHopECaX9wsiaWI/view)
+Unpack this content into `__build__` folder
+Run hl2_launcher.exe with `-game cstrike` (you can create .bat file for it)
