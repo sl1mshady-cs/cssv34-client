@@ -34,8 +34,8 @@ Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client-relea
 
 Windows (with Visual Studio):
 - Run waf_configure_cstrike_release.bat or waf_configure_cstrike_debug.bat
-(If you want target 32 bit, add `-4` at the end)
-(If you need voice support, add `--enable-speex --enable-opus` at the end)
+- If you want target 32 bit, add `-4` at the end
+- If you need voice support, add `--enable-speex --enable-opus` at the end
 - Run waf_build.bat
 - Output files will be copied to `./__build__`
 
