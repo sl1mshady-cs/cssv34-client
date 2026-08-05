@@ -1,11 +1,11 @@
 #include <client_pch.h>
 
 #ifdef _WIN32
-#include <windows.h> // Только для этого макроса
+#include <windows.h>
 #undef SetPort
 #undef CreateEvent
 #else
-#include <unistd.h> // для gethostname
+#include <unistd.h>
 #endif
 
 #include <clientticketmgr.h>

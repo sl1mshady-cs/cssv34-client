@@ -72,8 +72,6 @@ public:
 
 	// Methods of ICollideable
 	virtual IHandleEntity	*GetEntityHandle();
- 	virtual const Vector&	OBBMinsPreScaled() const { return m_vecMinsPreScaled.Get(); }
-	virtual const Vector&	OBBMaxsPreScaled() const { return m_vecMaxsPreScaled.Get(); }
 	virtual const Vector&	OBBMins() const { return m_vecMins.Get(); }
 	virtual const Vector&	OBBMaxs() const { return m_vecMaxs.Get(); }
 	virtual void			WorldSpaceTriggerBounds( Vector *pVecWorldMins, Vector *pVecWorldMaxs ) const;
@@ -239,8 +237,6 @@ private:
 private:
 	CBaseEntity *m_pOuter;
 
-	CNetworkVector( m_vecMinsPreScaled );
-	CNetworkVector( m_vecMaxsPreScaled );
 	CNetworkVector( m_vecMins );
 	CNetworkVector( m_vecMaxs );
 	float m_flRadius;
@@ -258,8 +254,6 @@ private:
 	// SUCKY: We didn't use to have to store this previously
 	// but storing it here means that we can network it + avoid a ton of
 	// client-side mismatch problems
-	CNetworkVector( m_vecSpecifiedSurroundingMinsPreScaled );
-	CNetworkVector( m_vecSpecifiedSurroundingMaxsPreScaled );
 	CNetworkVector( m_vecSpecifiedSurroundingMins );
 	CNetworkVector( m_vecSpecifiedSurroundingMaxs );
 

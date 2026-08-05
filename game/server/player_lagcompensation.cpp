@@ -74,8 +74,8 @@ public:
 		m_fFlags = 0;
 		m_vecOrigin.Init();
 		m_vecAngles.Init();
-		m_vecMinsPreScaled.Init();
-		m_vecMaxsPreScaled.Init();
+		m_vecMins.Init();
+		m_vecMaxs.Init();
 		m_flSimulationTime = -1;
 		m_masterSequence = 0;
 		m_masterCycle = 0;
@@ -86,8 +86,8 @@ public:
 		m_fFlags = src.m_fFlags;
 		m_vecOrigin = src.m_vecOrigin;
 		m_vecAngles = src.m_vecAngles;
-		m_vecMinsPreScaled = src.m_vecMinsPreScaled;
-		m_vecMaxsPreScaled = src.m_vecMaxsPreScaled;
+		m_vecMins = src.m_vecMins;
+		m_vecMaxs = src.m_vecMaxs;
 		m_flSimulationTime = src.m_flSimulationTime;
 		for( int layerIndex = 0; layerIndex < MAX_LAYER_RECORDS; ++layerIndex )
 		{
@@ -103,8 +103,8 @@ public:
 	// Player position, orientation and bbox
 	Vector					m_vecOrigin;
 	QAngle					m_vecAngles;
-	Vector					m_vecMinsPreScaled;
-	Vector					m_vecMaxsPreScaled;
+	Vector					m_vecMins;
+	Vector					m_vecMaxs;
 
 	float					m_flSimulationTime;	
 	
@@ -296,8 +296,8 @@ void CLagCompensationManager::FrameUpdatePostEntityThink()
 		record.m_flSimulationTime	= pPlayer->GetSimulationTime();
 		record.m_vecAngles			= pPlayer->GetLocalAngles();
 		record.m_vecOrigin			= pPlayer->GetLocalOrigin();
-		record.m_vecMinsPreScaled	= pPlayer->CollisionProp()->OBBMinsPreScaled();
-		record.m_vecMaxsPreScaled	= pPlayer->CollisionProp()->OBBMaxsPreScaled();
+		record.m_vecMins			= pPlayer->CollisionProp()->OBBMins();
+		record.m_vecMaxs			= pPlayer->CollisionProp()->OBBMaxs();
 
 		int layerCount = pPlayer->GetNumAnimOverlays();
 		for( int layerIndex = 0; layerIndex < layerCount; ++layerIndex )
@@ -414,8 +414,8 @@ void CLagCompensationManager::StartLagCompensation( CBasePlayer *player, CUserCm
 void CLagCompensationManager::BacktrackPlayer( CBasePlayer *pPlayer, float flTargetTime )
 {
 	Vector org;
-	Vector minsPreScaled;
-	Vector maxsPreScaled;
+	Vector mins;
+	Vector maxs;
 	QAngle ang;
 
 	VPROF_BUDGET( "BacktrackPlayer", "CLagCompensationManager" );
@@ -498,8 +498,8 @@ void CLagCompensationManager::BacktrackPlayer( CBasePlayer *pPlayer, float flTar
 
 		ang				= Lerp( frac, record->m_vecAngles, prevRecord->m_vecAngles );
 		org				= Lerp( frac, record->m_vecOrigin, prevRecord->m_vecOrigin );
-		minsPreScaled	= Lerp( frac, record->m_vecMinsPreScaled, prevRecord->m_vecMinsPreScaled );
-		maxsPreScaled	= Lerp( frac, record->m_vecMaxsPreScaled, prevRecord->m_vecMaxsPreScaled );
+		mins			= Lerp( frac, record->m_vecMins, prevRecord->m_vecMins );
+		maxs			= Lerp( frac, record->m_vecMaxs, prevRecord->m_vecMaxs );
 	}
 	else
 	{
@@ -507,8 +507,8 @@ void CLagCompensationManager::BacktrackPlayer( CBasePlayer *pPlayer, float flTar
 		// just copy these values since they are the best we have
 		org				= record->m_vecOrigin;
 		ang				= record->m_vecAngles;
-		minsPreScaled	= record->m_vecMinsPreScaled;
-		maxsPreScaled	= record->m_vecMaxsPreScaled;
+		mins			= record->m_vecMins;
+		maxs			= record->m_vecMaxs;
 	}
 
 	// See if this is still a valid position for us to teleport to
@@ -590,17 +590,17 @@ void CLagCompensationManager::BacktrackPlayer( CBasePlayer *pPlayer, float flTar
 	}
 
 	// Use absolute equality here
-	if ( minsPreScaled != pPlayer->CollisionProp()->OBBMinsPreScaled() || maxsPreScaled != pPlayer->CollisionProp()->OBBMaxsPreScaled() )
+	if ( mins != pPlayer->CollisionProp()->OBBMins() || maxs != pPlayer->CollisionProp()->OBBMaxs() )
 	{
 		flags |= LC_SIZE_CHANGED;
 
-		restore->m_vecMinsPreScaled = pPlayer->CollisionProp()->OBBMinsPreScaled();
-		restore->m_vecMaxsPreScaled = pPlayer->CollisionProp()->OBBMaxsPreScaled();
+		restore->m_vecMins = pPlayer->CollisionProp()->OBBMins();
+		restore->m_vecMaxs = pPlayer->CollisionProp()->OBBMaxs();
 		
-		pPlayer->SetSize( minsPreScaled, maxsPreScaled );
+		pPlayer->SetSize( mins, maxs );
 		
-		change->m_vecMinsPreScaled = minsPreScaled;
-		change->m_vecMaxsPreScaled = maxsPreScaled;
+		change->m_vecMins = mins;
+		change->m_vecMaxs = maxs;
 	}
 
 	// Note, do origin at end since it causes a relink into the k/d tree
@@ -764,11 +764,11 @@ void CLagCompensationManager::FinishLagCompensation( CBasePlayer *player )
 	
 			// see if simulation made any changes, if no, then do the restore, otherwise,
 			//  leave new values in
-			if ( pPlayer->CollisionProp()->OBBMinsPreScaled() == change->m_vecMinsPreScaled &&
-				pPlayer->CollisionProp()->OBBMaxsPreScaled() == change->m_vecMaxsPreScaled )
+			if ( pPlayer->CollisionProp()->OBBMins() == change->m_vecMins &&
+				pPlayer->CollisionProp()->OBBMaxs() == change->m_vecMaxs )
 			{
 				// Restore it
-				pPlayer->SetSize( restore->m_vecMinsPreScaled, restore->m_vecMaxsPreScaled );
+				pPlayer->SetSize( restore->m_vecMins, restore->m_vecMaxs );
 			}
 #ifdef STAGING_ONLY
 			else
