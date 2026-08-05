@@ -9,4 +9,4 @@ set VSINSTALLDIR=
 set VCINSTALLDIR=
 set VisualStudioVersion=
 
-waf.bat install -p -v
+waf.bat msvs
