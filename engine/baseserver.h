@@ -205,7 +205,7 @@ public:
 	char			m_szSkyname[64];		// skybox name
 	char			m_Password[32];		// server password
 
-	MD5Value_t		worldmapMD5;		// For detecting that client has a hacked local copy of map, the client will be dropped if this occurs.
+	CRC32_t			worldmapCRC;		// For detecting that client has a hacked local copy of map, the client will be dropped if this occurs.
 	
 	CNetworkStringTableContainer *m_StringTables;	// newtork string table container
 

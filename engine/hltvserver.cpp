@@ -544,7 +544,7 @@ void CHLTVServer::StartMaster(CGameClient *client)
 	m_nGameServerMaxClients = m_Server->GetMaxClients(); // maxclients is different on proxy (128)
 	serverclasses	= m_Server->serverclasses;
 	serverclassbits	= m_Server->serverclassbits;
-	V_memcpy( worldmapMD5.bits, m_Server->worldmapMD5.bits, MD5_DIGEST_LENGTH );
+	worldmapCRC		= m_Server->worldmapCRC;
 	m_flTickInterval= m_Server->GetTickInterval();
 
 	// allocate buffers for input frame

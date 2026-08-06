@@ -2394,6 +2394,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 
 	Assert( serverGameClients );
 
+
 	if ( CommandLine()->FindParm( "-NoLoadPluginsForClient" ) != 0 )
 	{
 		if ( !m_bLoadedPlugins )
@@ -2608,8 +2609,8 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 		EngineVGui()->UpdateProgressBar(PROGRESS_CRCMAP);
 #endif
 		// Server map CRC check.
-		V_memset( worldmapMD5.bits, 0, MD5_DIGEST_LENGTH );
-		if ( !MD5_MapFile( &worldmapMD5, szMapFile ) )
+		CRC32_Init(&worldmapCRC);
+		if ( !CRC_MapFile( &worldmapCRC, szMapFile ) )
 		{
 			ConMsg( "Couldn't CRC server map: %s\n", szMapFile );
 			m_State = ss_dead;
@@ -2623,7 +2624,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 	}
 	else
 	{
-		V_memset( worldmapMD5.bits, 0, MD5_DIGEST_LENGTH );
+		worldmapCRC = 0;
 	}
 
 	m_StringTables = networkStringTableContainerServer;

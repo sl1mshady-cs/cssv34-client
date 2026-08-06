@@ -270,7 +270,7 @@ CBaseServer::CBaseServer()
 	m_szMapname[0] = 0;
 	m_szSkyname[0] = 0;
 	m_Password[0] = 0;
-	V_memset( worldmapMD5.bits, 0, MD5_DIGEST_LENGTH );
+	worldmapCRC = 0;
 
 	serverclasses = serverclassbits = 0;
 	m_nMaxclients = m_nSpawnCount = 0;
@@ -915,7 +915,7 @@ void CBaseServer::FillServerInfo(SVC_ServerInfo &serverinfo)
 
 	serverinfo.m_nProtocol		= PROTOCOL_VERSION;
 	serverinfo.m_nServerCount	= GetSpawnCount();
-	V_memcpy( serverinfo.m_nMapMD5.bits, worldmapMD5.bits, MD5_DIGEST_LENGTH );
+	serverinfo.m_nMapCRC		= worldmapCRC;
 	serverinfo.m_nMaxClients	= GetMaxClients();
 	serverinfo.m_nMaxClasses	= serverclasses;
 	serverinfo.m_bIsDedicated	= IsDedicated();
@@ -1592,7 +1592,7 @@ void CBaseServer::Clear( void )
 	Q_memset( m_szMapname, 0, sizeof( m_szMapname ) );
 	Q_memset( m_szSkyname, 0, sizeof( m_szSkyname ) );
 
-	V_memset( worldmapMD5.bits, 0, MD5_DIGEST_LENGTH );
+	worldmapCRC = 0;
 
 	MEM_ALLOC_CREDIT();
 

@@ -376,7 +376,7 @@ bool CHLTVClientState::ProcessServerInfo(SVC_ServerInfo *msg )
 	m_pHLTV->m_nPlayerSlot		= m_nPlayerSlot;
 	
 	// copy other settings to HLTV server
-	V_memcpy( m_pHLTV->worldmapMD5.bits, msg->m_nMapMD5.bits, MD5_DIGEST_LENGTH );
+	m_pHLTV->worldmapCRC		= msg->m_nMapCRC;
 	m_pHLTV->m_flTickInterval	= msg->m_fTickInterval;
 
 	host_state.interval_per_tick = msg->m_fTickInterval;
