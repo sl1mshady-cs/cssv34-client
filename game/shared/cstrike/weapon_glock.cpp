@@ -120,13 +120,13 @@ void CWeaponGlock::SecondaryAttack()
 	{
 		ClientPrint( pPlayer, HUD_PRINTCENTER, "#Switch_To_SemiAuto" );
 		m_bBurstMode = false;
-		m_weaponMode = Primary_Mode;
+		//m_weaponMode = Primary_Mode;
 	}
 	else
 	{
 		ClientPrint( pPlayer, HUD_PRINTCENTER, "#Switch_To_BurstFire" );
 		m_bBurstMode = true;
-		m_weaponMode = Secondary_Mode;
+		//m_weaponMode = Secondary_Mode;
 	}
 	
 	m_flNextSecondaryAttack = gpGlobals->curtime + 0.3;
@@ -255,7 +255,7 @@ void CWeaponGlock::PrimaryAttack()
 	}
 
 	// update accuracy
-	m_fAccuracyPenalty += GetCSWpnData().m_fInaccuracyImpulseFire[m_weaponMode];
+	m_fAccuracyPenalty += GetCSWpnData().m_fInaccuracyImpulseFire[Primary_Mode];
 
 	//ResetPlayerShieldAnim();
 }

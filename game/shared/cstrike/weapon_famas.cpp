@@ -102,13 +102,13 @@ void CWeaponFamas::SecondaryAttack()
 	{
 		ClientPrint( pPlayer, HUD_PRINTCENTER, "#Switch_To_FullAuto" );
 		m_bBurstMode = false;
-		m_weaponMode = Primary_Mode;
+		//m_weaponMode = Primary_Mode;
 	}
 	else
 	{
 		ClientPrint( pPlayer, HUD_PRINTCENTER, "#Switch_To_BurstFire" );
 		m_bBurstMode = true;
-		m_weaponMode = Secondary_Mode;
+		//m_weaponMode = Secondary_Mode;
 	}
 	m_flNextSecondaryAttack = gpGlobals->curtime + 0.3;
 }
@@ -222,7 +222,7 @@ void CWeaponFamas::PrimaryAttack()
 		m_fNextBurstShot = gpGlobals->curtime + kFamasBurstCycleTime;
 	}
 
-	if ( !CSBaseGunFire( flCycleTime, m_weaponMode ) )
+	if ( !CSBaseGunFire( flCycleTime, Primary_Mode ) )
 		return;
 	
 	if ( pPlayer->GetAbsVelocity().Length2D() > 5 )

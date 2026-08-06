@@ -287,7 +287,6 @@ BEGIN_PREDICTION_DATA( CWeaponCSBase )
 	DEFINE_PRED_FIELD( m_flNextSecondaryAttack, FIELD_FLOAT, FTYPEDESC_OVERRIDE | FTYPEDESC_NOERRORCHECK ),
 	DEFINE_PRED_FIELD( m_bDelayFire, FIELD_BOOLEAN, 0 ),
 	DEFINE_PRED_FIELD( m_flAccuracy, FIELD_FLOAT, 0 ),
-	DEFINE_PRED_FIELD( m_weaponMode, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 END_PREDICTION_DATA()
 #endif
 
@@ -372,8 +371,6 @@ CWeaponCSBase::CWeaponCSBase()
 #endif
 
 	m_fAccuracyPenalty = 0.0f;
-
-	m_weaponMode = Primary_Mode;
 }
 
 
@@ -702,7 +699,7 @@ float CWeaponCSBase::GetInaccuracy() const
 		RemapValClamped(pPlayer->GetAbsVelocity().Length2D(), 
 		fMaxSpeed * CS_PLAYER_SPEED_DUCK_MODIFIER, 
 		fMaxSpeed * 0.95f,							// max out at 95% of run speed to avoid jitter near max speed
-		0.0f, weaponInfo.m_fInaccuracyMove[m_weaponMode]);
+		0.0f, weaponInfo.m_fInaccuracyMove[Primary_Mode]);
 }
 
 
@@ -711,7 +708,7 @@ float CWeaponCSBase::GetSpread() const
 	if ( weapon_accuracy_model.GetInt() == 1 )
 		return 0.0f;
 
-	return GetCSWpnData().m_fSpread[m_weaponMode];
+	return GetCSWpnData().m_fSpread[Primary_Mode];
 }
 
 
@@ -1089,7 +1086,7 @@ void CWeaponCSBase::DefaultTouch(CBaseEntity *pOther)
 		default:
 			{
 				// static crosshair
-				float fSpread = (GetCSWpnData().m_fSpread[m_weaponMode] + GetCSWpnData().m_fInaccuracyStand[m_weaponMode]) * 320.0f / tanf(fHalfFov);
+				float fSpread = (GetCSWpnData().m_fSpread[Primary_Mode] + GetCSWpnData().m_fInaccuracyStand[Primary_Mode]) * 320.0f / tanf(fHalfFov);
 				iCrosshairDistance = MAX( 0, RoundFloatToInt( YRES( fSpread * cl_crosshairspreadscale.GetFloat() ) ) );
 			}
 			break;
@@ -1530,8 +1527,6 @@ void CWeaponCSBase::DefaultTouch(CBaseEntity *pOther)
         m_donor = NULL;
         m_donated = false;
 
-		m_weaponMode = Primary_Mode;
-
         //=============================================================================
         // HPE_END
         //=============================================================================
@@ -1829,20 +1824,20 @@ void CWeaponCSBase::UpdateAccuracyPenalty()
 	// on ladder?
 	if ( pPlayer->GetMoveType() == MOVETYPE_LADDER )
 	{
-		fNewPenalty += weaponInfo.m_fInaccuracyStand[m_weaponMode] + weaponInfo.m_fInaccuracyLadder[m_weaponMode];
+		fNewPenalty += weaponInfo.m_fInaccuracyStand[Primary_Mode] + weaponInfo.m_fInaccuracyLadder[Primary_Mode];
 	}
 	// in the air?
 // 	else if ( !FBitSet( pPlayer->GetFlags(), FL_ONGROUND ) )
 // 	{
-// 		fNewPenalty += weaponInfo.m_fInaccuracyStand[m_weaponMode] + weaponInfo.m_fInaccuracyJump[m_weaponMode];
+// 		fNewPenalty += weaponInfo.m_fInaccuracyStand[Primary_Mode] + weaponInfo.m_fInaccuracyJump[Primary_Mode];
 // 	}
 	else if ( FBitSet( pPlayer->GetFlags(), FL_DUCKING) )
 	{
-		fNewPenalty += weaponInfo.m_fInaccuracyCrouch[m_weaponMode];
+		fNewPenalty += weaponInfo.m_fInaccuracyCrouch[Primary_Mode];
 	}
 	else
 	{
-		fNewPenalty += weaponInfo.m_fInaccuracyStand[m_weaponMode];
+		fNewPenalty += weaponInfo.m_fInaccuracyStand[Primary_Mode];
 	}
 
 	if ( m_bInReload )
@@ -1885,12 +1880,12 @@ const float kJumpVelocity = sqrtf(2.0f * 800.0f * 57.0f);	// see CCSGameMovement
 
 void CWeaponCSBase::OnJump( float fImpulse )
 {
-	m_fAccuracyPenalty += GetCSWpnData().m_fInaccuracyJump[m_weaponMode] * fImpulse / kJumpVelocity;
+	m_fAccuracyPenalty += GetCSWpnData().m_fInaccuracyJump[Primary_Mode] * fImpulse / kJumpVelocity;
 }
 
 void CWeaponCSBase::OnLand( float fVelocity )
 {
-	float fPenalty = GetCSWpnData().m_fInaccuracyLand[m_weaponMode] * fVelocity / kJumpVelocity;
+	float fPenalty = GetCSWpnData().m_fInaccuracyLand[Primary_Mode] * fVelocity / kJumpVelocity;
 	m_fAccuracyPenalty += fPenalty;
 
 /*

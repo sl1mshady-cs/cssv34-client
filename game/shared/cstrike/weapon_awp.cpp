@@ -120,18 +120,19 @@ void CWeaponAWP::SecondaryAttack()
 	if ( pPlayer->GetFOV() == pPlayer->GetDefaultFOV() )
 	{
 			pPlayer->SetFOV( pPlayer, cAWPMidZoomFOV, kZoomTime );
-			m_weaponMode = Secondary_Mode;
+			//m_weaponMode = Secondary_Mode;
 			m_fAccuracyPenalty += GetCSWpnData().m_fInaccuracyAltSwitch;
 	}
 	else if ( pPlayer->GetFOV() == cAWPMidZoomFOV )
 	{
 			pPlayer->SetFOV( pPlayer, cAWPMaxZoomFOV, kZoomTime );
-			m_weaponMode = Secondary_Mode;
+			//m_weaponMode = Secondary_Mode;
 	}
 	else
 	{
 		pPlayer->SetFOV( pPlayer, pPlayer->GetDefaultFOV(), kZoomTime );
-		m_weaponMode = Primary_Mode;
+		
+		//m_weaponMode = Primary_Mode;
 	}
 
 
@@ -210,10 +211,10 @@ void CWeaponAWP::PrimaryAttack()
 	if ( !pPlayer )
 		return;
 
-	if ( !CSBaseGunFire( GetCSWpnData().m_flCycleTime, m_weaponMode ) )
+	if ( !CSBaseGunFire( GetCSWpnData().m_flCycleTime, Primary_Mode ) )
 		return;
 
-	if ( m_weaponMode == Secondary_Mode )
+	if ( 0 )//m_weaponMode == Secondary_Mode )
 	{	
 		float	midFOVdistance = fabs( pPlayer->GetFOV() - (float)cAWPMidZoomFOV );
 		float	farFOVdistance = fabs( pPlayer->GetFOV() - (float)cAWPMaxZoomFOV );
@@ -231,7 +232,7 @@ void CWeaponAWP::PrimaryAttack()
 		#else
 			pPlayer->m_bResumeZoom = true;
 			pPlayer->SetFOV( pPlayer, pPlayer->GetDefaultFOV(), 0.1f );
-			m_weaponMode = Primary_Mode;
+			//m_weaponMode = Primary_Mode;
 		#endif
 	}
 
@@ -286,7 +287,7 @@ bool CWeaponAWP::IsAwp() const
 
 bool CWeaponAWP::Reload()
 {
-	m_weaponMode = Primary_Mode;
+	//m_weaponMode = Primary_Mode;
 	return BaseClass::Reload();
 }
 
@@ -299,7 +300,7 @@ bool CWeaponAWP::Deploy()
 	if ( !BaseClass::Deploy() )
 		return false;
 
-	m_weaponMode = Primary_Mode;
+	//m_weaponMode = Primary_Mode;
 	m_flNextPrimaryAttack	= MAX( m_flNextPrimaryAttack, fOldNextPrimaryAttack );
 	m_flNextSecondaryAttack	= MAX( m_flNextSecondaryAttack, fOldNextSecondaryAttack );
 	return true;

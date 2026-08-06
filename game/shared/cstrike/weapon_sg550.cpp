@@ -87,18 +87,18 @@ void CWeaponSG550::SecondaryAttack()
 	if (pPlayer->GetFOV() == pPlayer->GetDefaultFOV())
 	{
 		pPlayer->SetFOV( pPlayer, 40, kZoomTime );
-		m_weaponMode = Secondary_Mode;
+		//m_weaponMode = Secondary_Mode;
 		m_fAccuracyPenalty += GetCSWpnData().m_fInaccuracyAltSwitch;
 	}
 	else if (pPlayer->GetFOV() == 40)
 	{
 		pPlayer->SetFOV( pPlayer, 15, kZoomTime );
-		m_weaponMode = Secondary_Mode;
+		//m_weaponMode = Secondary_Mode;
 	}
 	else if (pPlayer->GetFOV() == 15)
 	{
 		pPlayer->SetFOV( pPlayer, pPlayer->GetDefaultFOV(), kZoomTime );
-		m_weaponMode = Primary_Mode;
+		//m_weaponMode = Primary_Mode;
 	}
 
 
@@ -174,7 +174,7 @@ void CWeaponSG550::PrimaryAttack()
 
 	m_flLastFire = gpGlobals->curtime;
 
-	if ( !CSBaseGunFire( GetCSWpnData().m_flCycleTime, m_weaponMode ) )
+	if ( !CSBaseGunFire( GetCSWpnData().m_flCycleTime, Primary_Mode ) )
 		return;
 
 	QAngle angle = pPlayer->GetPunchAngle();
@@ -188,7 +188,7 @@ bool CWeaponSG550::Reload()
 	bool ret = BaseClass::Reload();
 	
 	m_flAccuracy = 0.98;
-	m_weaponMode = Primary_Mode;
+	//m_weaponMode = Primary_Mode;
 	
 	return ret;
 }
@@ -198,7 +198,7 @@ bool CWeaponSG550::Deploy()
 	bool ret = BaseClass::Deploy();
 	
 	m_flAccuracy = 0.98;
-	m_weaponMode = Primary_Mode;
+	//m_weaponMode = Primary_Mode;
 	
 	return ret;
 }

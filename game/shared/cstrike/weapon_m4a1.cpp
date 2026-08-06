@@ -101,7 +101,7 @@ void CWeaponM4A1::Spawn( )
 	BaseClass::Spawn();
 
 	m_bSilencerOn = false;
-	m_weaponMode = Primary_Mode;
+	//m_weaponMode = Primary_Mode;
 	m_flDoneSwitchingSilencer = 0.0f;
 	m_bDelayFire = true;
 }
@@ -171,7 +171,7 @@ bool CWeaponM4A1::Holster( CBaseCombatWeapon *pSwitchingTo )
 	{
 		// still switching the silencer.  Cancel the switch.
 		m_bSilencerOn = !m_bSilencerOn;
-		m_weaponMode = m_bSilencerOn ? Secondary_Mode : Primary_Mode;
+		//m_weaponMode = m_bSilencerOn ? Secondary_Mode : Primary_Mode;
 		SetWeaponModelIndex( GetWorldModel() );
 	}
 
@@ -184,7 +184,7 @@ void CWeaponM4A1::Drop( const Vector &vecVelocity )
 	{
 		// still switching the silencer.  Cancel the switch.
 		m_bSilencerOn = !m_bSilencerOn;
-		m_weaponMode = m_bSilencerOn ? Secondary_Mode : Primary_Mode;
+		//m_weaponMode = m_bSilencerOn ? Secondary_Mode : Primary_Mode;
 		SetWeaponModelIndex( GetWorldModel() );
 	}
 
@@ -196,13 +196,13 @@ void CWeaponM4A1::SecondaryAttack()
 	if ( m_bSilencerOn )
 	{
 		m_bSilencerOn = false;
-		m_weaponMode = Primary_Mode;
+		//m_weaponMode = Primary_Mode;
 		SendWeaponAnim( ACT_VM_DETACH_SILENCER );
 	}
 	else
 	{
 		m_bSilencerOn = true;
-		m_weaponMode = Secondary_Mode;
+		//m_weaponMode = Secondary_Mode;
 		SendWeaponAnim( ACT_VM_ATTACH_SILENCER );
 	}
 	m_flDoneSwitchingSilencer = gpGlobals->curtime + 2;
@@ -251,7 +251,7 @@ void CWeaponM4A1::PrimaryAttack()
 	if ( !pPlayer )
 		return;
 
-	if ( !CSBaseGunFire( GetCSWpnData().m_flCycleTime, m_weaponMode ) )
+	if ( !CSBaseGunFire( GetCSWpnData().m_flCycleTime, Primary_Mode ) )
 		return;
 
 	if ( m_bSilencerOn )

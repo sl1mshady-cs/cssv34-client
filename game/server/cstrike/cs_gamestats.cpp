@@ -1133,7 +1133,6 @@ void CCSGameStats::Event_PlayerDamage( CBasePlayer *pBasePlayer, const CTakeDama
 				if (pCSWeapon)
 				{
 					pWeaponName = pCSWeapon->GetClassname();
-					weaponMode = pCSWeapon->m_weaponMode;
 				}
 			}
 		}

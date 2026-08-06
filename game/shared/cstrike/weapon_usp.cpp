@@ -118,7 +118,7 @@ void CWeaponUSP::Spawn()
 	//m_iDefaultAmmo = 12;
 	m_flAccuracy = 0.92;
 	m_bSilencerOn = false;
-	m_weaponMode = Primary_Mode;
+	//m_weaponMode = Primary_Mode;
 	m_flDoneSwitchingSilencer = 0.0f;
 
 	//FallInit();// get ready to fall down.
@@ -176,7 +176,7 @@ bool CWeaponUSP::Holster( CBaseCombatWeapon *pSwitchingTo )
 	{
 		// still switching the silencer.  Cancel the switch.
 		m_bSilencerOn = !m_bSilencerOn;
-		m_weaponMode = m_bSilencerOn ? Secondary_Mode : Primary_Mode;
+		//m_weaponMode = m_bSilencerOn ? Secondary_Mode : Primary_Mode;
 		SetWeaponModelIndex( GetWorldModel() );
 	}
 
@@ -189,7 +189,7 @@ void CWeaponUSP::Drop( const Vector &vecVelocity )
 	{
 		// still switching the silencer.  Cancel the switch.
 		m_bSilencerOn = !m_bSilencerOn;
-		m_weaponMode = m_bSilencerOn ? Secondary_Mode : Primary_Mode;
+		//m_weaponMode = m_bSilencerOn ? Secondary_Mode : Primary_Mode;
 		SetWeaponModelIndex( GetWorldModel() );
 	}
 
@@ -219,7 +219,7 @@ void CWeaponUSP::SecondaryAttack()
 		SendWeaponAnim( ACT_VM_ATTACH_SILENCER );
 	}
 	m_bSilencerOn = !m_bSilencerOn;
-	m_weaponMode = m_bSilencerOn ? Secondary_Mode : Primary_Mode;
+	//m_weaponMode = m_bSilencerOn ? Secondary_Mode : Primary_Mode;
 	m_flDoneSwitchingSilencer = gpGlobals->curtime + 3;
 
 	m_flNextSecondaryAttack = gpGlobals->curtime + 3;
@@ -318,7 +318,7 @@ void CWeaponUSP::PrimaryAttack()
 		pPlayer->Weapon_ShootPosition(),
 		pPlayer->EyeAngles() + 2.0f * pPlayer->GetPunchAngle(),
 		GetWeaponID(),
-		m_weaponMode,
+		0,
 		CBaseEntity::GetPredictionRandomSeed() & 255,
 		GetInaccuracy(),
 		GetSpread());
@@ -332,7 +332,7 @@ void CWeaponUSP::PrimaryAttack()
 	SetWeaponIdleTime( gpGlobals->curtime + 2 );
 
 	// update accuracy
-	m_fAccuracyPenalty += GetCSWpnData().m_fInaccuracyImpulseFire[m_weaponMode];
+	m_fAccuracyPenalty += GetCSWpnData().m_fInaccuracyImpulseFire[Primary_Mode];
 
 	QAngle angle = pPlayer->GetPunchAngle();
 	angle.x -= 2;

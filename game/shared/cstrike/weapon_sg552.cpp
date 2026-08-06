@@ -78,18 +78,18 @@ void CWeaponSG552::SecondaryAttack()
 	if (pPlayer->GetFOV() == pPlayer->GetDefaultFOV())
 	{
 		pPlayer->SetFOV( pPlayer, 55, 0.2f );
-		m_weaponMode = Secondary_Mode;
+		//m_weaponMode = Secondary_Mode;
 	}
 	else if (pPlayer->GetFOV() == 55)
 	{
 		pPlayer->SetFOV( pPlayer, 0, 0.15f );
-		m_weaponMode = Secondary_Mode;
+		//m_weaponMode = Secondary_Mode;
 	}
 	else 
 	{
 		//FIXME: This seems wrong
 		pPlayer->SetFOV( pPlayer, pPlayer->GetDefaultFOV() );
-		m_weaponMode = Primary_Mode;
+		//m_weaponMode = Primary_Mode;
 	}
 
 	m_flNextSecondaryAttack = gpGlobals->curtime + 0.3;
@@ -127,7 +127,7 @@ void CWeaponSG552::PrimaryAttack()
 	if ( bZoomed )
 		flCycleTime = 0.135f;
 
-	if ( !CSBaseGunFire( flCycleTime, m_weaponMode ) )
+	if ( !CSBaseGunFire( flCycleTime, Primary_Mode ) )
 		return;
 
 	// CSBaseGunFire can kill us, forcing us to drop our weapon, if we shoot something that explodes
@@ -159,12 +159,12 @@ float CWeaponSG552::GetMaxSpeed() const
 
 bool CWeaponSG552::Reload()
 {
-	m_weaponMode = Primary_Mode;
+	//m_weaponMode = Primary_Mode;
 	return BaseClass::Reload();
 }
 
 bool CWeaponSG552::Deploy()
 {
-	m_weaponMode = Primary_Mode;
+	//m_weaponMode = Primary_Mode;
 	return BaseClass::Deploy();
 }

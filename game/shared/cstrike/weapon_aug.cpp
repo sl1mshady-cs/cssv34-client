@@ -75,17 +75,17 @@ void CWeaponAug::SecondaryAttack()
 	if ( pPlayer->GetFOV() == pPlayer->GetDefaultFOV() )
 	{
 		pPlayer->SetFOV( pPlayer, 55, 0.2f );
-		m_weaponMode = Secondary_Mode;
+		//m_weaponMode = Secondary_Mode;
 	}
 	else if ( pPlayer->GetFOV() == 55 )
 	{
 		pPlayer->SetFOV( pPlayer, pPlayer->GetDefaultFOV(), 0.15f );
-		m_weaponMode = Primary_Mode;
+		//m_weaponMode = Primary_Mode;
 	}
 	else 
 	{
 		pPlayer->SetFOV( pPlayer, pPlayer->GetDefaultFOV() );
-		m_weaponMode = Primary_Mode;
+		//m_weaponMode = Primary_Mode;
 	}
 
 	m_flNextSecondaryAttack = gpGlobals->curtime + 0.3;
@@ -125,7 +125,7 @@ void CWeaponAug::PrimaryAttack()
 	if ( bZoomed )
 		flCycleTime = 0.135f;
 
-	if ( !CSBaseGunFire( flCycleTime, m_weaponMode ) )
+	if ( !CSBaseGunFire( flCycleTime, Primary_Mode ) )
 		return;
 
 	// CSBaseGunFire can kill us, forcing us to drop our weapon, if we shoot something that explodes
@@ -149,12 +149,12 @@ void CWeaponAug::PrimaryAttack()
 
 bool CWeaponAug::Reload()
 {
-	m_weaponMode = Primary_Mode;
+	//m_weaponMode = Primary_Mode;
 	return BaseClass::Reload();
 }
 
 bool CWeaponAug::Deploy()
 {
-	m_weaponMode = Primary_Mode;
+	//m_weaponMode = Primary_Mode;
 	return BaseClass::Deploy();
 }

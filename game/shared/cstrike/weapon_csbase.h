@@ -213,8 +213,6 @@ public:
 	// [pfreese] new accuracy model
 	//=============================================================================
 
-	CNetworkVar( CSWeaponMode, m_weaponMode);
-
 	virtual float GetInaccuracy() const;
 	virtual float GetSpread() const;
 

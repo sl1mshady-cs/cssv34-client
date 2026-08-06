@@ -70,7 +70,7 @@ void CWeaponCSBaseGun::ItemPostFrame()
 		
 		if ( m_iClip1 != 0 || ( GetWeaponFlags() & ITEM_FLAG_NOAUTORELOAD ) )
 		{
-			m_weaponMode = Secondary_Mode;
+			//m_weaponMode = Secondary_Mode;
 			pPlayer->SetFOV( pPlayer, pPlayer->m_iLastZoom, 0.05f );
 			m_zoomFullyActiveTime = gpGlobals->curtime + 0.05f;// Make sure we think that we are zooming on the server so we don't get instant acc bonus
 		}
