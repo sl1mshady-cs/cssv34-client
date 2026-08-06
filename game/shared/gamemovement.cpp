@@ -3336,7 +3336,7 @@ void CGameMovement::CheckFalling(void)
 			{
 				// Player landed on a descending object. Subtract the velocity of the ground entity.
 				player->m_Local.m_flFallVelocity += player->GetGroundEntity()->GetAbsVelocity().z;
-				player->m_Local.m_flFallVelocity = max(0.1f, player->m_Local.m_flFallVelocity);
+				player->m_Local.m_flFallVelocity = MAX(0.1f, player->m_Local.m_flFallVelocity);
 			}
 
 			if (player->m_Local.m_flFallVelocity > PLAYER_MAX_SAFE_FALL_SPEED)

@@ -135,11 +135,6 @@ void CPlayerMove::SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *p
 
 	// Allow sound, etc. to be created by movement code
 	move->m_bFirstRunOfFunctions = true;
-	move->m_bGameCodeMovedPlayer = false;
-	if ( player->GetPreviouslyPredictedOrigin() != player->GetAbsOrigin() )
-	{
-		move->m_bGameCodeMovedPlayer = true;
-	}
 
 	// Prepare the usercmd fields
 	move->m_nImpulseCommand		= ucmd->impulse;	
@@ -183,7 +178,7 @@ void CPlayerMove::SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *p
 
 	move->m_nPlayerHandle		= player;
 
-	move->SetAbsOrigin( player->GetAbsOrigin() );
+	move->m_vecAbsOrigin		= player->GetAbsOrigin();
 
 	// Copy constraint information
 	if ( player->m_hConstraintEntity.Get() )
@@ -208,9 +203,9 @@ void CPlayerMove::FinishMove( CBasePlayer *player, CUserCmd *ucmd, CMoveData *mo
 
 	// NOTE: Don't copy this.  the movement code modifies its local copy but is not expecting to be authoritative
 	//player->m_flMaxspeed			= move->m_flClientMaxSpeed;
-	player->SetAbsOrigin( move->GetAbsOrigin() );
+	player->SetAbsOrigin( move->m_vecAbsOrigin );
 	player->SetAbsVelocity( move->m_vecVelocity );
-	player->SetPreviouslyPredictedOrigin( move->GetAbsOrigin() );
+	player->SetPreviouslyPredictedOrigin( move->m_vecAbsOrigin );
 
 	player->m_Local.m_nOldButtons			= move->m_nButtons;
 
@@ -370,8 +365,6 @@ void CPlayerMove::RunCommand ( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper 
 	}
 	*/
 
-	g_pGameMovement->StartTrackPredictionErrors( player );
-
 	CommentarySystem_PePlayerRunCommand( player, ucmd );
 
 	// Do weapon selection
@@ -448,8 +441,6 @@ void CPlayerMove::RunCommand ( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper 
 	VPROF_SCOPE_END();
 
 	RunPostThink( player );
-
-	g_pGameMovement->FinishTrackPredictionErrors( player );
 
 	FinishCommand( player );
 
