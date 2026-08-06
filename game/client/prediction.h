@@ -65,7 +65,6 @@ public:
 	}
 
 	// The engine needs to be able to access a few predicted values
-	virtual int		GetWaterLevel( void );
 	virtual void	GetViewOrigin( Vector& org );
 	virtual void	SetViewOrigin( Vector& org );
 	virtual void	GetViewAngles( QAngle& ang );

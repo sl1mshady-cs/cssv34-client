@@ -1803,13 +1803,3 @@ bool CPrediction::InPrediction( void ) const
 	return false;
 #endif
 }
-
-// The engine needs to be able to access a few predicted values
-int CPrediction::GetWaterLevel( void )
-{
-	C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
-	if ( !player )
-		return 0;
-
-	return player->m_nWaterLevel;
-}
