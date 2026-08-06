@@ -14,6 +14,8 @@ This project is using waf buildsystem. If you have waf-related questions look ht
 
 Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client-releases/releases)
 
+---
+
 # Features:
 - Android, OSX, FreeBSD, Windows, Linux( glibc, musl ) support
 - Arm support( except windows )
@@ -31,23 +33,34 @@ Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client-relea
 - Serverbrowser works without steam
 
 Known issues:
-- prediction (or collision) bug, when standing on entities, moving into entities, etc
 - rare "unknown shaders" bug (will crash), partially fixed
 - unknown crashes
+
+---
 
 # How to Build?
 
 Windows (with Visual Studio):
 - Run waf_configure_cstrike_release.bat or waf_configure_cstrike_debug.bat
-- If you want target 32 bit, add `-4` at the end
-- If you need voice support, add `--enable-speex --enable-opus` at the end
+- If you want target 32 bit, add `-4` or `--32bits` at the end
+- OPTIONAL: Run waf_create_visualstudio_solution.bat to create the visual studio solution
 - Run waf_build.bat
 - Output files will be copied to `./__build__`
 
-Android, Linux, other platforms coming soon, just wait.
+Android, Linux, other platforms coming soon.
+
+---
 
 # How to Run?
 
 - You need to download content. Download it from: [here](https://drive.google.com/file/d/1Jtc9HfyoX88ENAxPzjHopECaX9wsiaWI/view)
 - Unpack this content into `__build__` folder
 - Run hl2_launcher.exe with `-game cstrike` (you can create .bat file for it)
+
+---
+
+# Debugging the engine
+- Set hl2_launcher as the startup project (if it isn't already) by right clicking it and pressing "Set as Startup Project".
+- Right click launcher_main, go to properties and click on the debugging section. Set "Command" to point to your compiled `hl2_launcher.exe` (in the `__build__` folder).
+- Set "Command Line Arguments" to `-game cstrike -insecure -sw -dev -allowdebug` (feel free to add more such as `+sv_cheats 1`).
+- Press "Local Windows Debugger" at the top of Visual Studio to then launch the game and debug it.

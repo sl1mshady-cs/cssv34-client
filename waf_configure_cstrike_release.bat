@@ -9,4 +9,4 @@ set VSINSTALLDIR=
 set VCINSTALLDIR=
 set VisualStudioVersion=
 
-waf.bat configure -T release --prefix=__build__ --build-games=cstrike --disable-warns %*
+waf.bat configure -T release --prefix=__build__ --build-games=cstrike --disable-warns --enable-speex --enable-opus %*
