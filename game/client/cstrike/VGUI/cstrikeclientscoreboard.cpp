@@ -526,8 +526,8 @@ void CCSClientScoreBoardDialog::SetupTeamDisplay( TeamDisplayInfo& teamDisplay, 
 			delete playerDisplay.pSelect;
 			playerDisplay.pSelect = (ImagePanel*)SETUP_PANEL( new ImagePanel( this, tmpName ) );
 			playerDisplay.pSelect->SetBounds( x1, y1, x2 - x1, y2 - y1 );
+			playerDisplay.pSelect->SetShouldScaleImage(true);
 			playerDisplay.pSelect->SetImage( "../vgui/scoreboard/scoreboard-select" );
-			playerDisplay.pSelect->SetShouldScaleImage( true );
 			playerDisplay.pSelect->SetVisible( false );
 		}
 	}
