@@ -1184,7 +1184,7 @@ bool SVC_UpdateStringTable::ReadFromBuffer( bf_read &buffer )
 		m_nChangedEntries = 1;
 	}
 	
-	m_nLength = buffer.ReadUBitLong( 16 );
+	m_nLength = buffer.ReadWord();
 	m_DataIn = buffer;
 	return buffer.SeekRelative( m_nLength );
 }
@@ -1218,7 +1218,7 @@ bool SVC_CreateStringTable::WriteToBuffer( bf_write &buffer )
 	buffer.WriteWord( m_nMaxEntries );
 	int encodeBits = Q_log2( m_nMaxEntries );
 	buffer.WriteUBitLong( m_nNumEntries, encodeBits+1 );
-	buffer.WriteUBitLong( m_nLength, NET_MAX_PAYLOAD_BITS_V23 + 3); // length in bits
+	buffer.WriteWord( m_nLength ); // length in bits
 
 	buffer.WriteOneBit( m_bUserDataFixedSize ? 1 : 0 );
 	if ( m_bUserDataFixedSize )

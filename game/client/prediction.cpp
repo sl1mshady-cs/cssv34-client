@@ -287,11 +287,6 @@ void CPrediction::OnReceivedUncompressedPacket( void )
 void CPrediction::PreEntityPacketReceived ( int commands_acknowledged, int current_world_update_packet )
 {
 #if !defined( NO_ENTITY_PREDICTION )
-#if defined( _DEBUG )
-	char sz[ 32 ];
-	Q_snprintf( sz, sizeof( sz ), "preentitypacket%d", commands_acknowledged );
-	PREDICTION_TRACKVALUECHANGESCOPE( sz );
-#endif
 	VPROF( "CPrediction::PreEntityPacketReceived" );
 
 	// Cache off incoming packet #
@@ -333,7 +328,6 @@ void CPrediction::PreEntityPacketReceived ( int commands_acknowledged, int curre
 void CPrediction::PostEntityPacketReceived( void )
 {
 #if !defined( NO_ENTITY_PREDICTION )
-	PREDICTION_TRACKVALUECHANGESCOPE( "postentitypacket" );
 	VPROF( "CPrediction::PostEntityPacketReceived" );
 
 	// Don't screw up memory of current player from history buffers if not filling in history buffers
@@ -414,11 +408,6 @@ void CPrediction::PostNetworkDataReceived( int commands_acknowledged )
 	VPROF( "CPrediction::PostNetworkDataReceived" );
 
 	bool error_check = ( commands_acknowledged > 0 ) ? true : false;
-#if defined( _DEBUG )
-	char sz[ 32 ];
-	Q_snprintf( sz, sizeof( sz ), "postnetworkdata%d", commands_acknowledged );
-	PREDICTION_TRACKVALUECHANGESCOPE( sz );
-#endif
 #ifndef _XBOX
 	CPDumpPanel *dump = GetPDumpPanel();
 #endif
@@ -608,7 +597,7 @@ void CPrediction::SetupMove( C_BasePlayer *player, CUserCmd *ucmd, IMoveHelper *
 	
 	move->m_nPlayerHandle = player->GetClientHandle();
 	move->m_vecVelocity		= player->GetAbsVelocity();
-	move->SetAbsOrigin( player->GetNetworkOrigin() );
+	move->m_vecAbsOrigin	= player->GetNetworkOrigin();
 	move->m_vecOldAngles	= move->m_vecAngles;
 	move->m_nOldButtons		= player->m_Local.m_nOldButtons;
 	move->m_flClientMaxSpeed = player->m_flMaxspeed;
@@ -689,17 +678,16 @@ void CPrediction::FinishMove( C_BasePlayer *player, CUserCmd *ucmd, CMoveData *m
 
 	player->m_vecVelocity = move->m_vecVelocity;
 
-	player->m_vecNetworkOrigin = move->GetAbsOrigin();
+	player->m_vecNetworkOrigin = move->m_vecAbsOrigin;
 	
 	player->m_Local.m_nOldButtons = move->m_nButtons;
 
 
-	// NOTE: Don't copy this.  the movement code modifies its local copy but is not expecting to be authoritative
-	//player->m_flMaxspeed = move->m_flClientMaxSpeed;
+	player->m_flMaxspeed = move->m_flClientMaxSpeed;
 	
 	m_hLastGround = player->GetGroundEntity();
  
-	player->SetLocalOrigin( move->GetAbsOrigin() );
+	player->SetLocalOrigin( move->m_vecAbsOrigin );
 
 	IClientVehicle *pVehicle = player->GetVehicle();
 	if (pVehicle)
@@ -826,18 +814,12 @@ void CPrediction::RunCommand( C_BasePlayer *player, CUserCmd *ucmd, IMoveHelper 
 {
 #if !defined( NO_ENTITY_PREDICTION )
 	VPROF( "CPrediction::RunCommand" );
-#if defined( _DEBUG )
-	char sz[ 32 ];
-	Q_snprintf( sz, sizeof( sz ), "runcommand%04d", ucmd->command_number );
-	PREDICTION_TRACKVALUECHANGESCOPE( sz );
-#endif
+
 	StartCommand( player, ucmd );
 
 	// Set globals appropriately
 	gpGlobals->curtime		= player->m_nTickBase * TICK_INTERVAL;
-	gpGlobals->frametime	= m_bEnginePaused ? 0 : TICK_INTERVAL;
-
-	//g_pGameMovement->StartTrackPredictionErrors( player );
+	gpGlobals->frametime	= TICK_INTERVAL;
 
 // TODO
 // TODO:  Check for impulse predicted?
@@ -907,14 +889,13 @@ void CPrediction::RunCommand( C_BasePlayer *player, CUserCmd *ucmd, IMoveHelper 
 
 	RunPostThink( player );
 
-	//g_pGameMovement->FinishTrackPredictionErrors( player );
+// TODO:  Predict impacts?
+//	// Let server invoke any needed impact functions
+//	moveHelper->ProcessImpacts();
 
 	FinishCommand( player );
 
-	if ( gpGlobals->frametime > 0 )
-	{
-		player->m_nTickBase++;
-	}
+	player->m_nTickBase++;
 #endif
 }
 
@@ -931,17 +912,12 @@ void CPrediction::SetIdealPitch ( C_BasePlayer *player, const Vector& origin, co
 	Vector	top, bottom;
 	float	floor_height[MAX_FORWARD];
 	int		i, j;
-	float	step, dir;
-	int		steps;
+	int		step, dir, steps;
 	trace_t tr;
 
 	if ( player->GetGroundEntity() == NULL )
 		return;
-	
-	// Don't do this on the 360..
-	if ( IsX360() )
-		return;
-
+		
 	AngleVectors( angles, &forward );
 	forward[2] = 0;
 
@@ -1102,7 +1078,6 @@ void CPrediction::RestoreOriginalEntityState( void )
 {
 #if !defined( NO_ENTITY_PREDICTION )
 	VPROF( "CPrediction::RestoreOriginalEntityState" );
-	PREDICTION_TRACKVALUECHANGESCOPE( "restore" );
 
 	Assert( C_BaseEntity::IsAbsRecomputationsEnabled() );
 
@@ -1163,7 +1138,7 @@ void CPrediction::RunSimulation( int current_command, float curtime, CUserCmd *c
 	{
 		// Always reset
 		gpGlobals->curtime		= curtime;
-		gpGlobals->frametime	= m_bEnginePaused ? 0 : TICK_INTERVAL;
+		gpGlobals->frametime	= TICK_INTERVAL;
 
 		C_BaseEntity *entity = predictables->GetPredictable( i );
 
@@ -1211,7 +1186,6 @@ void CPrediction::RunSimulation( int current_command, float curtime, CUserCmd *c
 			entity->PhysicsSimulate();
 		}
 
-		// Don't update last networked data here!!!
 		entity->OnLatchInterpolatedVariables( LATCH_SIMULATION_VAR | LATCH_ANIMATION_VAR );
 	}
 
@@ -1263,7 +1237,6 @@ void CPrediction::StorePredictionResults( int predicted_frame )
 {
 #if !defined( NO_ENTITY_PREDICTION )
 	VPROF( "CPrediction::StorePredictionResults" );
-	PREDICTION_TRACKVALUECHANGESCOPE( "save" );
 
 	int i;
 	int numpredictables = predictables->GetPredictableCount();
@@ -1299,7 +1272,6 @@ void CPrediction::ShiftIntermediateDataForward( int slots_to_remove, int number_
 {
 #if !defined( NO_ENTITY_PREDICTION )
 	VPROF( "CPrediction::ShiftIntermediateDataForward" );
-	PREDICTION_TRACKVALUECHANGESCOPE( "shift" );
 
 	C_BasePlayer *current = C_BasePlayer::GetLocalPlayer();
 	// No local player object?
@@ -1335,7 +1307,6 @@ void CPrediction::RestoreEntityToPredictedFrame( int predicted_frame )
 {
 #if !defined( NO_ENTITY_PREDICTION )
 	VPROF( "CPrediction::RestoreEntityToPredictedFrame" );
-	PREDICTION_TRACKVALUECHANGESCOPE( "restoretopred" );
 
 	C_BasePlayer *current = C_BasePlayer::GetLocalPlayer();
 	// No local player object?
@@ -1386,9 +1357,9 @@ int CPrediction::ComputeFirstCommandToExecute( bool received_new_world_update, i
 		// this is where we would normally start
 		int start = incoming_acknowledged + 1;
 		// outgoing_command is where we really want to start
-		skipahead = MAX( 0, ( outgoing_command - start ) );
+		skipahead = max( 0, ( outgoing_command - start ) );
 		// Don't start past the last predicted command, though, or we'll get prediction errors
-		skipahead = MIN( skipahead, m_nCommandsPredicted  );
+		skipahead = min( skipahead, m_nCommandsPredicted  );
 
 		// Always restore since otherwise we might start prediction using an "interpolated" value instead of a purely predicted value
 		RestoreEntityToPredictedFrame( skipahead - 1 );
@@ -1539,7 +1510,7 @@ bool CPrediction::PerformPrediction( bool received_new_world_update, C_BasePlaye
 		RunSimulation( current_command, curtime, cmd, localPlayer );
 
 		gpGlobals->curtime		= curtime;
-		gpGlobals->frametime	= m_bEnginePaused ? 0 : TICK_INTERVAL;
+		gpGlobals->frametime	= TICK_INTERVAL;
 
 		// Call untouch on any entities no longer predicted to be touching
 		Untouch();
@@ -1612,8 +1583,6 @@ void CPrediction::Update( int startframe, bool validframe,
 {
 #if !defined( NO_ENTITY_PREDICTION )
 	VPROF_BUDGET( "CPrediction::Update", VPROF_BUDGETGROUP_PREDICTION );
-
-	m_bEnginePaused = engine->IsPaused();
 
 	bool received_new_world_update = true;
 
@@ -1699,6 +1668,7 @@ void CPrediction::_Update( bool received_new_world_update, bool validframe,
 	SetIdealPitch( localPlayer, localPlayer->GetLocalOrigin(), localPlayer->GetLocalAngles(), localPlayer->m_vecViewOffset );
 #endif
 }
+
 
 
 
@@ -1832,4 +1802,14 @@ bool CPrediction::InPrediction( void ) const
 #else
 	return false;
 #endif
+}
+
+// The engine needs to be able to access a few predicted values
+int CPrediction::GetWaterLevel( void )
+{
+	C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
+	if ( !player )
+		return 0;
+
+	return player->m_nWaterLevel;
 }
