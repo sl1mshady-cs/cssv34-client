@@ -1431,6 +1431,12 @@ bool NET_ReceiveDatagram ( const int sock, netpacket_t * packet )
 	int				fromlen = sizeof(from);
 	int				net_socket = net_sockets[packet->source].hUDP;
 
+	// Sometimes we get "Socket operation on non-socket" (WSAENOTSOCK)
+	if ( net_socket == 0 || net_socket == -1 )
+	{
+		return false;
+	}
+
 	int ret = 0;
 	{
 		VPROF_BUDGET( "recvfrom", VPROF_BUDGETGROUP_OTHER_NETWORKING );
