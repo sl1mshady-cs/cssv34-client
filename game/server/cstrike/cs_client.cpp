@@ -101,16 +101,16 @@ void ClientActive( edict_t *pEdict, bool bLoadGame )
 	CCSPlayer *pPlayer = ToCSPlayer( CBaseEntity::Instance( pEdict ) );
 	FinishClientPutInServer( pPlayer );
 
-	CSingleUserRecipientFilter user( pPlayer );
-	user.MakeReliable();
+	//CSingleUserRecipientFilter user( pPlayer );
+	//user.MakeReliable();
 
 	// send the 4 end of match conditions.  long frag limit, long max rounds, long rounds needed won, and long time
-	UserMessageBegin( user, "MatchEndConditions" );
-	WRITE_LONG( fraglimit.GetInt() );
-	WRITE_LONG( mp_maxrounds.GetInt() );
-	WRITE_LONG( mp_winlimit.GetInt() );
-	WRITE_LONG( mp_timelimit.GetInt() );
-	MessageEnd();
+	//UserMessageBegin( user, "MatchEndConditions" );
+	//WRITE_LONG( fraglimit.GetInt() );
+	//WRITE_LONG( mp_maxrounds.GetInt() );
+	//WRITE_LONG( mp_winlimit.GetInt() );
+	//WRITE_LONG( mp_timelimit.GetInt() );
+	//MessageEnd();
 }
 
 

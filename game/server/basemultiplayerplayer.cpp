@@ -227,14 +227,14 @@ void CBaseMultiplayerPlayer::Spawn( void )
 
 void CBaseMultiplayerPlayer::AwardAchievement( int iAchievement, int iCount )
 {
-	Assert( iAchievement >= 0 && iAchievement < 0xFFFF );		// must fit in short
-
-	CSingleUserRecipientFilter filter( this );
-
-	UserMessageBegin( filter, "AchievementEvent" );
-		WRITE_SHORT( iAchievement );
-		WRITE_SHORT( iCount );
-	MessageEnd();
+//	Assert( iAchievement >= 0 && iAchievement < 0xFFFF );		// must fit in short
+//
+//	CSingleUserRecipientFilter filter( this );
+//
+	//UserMessageBegin( filter, "AchievementEvent" );
+	//	WRITE_SHORT( iAchievement );
+	//	WRITE_SHORT( iCount );
+	//MessageEnd();
 }
 
 #ifdef _DEBUG

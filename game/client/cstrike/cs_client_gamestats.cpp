@@ -23,15 +23,15 @@
 
 CCSClientGameStats g_CSClientGameStats;
 
-void MsgFunc_PlayerStatsUpdate( bf_read &msg )
-{
-	g_CSClientGameStats.MsgFunc_PlayerStatsUpdate(msg);
-}
+//void MsgFunc_PlayerStatsUpdate( bf_read &msg )
+//{
+	//g_CSClientGameStats.MsgFunc_PlayerStatsUpdate(msg);
+//}
 
-void MsgFunc_MatchStatsUpdate( bf_read &msg )
-{
-	g_CSClientGameStats.MsgFunc_MatchStatsUpdate(msg);
-}
+//void MsgFunc_MatchStatsUpdate( bf_read &msg )
+//{
+//	g_CSClientGameStats.MsgFunc_MatchStatsUpdate(msg);
+//}
 
 CCSClientGameStats::StatContainerList_t* CCSClientGameStats::s_StatLists = new CCSClientGameStats::StatContainerList_t();
 //-----------------------------------------------------------------------------
@@ -55,8 +55,8 @@ void CCSClientGameStats::PostInit()
 	ListenForGameEvent( "round_start" );
 
 
-	usermessages->HookMessage( "PlayerStatsUpdate", ::MsgFunc_PlayerStatsUpdate );
-	usermessages->HookMessage( "MatchStatsUpdate", ::MsgFunc_MatchStatsUpdate );
+	//usermessages->HookMessage( "PlayerStatsUpdate", ::MsgFunc_PlayerStatsUpdate );
+//usermessages->HookMessage( "MatchStatsUpdate", ::MsgFunc_MatchStatsUpdate );
 
 	GetSteamWorksSGameStatsUploader().StartSession();
 
@@ -591,18 +591,18 @@ void CCSClientGameStats::ResetAllStats( void )
 
 void CCSClientGameStats::MsgFunc_MatchStatsUpdate( bf_read &msg )
 {
-	int firstStat = msg.ReadShort();
+//	int firstStat = msg.ReadShort();
 
-	for (int iStat = firstStat; iStat < CSSTAT_MAX && msg.GetNumBytesLeft() > 0; iStat++ )
-	{
-		m_directTStatAverages.m_fStat[iStat] = msg.ReadFloat();
-		m_directCTStatAverages.m_fStat[iStat] = msg.ReadFloat();
-		m_directPlayerStatAverages.m_fStat[iStat] = msg.ReadFloat();
-	}
+//	for (int iStat = firstStat; iStat < CSSTAT_MAX && msg.GetNumBytesLeft() > 0; iStat++ )
+	//{
+//		m_directTStatAverages.m_fStat[iStat] = msg.ReadFloat();
+	//	m_directCTStatAverages.m_fStat[iStat] = msg.ReadFloat();
+	//	m_directPlayerStatAverages.m_fStat[iStat] = msg.ReadFloat();
+//	}
 
 	// sanity check: the message should contain exactly the # of bytes we expect based on the bit field
-	Assert( !msg.IsOverflowed() );
-	Assert( 0 == msg.GetNumBytesLeft() );
+//	Assert( !msg.IsOverflowed() );
+//	Assert( 0 == msg.GetNumBytesLeft() );
 }
 
 void CCSClientGameStats::MsgFunc_PlayerStatsUpdate( bf_read &msg )

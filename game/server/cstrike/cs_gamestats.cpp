@@ -650,61 +650,11 @@ void CCSGameStats::UpdatePlayerRoundStats(int winner)
 
 void CCSGameStats::SendRollingStatsAveragesToAllPlayers()
 {
-	//The most stats we can send at once is the max message size minus the header, divided by the total size of each stat.
-	const int maxStatsPerMessage = (MAX_USER_MSG_DATA - sizeof(CSStatType_t)) / (3 * sizeof(float));
-
-	const int numMessagesNeeded = ((CSSTAT_MAX - CSSTAT_FIRST) / maxStatsPerMessage) + 1;
-
-	for (int batchIndex = 0 ; batchIndex < numMessagesNeeded ; ++batchIndex)
-	{
-		int firstStatInThisBatch = (batchIndex * maxStatsPerMessage) + CSSTAT_FIRST;
-		int lastMessageInThisBatch = firstStatInThisBatch + maxStatsPerMessage - 1;
-
-		CRecipientFilter filter;
-		filter.AddAllPlayers();
-		UserMessageBegin( filter, "MatchStatsUpdate" );  
-
-		WRITE_SHORT(firstStatInThisBatch);
-		
-		for ( int iStat = firstStatInThisBatch; iStat < CSSTAT_MAX && iStat <= lastMessageInThisBatch; ++iStat )
-		{
-			WRITE_FLOAT(m_rollingTStatAverages.m_fStat[iStat]);
-			WRITE_FLOAT(m_rollingCTStatAverages.m_fStat[iStat]);
-			WRITE_FLOAT(m_rollingPlayerStatAverages.m_fStat[iStat]);
-		}
-
-		MessageEnd();
-	}
 }
 
 
 void CCSGameStats::SendDirectStatsAveragesToAllPlayers()
 {
-	//The most stats we can send at once is the max message size minus the header, divided by the total size of each stat.
-	const int maxStatsPerMessage = (MAX_USER_MSG_DATA - sizeof(CSStatType_t)) / (3 * sizeof(float));
-
-	const int numMessagesNeeded = ((CSSTAT_MAX - CSSTAT_FIRST) / maxStatsPerMessage) + 1;
-
-	for (int batchIndex = 0 ; batchIndex < numMessagesNeeded ; ++batchIndex)
-	{
-		int firstStatInThisBatch = (batchIndex * maxStatsPerMessage) + CSSTAT_FIRST;
-		int lastMessageInThisBatch = firstStatInThisBatch + maxStatsPerMessage - 1;
-
-		CRecipientFilter filter;
-		filter.AddAllPlayers();
-		UserMessageBegin( filter, "MatchStatsUpdate" );  
-
-		WRITE_SHORT(firstStatInThisBatch);
-
-		for ( int iStat = firstStatInThisBatch; iStat < CSSTAT_MAX && iStat <= lastMessageInThisBatch; ++iStat )
-		{
-			WRITE_FLOAT(m_directTStatAverages.m_fStat[iStat]);
-			WRITE_FLOAT(m_directCTStatAverages.m_fStat[iStat]);
-			WRITE_FLOAT(m_directPlayerStatAverages.m_fStat[iStat]);
-		}
-
-		MessageEnd();
-	}
 }
 
 void CCSGameStats::ComputeRollingStatAverages()
@@ -1460,73 +1410,6 @@ void CCSGameStats::SetStat( CCSPlayer *pPlayer, CSStatType_t statId, int iValue 
 
 void CCSGameStats::SendStatsToPlayer( CCSPlayer * pPlayer, int iMinStatPriority )
 {
-	ASSERT(CSSTAT_MAX < 255); // if we add more than 255 stats, we'll need to update this protocol
-	if ( pPlayer && pPlayer->IsConnected())
-	{				
-		StatsCollection_t &deltaStats = m_aPlayerStats[pPlayer->entindex()].statsDelta;
-
-		// check to see if we have any stats to actually send
-		byte iStatsToSend = 0;
-		for ( int iStat = CSSTAT_FIRST; iStat < CSSTAT_MAX; ++iStat )
-		{
-			ASSERT(CSStatProperty_Table[iStat].statId == iStat);
-			if ( CSStatProperty_Table[iStat].statId != iStat )
-			{
-				Warning( "CSStatProperty_Table[iStat].statId != iStat, (%d)", CSStatProperty_Table[iStat].statId );
-			}
-			int iPriority = CSStatProperty_Table[iStat].flags & CSSTAT_PRIORITY_MASK;
-			if (deltaStats[iStat] != 0 && iPriority >= iMinStatPriority)
-			{
-				++iStatsToSend;
-			}
-		}
-
-		// nothing changed - bail out
-		if ( !iStatsToSend )
-			return;
-
-		CSingleUserRecipientFilter filter( pPlayer );
-		filter.MakeReliable();
-		UserMessageBegin( filter, "PlayerStatsUpdate" );
-
-		CRC32_t crc;
-		CRC32_Init( &crc );
-
-		// begin the CRC with a trivially hidden key value to discourage packet modification
-		const uint32 key = 0x82DA9F4C;	// this key should match the key in cs_client_gamestats.cpp
-		CRC32_ProcessBuffer( &crc, &key, sizeof(key));
-
-		// if we make any change to the ordering of the stats or this message format, update this value
-		const byte version = 0x01;
-		CRC32_ProcessBuffer( &crc, &version, sizeof(version));
-		WRITE_BYTE(version);
-
-		CRC32_ProcessBuffer( &crc, &iStatsToSend, sizeof(iStatsToSend));
-		WRITE_BYTE(iStatsToSend);
-
-		for ( byte iStat = CSSTAT_FIRST; iStat < CSSTAT_MAX; ++iStat )
-		{
-			int iPriority = CSStatProperty_Table[iStat].flags & CSSTAT_PRIORITY_MASK;
-			if (deltaStats[iStat] != 0 && iPriority >= iMinStatPriority)
-			{
-				CRC32_ProcessBuffer( &crc, &iStat, sizeof(iStat));
-				WRITE_BYTE(iStat);
-				Assert(deltaStats[iStat] <= 0x7FFF && deltaStats[iStat] > 0);	// make sure we aren't truncating bits
-				short delta = deltaStats[iStat];
-				CRC32_ProcessBuffer( &crc, &delta, sizeof(delta));
-				WRITE_SHORT( deltaStats[iStat]);
-				deltaStats[iStat] = 0;
-				--iStatsToSend;
-			}
-		}
-
-		Assert(iStatsToSend == 0);
-
-		CRC32_Final( &crc );
-		WRITE_LONG(crc);
-
-		MessageEnd();
-	}
 }
 
 

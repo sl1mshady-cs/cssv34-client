@@ -6841,17 +6841,6 @@ void CBasePlayer::UpdateClientData( void )
 
 void CBasePlayer::RumbleEffect( unsigned char index, unsigned char rumbleData, unsigned char rumbleFlags )
 {
-	if( !IsAlive() )
-		return;
-
-	CSingleUserRecipientFilter filter( this );
-	filter.MakeReliable();
-
-	UserMessageBegin( filter, "Rumble" );
-	WRITE_BYTE( index );
-	WRITE_BYTE( rumbleData );
-	WRITE_BYTE( rumbleFlags	);
-	MessageEnd();
 }
 
 void CBasePlayer::EnableControl(bool fControl)

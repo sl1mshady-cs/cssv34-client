@@ -319,7 +319,6 @@ bool CAchievementMgr::Init()
 #else
 	ListenForGameEvent( "player_death" );
 	ListenForGameEvent( "player_stats_updated" );
-	usermessages->HookMessage( "AchievementEvent", MsgFunc_AchievementEvent );
 #endif // CLIENT_DLL
 
 #ifdef TF_CLIENT_DLL
@@ -1907,12 +1906,12 @@ void CAchievementMgr::UpdateStateFromSteam_Internal()
 
 void MsgFunc_AchievementEvent( bf_read &msg )
 {
-	int iAchievementID = (int) msg.ReadShort();
-	int iCount = (int) msg.ReadShort();
-	CAchievementMgr *pAchievementMgr = dynamic_cast<CAchievementMgr *>( engine->GetAchievementMgr() );
-	if ( !pAchievementMgr )
-		return;
-	pAchievementMgr->OnAchievementEvent( iAchievementID, iCount );
+//	int iAchievementID = (int) msg.ReadShort();
+//	int iCount = (int) msg.ReadShort();
+//	CAchievementMgr *pAchievementMgr = dynamic_cast<CAchievementMgr *>( engine->GetAchievementMgr() );
+//	if ( !pAchievementMgr )
+//		return;
+//	pAchievementMgr->OnAchievementEvent( iAchievementID, iCount );
 }
 
 #if defined(_DEBUG) || defined(STAGING_ONLY) || DEBUG_ACHIEVEMENTS_IN_RELEASE

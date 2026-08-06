@@ -187,19 +187,6 @@ CON_COMMAND_F( crash, "Crash the client. Optional parameter -- type of crash:\n 
 }
 #endif // _DEBUG
 
-static void __MsgFunc_Rumble( bf_read &msg )
-{
-	unsigned char waveformIndex;
-	unsigned char rumbleData;
-	unsigned char rumbleFlags;
-
-	waveformIndex = msg.ReadByte();
-	rumbleData = msg.ReadByte();
-	rumbleFlags = msg.ReadByte();
-
-	RumbleEffect( waveformIndex, rumbleData, rumbleFlags );
-}
-
 static void __MsgFunc_VGUIMenu( bf_read &msg )
 {
 	char panelname[2048]; 
@@ -378,7 +365,6 @@ void ClientModeShared::Init()
 	m_CursorNone = vgui::dc_none;
 
 	HOOK_MESSAGE( VGUIMenu );
-	HOOK_MESSAGE( Rumble );
 }
 
 
