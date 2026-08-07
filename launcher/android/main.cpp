@@ -31,13 +31,13 @@ extern void InitCrashHandler();
 DLL_EXPORT int LauncherMain( int argc, char **argv ); // from launcher.cpp
 
 // compatibility with Source Engine v1.09 launcher
-DLLEXPORT void Java_com_valvesoftware_ValveActivity2_setDataDirectoryPath(JNIEnv* env, jclass* clazz, jstring path)
+DLL_EXPORT void Java_com_valvesoftware_ValveActivity2_setDataDirectoryPath(JNIEnv* env, jclass* clazz, jstring path)
 {
 	setenv("APP_DATA_PATH", env->GetStringUTFChars(path, NULL), 1);
 	LogPrintf("Java_com_valvesoftware_ValveActivity2_setDataDirectoryPath: %s", getenv("APP_DATA_PATH"));
 }
 
-DLLEXPORT void Java_com_valvesoftware_ValveActivity2_setGameDirectoryPath(JNIEnv* env, jclass* clazz, jstring path)
+DLL_EXPORT void Java_com_valvesoftware_ValveActivity2_setGameDirectoryPath(JNIEnv* env, jclass* clazz, jstring path)
 {
 	LogPrintf("Java_com_valvesoftware_ValveActivity2_setGameDirectoryPath");
 	setenv("VALVE_GAME_PATH", env->GetStringUTFChars(path, NULL), 1);
