@@ -96,7 +96,7 @@ void CTicket::Init()
 	m_Ticket.steamidlow = m_nSteamID << 1;
 	m_Ticket.steamidhigh = 0x01100001;
 
-	sprintf_s(m_Ticket.hwid, sizeof(m_Ticket.hwid), "%u", m_nHostIdentifier);
+	snprintf(m_Ticket.hwid, sizeof(m_Ticket.hwid), "%u", m_nHostIdentifier);
 }
 
 void CTicket::Shutdown()
