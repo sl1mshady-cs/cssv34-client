@@ -1,4 +1,8 @@
 # CS:S v34 Engine (new)
+[![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/win64_build.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/win64_build.yml)
+[![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/win32.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/win32.yml)
+[![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/linux-amd64_build.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/linux-amd64_build.yml)
+[![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/linux-i386_build.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/linux-i386_build.yml)
 
 Information from [wikipedia](https://wikipedia.org/wiki/Source_(game_engine)):
 
@@ -7,8 +11,9 @@ It debuted as the successor to GoldSrc with Half-Life: Source in June 2004,
 followed by Counter-Strike: Source and Half-Life 2 later that year.
 Source does not have a concise version numbering scheme; instead, it was released in incremental versions
 
-Source code is based on TF2 2018 leak and patched to work with CS:S v34 servers.
-Don't use it for commercial purposes.
+Source code is based on [nillerusr's source engine](https://github.com/nillerusr/source-engine) and patched to work with CS:S v34 servers.
+
+**Don't use it for commercial purposes.**
 
 This project is using waf buildsystem. If you have waf-related questions look https://waf.io/book
 
@@ -38,16 +43,17 @@ Known issues:
 
 ---
 
+Currently, stable support is only available for Windows.<br>
+Android, Linux, other platforms coming soon.
+
 # How to Build?
 
-Windows (with Visual Studio):
+Windows:
 - Run configure_cstrike_release.bat or configure_cstrike_debug.bat
 - If you want target 32 bit, add `-4` or `--32bits` at the end
 - OPTIONAL: Run create_visualstudio_solution.bat to create the visual studio solution
 - Run build_projects.bat
 - Output files will be copied to `./__build__`
-
-Android, Linux, other platforms coming soon.
 
 ---
 
