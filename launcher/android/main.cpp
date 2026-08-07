@@ -34,12 +34,10 @@ DLL_EXPORT int LauncherMain( int argc, char **argv ); // from launcher.cpp
 DLL_EXPORT void Java_com_valvesoftware_ValveActivity2_setDataDirectoryPath(JNIEnv* env, jclass* clazz, jstring path)
 {
 	setenv("APP_DATA_PATH", env->GetStringUTFChars(path, NULL), 1);
-	LogPrintf("Java_com_valvesoftware_ValveActivity2_setDataDirectoryPath: %s", getenv("APP_DATA_PATH"));
 }
 
 DLL_EXPORT void Java_com_valvesoftware_ValveActivity2_setGameDirectoryPath(JNIEnv* env, jclass* clazz, jstring path)
 {
-	LogPrintf("Java_com_valvesoftware_ValveActivity2_setGameDirectoryPath");
 	setenv("VALVE_GAME_PATH", env->GetStringUTFChars(path, NULL), 1);
 }
 
