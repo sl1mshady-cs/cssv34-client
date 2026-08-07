@@ -44,7 +44,7 @@ jobs:
     - name: Build windows-i386
       run: |
         git submodule init && git submodule update
-        python waf configure -T debug --32bits
+        python waf configure -T release --32bits --enable-speex --enable-opus --build-games=cstrike
         python waf build
 
   build-windows-amd64:
@@ -55,16 +55,5 @@ jobs:
     - name: Build windows-amd64
       run: |
         git submodule init && git submodule update
-        python waf configure -T debug
+        python waf configure -T release --enable-speex --enable-opus --build-games=cstrike
         python waf build
-
-  build-macos-amd64:
-    runs-on: macos-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build macos-amd64
-      run: |
-        chmod +x waf
-        chmod +x scripts/build-macos-amd64.sh
-        ./scripts/build-macos-amd64.sh
