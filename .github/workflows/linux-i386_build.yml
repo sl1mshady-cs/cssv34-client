@@ -13,3 +13,11 @@ jobs:
         chmod +x waf
         chmod +x scripts/build-ubuntu-i386.sh
         ./scripts/build-ubuntu-i386.sh
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@4
+      with:
+        name: linux_i386_build
+        path: linux_i386_build
+        if-no-files-found: error
+        retention-days: 7
