@@ -1,0 +1,15 @@
+name: Build Linux i386
+
+on: [push, pull_request]
+
+jobs:
+  build-linux-i386:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build linux-i386
+      run: |
+        chmod +x waf
+        chmod +x scripts/build-ubuntu-i386.sh
+        ./scripts/build-ubuntu-i386.sh
