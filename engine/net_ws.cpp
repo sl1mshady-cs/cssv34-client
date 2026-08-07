@@ -1431,12 +1431,6 @@ bool NET_ReceiveDatagram ( const int sock, netpacket_t * packet )
 	int				fromlen = sizeof(from);
 	int				net_socket = net_sockets[packet->source].hUDP;
 
-	// Sometimes we get "Socket operation on non-socket" (WSAENOTSOCK)
-	if ( net_socket == 0 || net_socket == -1 )
-	{
-		return false;
-	}
-
 	int ret = 0;
 	{
 		VPROF_BUDGET( "recvfrom", VPROF_BUDGETGROUP_OTHER_NETWORKING );
@@ -1671,7 +1665,7 @@ netpacket_t *NET_GetPacket (int sock, byte *scratch )
 	// Check loopback first
 	if ( !NET_GetLoopPacket( &inpacket ) )
 	{
-		if ( !NET_IsMultiplayer() && sock != NS_CLIENT )
+		if ( !NET_IsMultiplayer() )
 		{
 			return NULL;
 		}
