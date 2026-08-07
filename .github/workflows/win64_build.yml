@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build-windows-amd64:
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -13,3 +13,11 @@ jobs:
         git submodule init && git submodule update
         python waf configure -T release --enable-speex --enable-opus --build-games=cstrike
         python waf build
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v7.0.1
+      with:
+        name: win32_build
+        path: win32_build
+        if-no-files-found: error
+        retention-days: 7

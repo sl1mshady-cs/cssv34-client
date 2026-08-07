@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build-android-armv7a:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -13,3 +13,11 @@ jobs:
         chmod +x waf
         chmod +x scripts/build-android-armv7a.sh
         ./scripts/build-android-armv7a.sh
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v7.0.1
+      with:
+        name: android_armv7a_build
+        path: android_armv7a_build
+        if-no-files-found: error
+        retention-days: 7
