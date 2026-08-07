@@ -41,7 +41,7 @@ def build(bld):
 		'debugdepth.cpp',
 		'debugluxel.cpp',
 		'debugnormalmap.cpp',
-		'debugdrawenvmapmask.cpp',
+		'DebugDrawEnvmapMask.cpp',
 		'debugmrttexture.cpp',
 		#'debugmorphaccumulator_dx9.cpp',					[$WIN32]
 		'DebugTextureView.cpp',
