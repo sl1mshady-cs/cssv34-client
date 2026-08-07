@@ -1,0 +1,15 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build-android-armv7a:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build android-armv7a
+      run: |
+        chmod +x waf
+        chmod +x scripts/build-android-armv7a.sh
+        ./scripts/build-android-armv7a.sh
