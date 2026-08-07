@@ -43,6 +43,7 @@ def build(bld):
 		'cbenchmark.cpp',
 		'console.cpp',
 		'clientticketmgr.cpp',
+		'clientmodmgr.cpp',
 		'render_pch.cpp',
 		'decals.cpp',
 		'disp.cpp',

@@ -132,7 +132,7 @@ CON_COMMAND( buymenu, "Show main buy menu" )
 	}
 }
 
-CON_COMMAND( chooseteam, "Choose a new team" )
+CON_COMMAND_F( chooseteam, "Choose a new team", FCVAR_SERVER_CAN_EXECUTE )
 {
 	C_CSPlayer *pPlayer = C_CSPlayer::GetLocalCSPlayer();
 

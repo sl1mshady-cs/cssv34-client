@@ -134,6 +134,7 @@
 #include "SDL.h"
 #endif
 #endif
+#include "clientmodmgr.h"
 
 #include "ixboxsystem.h"
 extern IXboxSystem *g_pXboxSystem;
@@ -2148,10 +2149,13 @@ void Host_BuildConVarUpdateMessage( NET_SetConVar *cvarMsg, int flags, bool nonD
 		NET_SetConVar::cvar_t acvar;
 
 		Q_strncpy( acvar.name, pCvar->GetName(), MAX_OSPATH );
-		Q_strncpy( acvar.value, Host_CleanupConVarStringValue( pCvar->GetString() ), MAX_OSPATH );
+		Q_strncpy( acvar.value, Host_CleanupConVarStringValue(pCvar->GetString()), MAX_OSPATH );
 
 		cvarMsg->m_ConVars.AddToTail( acvar );
 	}
+
+	if (flags == FCVAR_USERINFO)
+		g_pClientModManager->FillConVarUpdateMsg(cvarMsg);
 
 	// Make sure this count matches original one!!!
 	Assert( cvarMsg->m_ConVars.Count() == count );

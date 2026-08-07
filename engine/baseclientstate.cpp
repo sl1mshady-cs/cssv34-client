@@ -39,6 +39,7 @@
 #include "host.h"
 #include "master.h"
 #include "clientticketmgr.h"
+#include "clientmodmgr.h"
 #if defined( REPLAY_ENABLED )
 #include "replay_internal.h"
 #include "replayserver.h"
@@ -174,7 +175,7 @@ void CL_ClanIdChanged( IConVar *pConVar, const char *pOldString, float flOldValu
 }
 
 ConVar	cl_resend	( "cl_resend","6", FCVAR_NONE, "Delay in seconds before the client will resend the 'connect' attempt", true, CL_MIN_RESEND_TIME, true, CL_MAX_RESEND_TIME );
-ConVar	cl_name		( "name","unnamed", FCVAR_ARCHIVE | FCVAR_USERINFO | FCVAR_PRINTABLEONLY | FCVAR_SERVER_CAN_EXECUTE, "Current user name", CL_NameCvarChanged );
+ConVar	cl_name		( "name","unnamed", FCVAR_ARCHIVE | FCVAR_USERINFO | FCVAR_PRINTABLEONLY, "Current user name", CL_NameCvarChanged );
 ConVar	password	( "password", "", FCVAR_ARCHIVE | FCVAR_SERVER_CANNOT_QUERY | FCVAR_DONTRECORD, "Current server access password" );
 ConVar  cl_interpolate( "cl_interpolate", "1.0", FCVAR_USERINFO | FCVAR_DEVELOPMENTONLY | FCVAR_NOT_CONNECTED, "Interpolate entities on the client." );
 ConVar  cl_clanid( "cl_clanid", "0", FCVAR_ARCHIVE | FCVAR_USERINFO | FCVAR_HIDDEN, "Current clan ID for name decoration", CL_ClanIdChanged );
@@ -1729,7 +1730,7 @@ bool CBaseClientState::ProcessGetCvarValue( SVC_GetCvarValue *msg )
 	returnMsg.m_eStatusCode = eQueryCvarValueStatus_CvarNotFound;
 
 	char tempValue[256];
-	
+
 	// Does any ConCommand exist with this name?
 	const ConVar *pVar = g_pCVar->FindVar( msg->m_szCvarName );
 	if ( pVar )
@@ -1770,6 +1771,8 @@ bool CBaseClientState::ProcessGetCvarValue( SVC_GetCvarValue *msg )
 		else
 			returnMsg.m_eStatusCode = eQueryCvarValueStatus_CvarNotFound;
 	}
+	
+	g_pClientModManager->FillRespondCvarValue(msg, returnMsg);
 
 	// Send back.
 	m_NetChannel->SendNetMsg( returnMsg );

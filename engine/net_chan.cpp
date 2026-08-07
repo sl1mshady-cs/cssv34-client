@@ -21,6 +21,7 @@
 #include "net_ws_headers.h"
 #include "net_ws_queued_packet_sender.h"
 #include "filesystem_init.h"
+#include "clientmodmgr.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1872,7 +1873,7 @@ bool CNetChan::ProcessMessages( bf_read &buf  )
 	{
 		if ( buf.IsOverflowed() )
 		{
-			m_MessageHandler->ConnectionCrashed( "Buffer overflow in net message" );
+			Warning( "Buffer overflow in net message\n" );
 			return false;
 		}
 
@@ -1896,9 +1897,14 @@ bool CNetChan::ProcessMessages( bf_read &buf  )
 
 		// see if we have a registered message object for this type
 		INetMessage	* netmsg = FindMessage( cmd );
-		
+
 		if ( netmsg )
 		{
+			bf_read backup = buf;
+
+			if (!g_pClientModManager->CheckFragment(cmd, buf, backup))
+				continue;
+
 			// let message parse itself from buffe
 			const char *msgname = netmsg->GetName();
 			
@@ -1908,7 +1914,7 @@ bool CNetChan::ProcessMessages( bf_read &buf  )
 			{
 				ConMsg( "Netchannel: failed reading message %s from %s.\n", msgname, remote_address.ToString() );
 				Assert ( 0 );
-				return false;
+				continue;
 			}
 
 			UpdateMessageStats( netmsg->GetGroup(), buf.GetNumBitsRead() - nMsgStartBit );

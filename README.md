@@ -41,10 +41,10 @@ Known issues:
 # How to Build?
 
 Windows (with Visual Studio):
-- Run waf_configure_cstrike_release.bat or waf_configure_cstrike_debug.bat
+- Run configure_cstrike_release.bat or configure_cstrike_debug.bat
 - If you want target 32 bit, add `-4` or `--32bits` at the end
-- OPTIONAL: Run waf_create_visualstudio_solution.bat to create the visual studio solution
-- Run waf_build.bat
+- OPTIONAL: Run create_visualstudio_solution.bat to create the visual studio solution
+- Run build_projects.bat
 - Output files will be copied to `./__build__`
 
 Android, Linux, other platforms coming soon.

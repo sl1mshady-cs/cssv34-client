@@ -135,7 +135,7 @@ inline void *ReallocUnattributed( void *pMem, size_t nSize )
 // end up in a recursion (as g_pMemAlloc->Alloc() calls malloc)
 #if _MSC_VER >= 1900
 #define SUPPRESS_INVALID_PARAMETER_NO_INFO
-#define ALLOC_CALL  __declspec(restrict)
+#define ALLOC_CALL  _CRTRESTRICT
 #define FREE_CALL 
 #elif _MSC_VER >= 1400
 #define ALLOC_CALL _CRTNOALIAS _CRTRESTRICT 

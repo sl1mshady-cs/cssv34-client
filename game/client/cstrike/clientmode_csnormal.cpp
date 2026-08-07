@@ -506,6 +506,16 @@ void ClientModeCSNormal::FireGameEvent( IGameEvent *event )
 		}
 		else if ( winningTeam == TEAM_TERRORIST )
 		{
+			if ( reason == Target_Bombed )
+			{
+				if (g_PlantedC4s.Count() > 0)
+				{
+					// bomb is planted
+					C_PlantedC4* pC4 = g_PlantedC4s[0];
+					pC4->Explode();
+				}
+			}
+
 			C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "Event.TERWin");
 		}
 		else
@@ -585,12 +595,14 @@ void ClientModeCSNormal::FireGameEvent( IGameEvent *event )
 	 
 	else if ( Q_strcmp( "bomb_exploded", eventname ) == 0 )
 	{
+		// CSS v34 Servers do not send bomb_exploded events for some reason
+		/*
 		if ( g_PlantedC4s.Count() > 0 )
 		{
 			// bomb is planted
 			C_PlantedC4 *pC4 = g_PlantedC4s[0];
 			pC4->Explode();
-		}
+		}*/
 	}
 	 
 	//=============================================================================

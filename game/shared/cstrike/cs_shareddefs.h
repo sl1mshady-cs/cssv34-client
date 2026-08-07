@@ -166,7 +166,7 @@ enum CSPlayerState
 enum e_RoundEndReason
 {
     Invalid_Round_End_Reason = -1,
-    Target_Bombed,
+    Target_Bombed = 1,
     VIP_Escaped,						
     VIP_Assassinated,
     Terrorists_Escaped,

@@ -337,11 +337,6 @@ static ConVar s_cl_class("cl_class", "default", FCVAR_USERINFO|FCVAR_ARCHIVE, "D
 static ConVar s_cl_load_hl1_content("cl_load_hl1_content", "0", FCVAR_ARCHIVE, "Mount the content from Half-Life: Source if possible");
 #endif
 
-// ClientMod API
-static ConVar clientmod_major_version("~clientmod", "3.0", FCVAR_USERINFO | FCVAR_DEVELOPMENTONLY);
-static ConVar clientmod_version("_client_version", "3.0.1.1943", FCVAR_USERINFO | FCVAR_DEVELOPMENTONLY);
-static ConVar clientmod_connectmethod("_connectmethod", "8", FCVAR_USERINFO | FCVAR_DEVELOPMENTONLY);
-
 
 // Physics system
 bool g_bLevelInitialized;
