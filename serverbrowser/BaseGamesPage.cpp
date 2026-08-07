@@ -2092,7 +2092,11 @@ void CBaseGamesPage::ServerResponded( newgameserver_t &server )
 	kv->SetInt("password", pServerItem->m_bPassword ? m_nImageIndexPassword : 0);
 	kv->SetInt("bots", pServerItem->m_nBotPlayers);
 
-	kv->SetInt("secure", 0);
+	// Show secure icon
+	if (pServerItem->m_bSecure)
+		kv->SetInt("secure", m_nImageIndexSecure);
+	else
+		kv->SetInt("secure", 0);
 
 	kv->SetString( "IPAddr", pServerItem->m_NetAdr.ToString() );
 

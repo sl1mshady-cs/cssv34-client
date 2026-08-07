@@ -16,12 +16,14 @@
 #include "master.h"
 #include "proto_oob.h"
 #include "host.h"
+#include "sys_dll.h"
 #include "eiface.h"
-#include "server.h"
 #include "utlmap.h"
 #include "net_ws_headers.h"
+#include "sv_steamauth.h"
 
 extern ConVar sv_tags;
+extern ConVar sv_visiblemaxplayers;
 extern ConVar sv_lan;
 
 #define S2A_EDF_GAMEPORT 0x80
@@ -199,46 +201,88 @@ void CMaster::StopRefresh()
 
 void CMaster::ReplyInfo( const netadr_t &adr )
 {
-	static char gamedir[MAX_OSPATH];
-	Q_FileBase( com_gamedir, gamedir, sizeof( gamedir ) );
+	if (serverGameDLL && serverGameDLL->ShouldHideServer())
+		return;
 
-	CUtlBuffer buf;
-	buf.EnsureCapacity( 2048 );
+	byte	data[1400];
+	char	gd[MAX_OSPATH];
 
-	buf.PutUnsignedInt( LittleDWord( CONNECTIONLESS_HEADER ) );
-	buf.PutUnsignedChar( S2A_INFO_SRC );
+	bf_write buf("SVC_Info->buf", data, sizeof(data));
 
-	buf.PutUnsignedInt(0);
-	buf.PutUnsignedChar( PROTOCOL_VERSION ); // Hardcoded protocol version number
-	buf.PutString( sv.GetName() );
-	buf.PutString( sv.GetMapName() );
-	buf.PutString( gamedir );
-	buf.PutString( serverGameDLL->GetGameDescription() );
+	buf.WriteLong(CONNECTIONLESS_HEADER);
+	buf.WriteByte(S2A_INFO_SRC);
+
+	buf.WriteByte(PROTOCOL_VERSION); // Hardcoded protocol version number
+
+	buf.WriteString(sv.GetName());
+	buf.WriteString(sv.GetMapName());
+	Q_FileBase(com_gamedir, gd, sizeof(gd));
+	buf.WriteString(gd);
+	buf.WriteString(serverGameDLL->GetGameDescription());
+
+	uint appID = GetSteamAppID();
+	buf.WriteShort(appID);
+
+	// this is a quick workaround from goldsrc for the admin mod reserved slots UI problem
+	int visibleClients = sv.GetMaxClients();
+	if (!sv.IsHLTV() && sv_visiblemaxplayers.GetInt() > 0 && sv_visiblemaxplayers.GetInt() < sv.GetMaxClients())
+	{
+		visibleClients = sv_visiblemaxplayers.GetInt();
+	}
 
 	// player info
-	buf.PutUnsignedChar( sv.GetNumClients() );
-	buf.PutUnsignedChar( sv.GetMaxClients() );
-	buf.PutUnsignedChar( sv.GetNumFakeClients() );
+	buf.WriteByte(sv.GetNumClients());
+	buf.WriteByte(visibleClients);
+	buf.WriteByte(sv.GetNumFakeClients());
+
+	// Additional info....
+	if (sv.IsHLTV())
+		buf.WriteByte('p');	// p = SourceTV proxy
+	else if (sv.IsDedicated())
+		buf.WriteByte('d');	// d = dedicated server
+	else
+		buf.WriteByte('l');	// l = listen server
+
+#if defined(_WIN32)
+	buf.WriteByte('w');
+#else // LINUX?
+	buf.WriteByte('l');
+#endif
 
 	// Password?
-	buf.PutUnsignedChar( sv.GetPassword() != NULL ? 1 : 0 );
+	buf.WriteByte(sv.GetPassword() ? 1 : 0);
+
+#ifndef _XBOX
+	// VAC state, needs to be hooked up
+	bool bIsSecure = Steam3Server().SteamGameServer()->BSecure() && !sv.IsHLTV();
+#else
+	bool bIsSecure = true;
+#endif
+	buf.WriteByte(bIsSecure ? 1 : 0);
+
+	char verString[40];
+	Q_snprintf(verString, sizeof(verString), "%s", GetSteamInfIDVersionInfo().szVersionString);
+	buf.WriteString(verString);
 
 	// Write a byte with some flags that describe what is to follow.
-	const char *pchTags = sv_tags.GetString();
-	int nFlags = 0;
+	byte nNewFlags = 0;
 
-	if ( pchTags && pchTags[0] != '\0' )
-		nFlags |= S2A_EDF_GAMETAGS;
+	const char* pchGameType = sv_tags.GetString();
+	if (pchGameType && Q_strlen(pchGameType) > 0)
+		nNewFlags |= S2A_EDF_GAMETAGS;
 
-	buf.PutUnsignedInt( nFlags );
+	buf.WriteByte(nNewFlags);
 
-	if ( nFlags & S2A_EDF_GAMETAGS)
-		buf.PutString( pchTags );
+	// Write the gametags.
+	if (nNewFlags & S2A_EDF_GAMETAGS)
+	{
+		buf.WriteString(pchGameType);
+	}
 
 	sockaddr to;
 	adr.ToSockadr(&to);
 
-	sendto(m_nSocket, (const char*)buf.Base(), buf.TellPut(), 0, &to, sizeof(to));
+	sendto(m_nSocket, (const char*)buf.GetData(), buf.GetNumBytesWritten(), 0, &to, sizeof(to));
 }
 
 newgameserver_t &CMaster::ProcessInfo(bf_read &buf)
@@ -268,32 +312,32 @@ newgameserver_t &CMaster::ProcessInfo(bf_read &buf)
 	s.m_bSecure = buf.ReadByte();
 	buf.ReadString(s.m_szGameVersion, sizeof(s.m_szGameVersion));
 
-	s.m_iFlags = buf.ReadByte();
+	s.m_nFlags = buf.ReadByte();
 
-	if (s.m_iFlags & S2A_EDF_GAMEPORT)
+	if (s.m_nFlags & S2A_EDF_GAMEPORT)
 	{
 		s.m_NetAdr.SetPort(buf.ReadShort());
 	}
 
-	if (s.m_iFlags & S2A_EDF_STEAMID)
+	if (s.m_nFlags & S2A_EDF_STEAMID)
 	{
 		uint64 ulSteamID;
 		buf.ReadBytes(&ulSteamID, 8);
 	}
 
-	if (s.m_iFlags & S2A_EDF_SOURCETV)
+	if (s.m_nFlags & S2A_EDF_SOURCETV)
 	{
 		char str[64];
 		buf.ReadShort(); // spectator port (unused)
 		buf.ReadString(str, sizeof(str)); // spectator sv name
 	}
 
-	if (s.m_iFlags & S2A_EDF_GAMETAGS)
+	if (s.m_nFlags & S2A_EDF_GAMETAGS)
 	{
 		buf.ReadString(s.m_szGameTags, sizeof(s.m_szGameTags));
 	}
 
-	if (s.m_iFlags & S2A_EDF_GAMEID)
+	if (s.m_nFlags & S2A_EDF_GAMEID)
 	{
 		uint64 ulGameID;
 		buf.ReadBytes(&ulGameID, 8);

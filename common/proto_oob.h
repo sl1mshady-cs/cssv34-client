@@ -93,7 +93,7 @@
 #define M2C_QUERY				'J'	// request module from master
 #define C2M_CLIENTQUERY			'1' // New style server query
 
-#define C2S_INFOREQUEST			'v'
+#define C2S_INFOREQUEST			'T'
 #define S2C_INFOREPLY			'K'
 
 // SERVER TO CLIENT/ANY

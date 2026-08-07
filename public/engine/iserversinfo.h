@@ -25,26 +25,26 @@ class newgameserver_t
 public:
 	newgameserver_t() = default;
 
-	netadr_t m_NetAdr;								///< IP/Query Port/Connection Port for this server
-	int m_nPing;											///< current ping time in milliseconds
+	netadr_t m_NetAdr;									///< IP/Query Port/Connection Port for this server
+	int m_nPing;										///< current ping time in milliseconds
 	int m_nProtocolVersion;
-	bool m_bHadSuccessfulResponse;	///< server has responded successfully in the past
-	bool m_bDoNotRefresh;						///< server is marked as not responding and should no longer be refreshed
-	char m_szGameDir[MAX_PATH];				 ///< current game directory
-	char m_szMap[MAX_PATH];					///< current map
+	bool m_bHadSuccessfulResponse;						///< server has responded successfully in the past
+	bool m_bDoNotRefresh;								///< server is marked as not responding and should no longer be refreshed
+	char m_szGameDir[MAX_PATH];							///< current game directory
+	char m_szMap[MAX_PATH];								///< current map
 	char m_szGameTags[MAX_PATH];
-	char m_szGameDescription[MAX_GAME_DESCRIPTION]; ///< game description
-	char m_szGameVersion[MAX_PATH]; ///< game version
+	char m_szGameDescription[MAX_GAME_DESCRIPTION];		///< game description
+	char m_szGameVersion[MAX_PATH];						///< game version
 
 	int m_nPlayers;
-	int m_nMaxPlayers;										///< Maximum players that can join this server
-	int m_nBotPlayers;										///< Number of bots (i.e simulated players) on this server
-	bool m_bPassword;										///< true if this server needs a password to join
+	int m_nMaxPlayers;									///< Maximum players that can join this server
+	int m_nBotPlayers;									///< Number of bots (i.e simulated players) on this server
+	bool m_bPassword;									///< true if this server needs a password to join
 	bool m_bSecure;
 
 	int m_nAppID;
 
-	int m_iFlags;
+	byte m_nFlags;
 
 	/// Game server name
 	char m_szServerName[MAX_SERVER_NAME];
