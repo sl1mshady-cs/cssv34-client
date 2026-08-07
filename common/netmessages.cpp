@@ -926,7 +926,7 @@ bool SVC_VoiceInit::ReadFromBuffer( bf_read &buffer )
 
 	buffer.ReadString( m_szVoiceCodec, sizeof(m_szVoiceCodec) );
 	unsigned char nLegacyQuality = buffer.ReadByte();
-	m_nSampleRate = 11025;
+	m_nSampleRate = stricmp(m_szVoiceCodec, "vaudio_opus") == 0 ? 44100 : 11025;
 
 	return !buffer.IsOverflowed();
 }

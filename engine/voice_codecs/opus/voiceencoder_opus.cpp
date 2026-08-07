@@ -10,29 +10,14 @@
 
 #include <stdio.h>
 #include <opus/opus.h>
-#include <opus/opus_custom.h>
-
 
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 #include "tier0/dbg.h"
 
 #define CHANNELS 1
-
-struct opus_options
-{
-	int iSampleRate;
-	int iRawFrameSize;
-	int iPacketSize;
-};
-
-opus_options g_OpusOpts[] =
-{
-        {44100, 256, 120},
-        {22050, 120, 60},
-        {22050, 256, 60},
-        {22050, 512, 64},
-};
+#define PACKET_SIZE 28
+#define RAW_FRAME_SIZE 480
 
 class VoiceEncoder_Opus : public IFrameEncoder
 {
@@ -49,15 +34,8 @@ public:
 	bool ResetState();
 
 private:
-
-	bool	InitStates();
-	void	TermStates();
-
-	OpusCustomEncoder *m_EncoderState;	// Celt internal encoder state
-	OpusCustomDecoder *m_DecoderState; // Celt internal decoder state
-	OpusCustomMode	*m_Mode;
-
-	int m_iVersion;
+	OpusEncoder* m_Encoder;
+	OpusDecoder* m_Decoder;
 };
 
 extern IVoiceCodec* CreateVoiceCodec_Frame(IFrameEncoder *pEncoder);
@@ -76,41 +54,34 @@ EXPOSE_INTERFACE_FN(CreateCeltVoiceCodec, IVoiceCodec, "vaudio_opus")
 
 VoiceEncoder_Opus::VoiceEncoder_Opus()
 {
-	m_EncoderState = NULL;
-	m_DecoderState = NULL;
-	m_Mode = NULL;
-	m_iVersion = 0;
+	m_Encoder = nullptr;
+	m_Decoder = nullptr;
 }
 
 VoiceEncoder_Opus::~VoiceEncoder_Opus()
 {
-	TermStates();
+	if (m_Encoder) opus_encoder_destroy(m_Encoder);
+	if (m_Decoder) opus_decoder_destroy(m_Decoder);
 }
 
 bool VoiceEncoder_Opus::Init( int quality, int &rawFrameSize, int &encodedFrameSize)
 {
-	m_iVersion = quality;
+	rawFrameSize = RAW_FRAME_SIZE * BYTES_PER_SAMPLE;
 
-	rawFrameSize = g_OpusOpts[m_iVersion].iRawFrameSize * BYTES_PER_SAMPLE;
+	encodedFrameSize = PACKET_SIZE;
 
-	int iError = 0;
+    int err;
+    m_Encoder = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &err);
+    if (err != OPUS_OK) return false;
 
-	m_Mode = opus_custom_mode_create( g_OpusOpts[m_iVersion].iSampleRate, g_OpusOpts[m_iVersion].iRawFrameSize, &iError );
+    m_Decoder = opus_decoder_create(48000, 1, &err);
+    if (err != OPUS_OK) return false;
 
-	if ( iError != 0 ) {
-		Msg( "Opus init failed with error %d\n", iError );
-		return false;
-	}
-
-	m_EncoderState = opus_custom_encoder_create( m_Mode, CHANNELS, NULL);
-	m_DecoderState = opus_custom_decoder_create( m_Mode, CHANNELS, NULL);
-
-	if ( !InitStates() )
-		return false;
-
-	encodedFrameSize = g_OpusOpts[m_iVersion].iPacketSize;
-
-	return true;
+	opus_encoder_ctl(m_Encoder, 0x00000FA8, 0x00000000, 0x00000450);
+	opus_encoder_ctl(m_Encoder, 0x00000FC8, 0x00000000, 0x0000138B);
+	opus_encoder_ctl(m_Encoder, 0x00000FA6, 0x00000000, 0x00000001);
+	opus_encoder_ctl(m_Encoder, 0x00000FB4, 0x00000001, 0x00000000);
+    return true;
 }
 
 void VoiceEncoder_Opus::Release()
@@ -120,70 +91,22 @@ void VoiceEncoder_Opus::Release()
 
 void VoiceEncoder_Opus::EncodeFrame(const char *pUncompressedBytes, char *pCompressed)
 {
-	unsigned char output[1024];
-
-	opus_custom_encode( m_EncoderState, (opus_int16*)pUncompressedBytes, g_OpusOpts[m_iVersion].iRawFrameSize, output, g_OpusOpts[m_iVersion].iPacketSize );
-
-	for ( int i = 0; i < g_OpusOpts[m_iVersion].iPacketSize; i++ )
-	{
-		*pCompressed = (char)output[i];
-		pCompressed++;
-	}
+	short* in = (short*)pUncompressedBytes;
+	int nbBytes = opus_encode(m_Encoder, in, 480, (unsigned char*)pCompressed, 28);
+	if (nbBytes < 0) nbBytes = 0;
 }
 
 void VoiceEncoder_Opus::DecodeFrame(const char *pCompressed, char *pDecompressedBytes)
 {
-	unsigned char output[1024];
-	char *out = (char *)pCompressed;
-
-	if ( !pCompressed )
-	{
-		int decoded = opus_custom_decode( m_DecoderState, NULL, g_OpusOpts[m_iVersion].iPacketSize, (opus_int16 *)pDecompressedBytes, g_OpusOpts[m_iVersion].iRawFrameSize );
-		return;
-	}
-
-	for ( int i = 0; i < g_OpusOpts[m_iVersion].iPacketSize; i++ )
-	{
-		output[i] = ( unsigned char ) ( ( *out < 0 ) ? (*out + 256) : *out );
-		out++;
-	}
-
-	//celt_decoder_ctl( m_DecoderState, CELT_RESET_STATE_REQUEST, NULL );
-	int decoded = opus_custom_decode( m_DecoderState, output, g_OpusOpts[m_iVersion].iPacketSize, (opus_int16 *)pDecompressedBytes, g_OpusOpts[m_iVersion].iRawFrameSize );
+	short* out = (short*)pDecompressedBytes;
+	int frame_size = opus_decode(m_Decoder, (const unsigned char*)pCompressed, 28, out, 480, 0);
+	if (frame_size < 0) frame_size = 0;
 }
 
 bool VoiceEncoder_Opus::ResetState()
 {
-	opus_custom_encoder_ctl(m_EncoderState, OPUS_RESET_STATE );
-	opus_custom_decoder_ctl(m_DecoderState, OPUS_RESET_STATE );
+	opus_encoder_ctl(m_Encoder, OPUS_RESET_STATE);
+	opus_decoder_ctl(m_Decoder, OPUS_RESET_STATE);
 
 	return true;
-}
-
-bool VoiceEncoder_Opus::InitStates()
-{
-	if ( !m_EncoderState || !m_DecoderState )
-		return false;
-
-	opus_custom_encoder_ctl(m_EncoderState, OPUS_RESET_STATE );
-	opus_custom_decoder_ctl(m_DecoderState, OPUS_RESET_STATE );
-
-	return true;
-}
-
-void VoiceEncoder_Opus::TermStates()
-{
-	if( m_EncoderState )
-	{
-		opus_custom_encoder_destroy( m_EncoderState );
-		m_EncoderState = NULL;
-	}
-
-	if( m_DecoderState )
-	{
-		opus_custom_decoder_destroy( m_DecoderState );
-		m_DecoderState = NULL;
-	}
-
-	opus_custom_mode_destroy( m_Mode );
 }

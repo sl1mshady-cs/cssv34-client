@@ -1722,6 +1722,8 @@ void CMaterial::SetupErrorShader()
 	m_pShader = ShaderSystem()->FindShader( MissingShaderName() );
 	Assert( m_pShader );
 
+	if (!m_pShader) return;
+
 	// Create undefined vars for all the actual material vars
 	m_VarCount = m_pShader->GetNumParams();
 	m_pShaderParams = (IMaterialVar**)malloc( m_VarCount * sizeof(IMaterialVar*) );
