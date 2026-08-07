@@ -81,7 +81,7 @@ void CTicket::Init()
 	m_nHostIdentifier = get_host_identifier();
 
 	char id[16];
-	sprintf_s(id, sizeof(id), "%u", m_nHostIdentifier);
+	snprintf(id, sizeof(id), "%u", m_nHostIdentifier);
 
 	m_nSteamID = JSHash((const uint8*)id, strlen(id));
 
