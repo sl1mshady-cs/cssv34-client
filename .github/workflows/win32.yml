@@ -1,0 +1,15 @@
+name: Build Win32
+
+on: [push, pull_request]
+
+jobs:
+  build-windows-i386:
+    runs-on: windows-2019
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build windows-i386
+      run: |
+        git submodule init && git submodule update
+        python waf configure -T release --32bits --enable-speex --enable-opus --build-games=cstrike
+        python waf build
