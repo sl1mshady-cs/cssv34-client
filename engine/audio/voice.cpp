@@ -1131,7 +1131,7 @@ int Voice_GetCompressedData(char *pchDest, int nCount, bool bFinal)
 #endif // VOICE_VOX_ENABLE	
 
 		short tempData[8192];
-		int samplesWanted = min(nCount/BYTES_PER_SAMPLE, (int)sizeof(tempData)/BYTES_PER_SAMPLE);
+		int samplesWanted = sizeof(tempData)/BYTES_PER_SAMPLE;
 		int gotten = g_pVoiceRecord->GetRecordedData(tempData, samplesWanted);
 
 		// If they want to get the data from a file instead of the mic, use that.
