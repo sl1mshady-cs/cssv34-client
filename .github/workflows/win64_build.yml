@@ -17,7 +17,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v7.0.1
       with:
-        name: win32_build
-        path: win32_build
+        name: win64_build
+        path: win64_build
         if-no-files-found: error
         retention-days: 7
