@@ -294,13 +294,21 @@ bool foundLibraryWithPrefix( char *pModuleAbsolutePath, size_t AbsolutePathSize,
 
 	if( !bFound )
 	{
+#ifdef ANDROID
+		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib/lib%s", pPath, str);
+#else
 		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib%s", pPath, str);
+#endif
 		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 	}
 
 	if( !bFound )
 	{
+#ifdef ANDROID
+		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib/%s", pPath, str);
+#else
 		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/%s", pPath, str);
+#endif
 		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 	}
 
@@ -345,7 +353,7 @@ CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NO
 
 		char szAbsoluteModuleName[2048];
 #ifdef ANDROID
-		char *libPath = getenv("APP_LIB_PATH");
+		char *dataPath = getenv("APP_DATA_PATH");
 		char *modLibPath = getenv("APP_MOD_LIB");
 		bool bFound;
 
@@ -360,7 +368,7 @@ CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NO
 				Error("Can't find mod library %s\n", szAbsoluteModuleName);
 		}
 
-		if( !foundLibraryWithPrefix( szAbsoluteModuleName, sizeof(szAbsoluteModuleName), libPath, pModuleName ) )
+		if( !foundLibraryWithPrefix( szAbsoluteModuleName, sizeof(szAbsoluteModuleName), dataPath, pModuleName ) )
 		{
 			Warning("Can't find module - %s\n", pModuleName);
 			return reinterpret_cast<CSysModule *>(hDLL);
