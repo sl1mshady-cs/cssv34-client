@@ -1054,7 +1054,12 @@ void CTouchControls::FingerMotion(touch_event_t *ev) // finger in my ass
 			else if( btn->type == touch_look )
 			{
 				yaw += ev->dx;
+				if (yaw > 180.0f) yaw -= 360.0f;
+				if (yaw < -180.0f) yaw += 360.0f;
+
 				pitch += ev->dy;
+				if (pitch > 89.0f) pitch = 89.0f;
+				else if (pitch < -89.0f) pitch = -89.0f;
 			}
 		}
 	}
