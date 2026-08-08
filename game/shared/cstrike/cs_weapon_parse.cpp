@@ -297,7 +297,6 @@ void CCSWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName )
 	BaseClass::Parse( pKeyValuesData, szWeaponName );
 
 	m_flMaxSpeed = (float)pKeyValuesData->GetInt( "MaxPlayerSpeed", 1 );
-	Warning("Parser MaxPlayerSpeed for %s: %f\n", szWeaponName, m_flMaxSpeed);
 
 	m_iDefaultPrice = m_iWeaponPrice = pKeyValuesData->GetInt( "WeaponPrice", -1 );
 	if ( m_iWeaponPrice == -1 )

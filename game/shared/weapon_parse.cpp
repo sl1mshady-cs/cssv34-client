@@ -249,10 +249,6 @@ KeyValues* ReadEncryptedKVFile( IFileSystem *filesystem, const char *szFilenameW
 				pKV->deleteThis();
 				return NULL;
 			}
-
-			// Save decrypted one
-			if (!pKV->SaveToFile(filesystem, szDecryptedFileName, pSearchPath))
-				Msg("Failed to save decrypted weapon data to %s\n", szDecryptedFileName);
 		}
 		else
 		{
