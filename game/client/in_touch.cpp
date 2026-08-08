@@ -102,11 +102,16 @@ void CInput::TouchMove( CUserCmd *cmd )
 		cmd->forwardmove += cl_forwardspeed.GetFloat() * forward;
 	}
 	else {
-		bool side_neg = side < 0;
-		bool forward_neg = forward < 0;
+		float normalizedForward = 0.0f;
+		if (forward > 0.3f) normalizedForward = 1.0f;
+		if (forward < -0.3f) normalizedForward = -1.0f;
 
-		cmd->sidemove -= cl_sidespeed.GetFloat() * side_neg ? -1 : 1;
-		cmd->forwardmove += cl_forwardspeed.GetFloat() * forward_neg ? -1 : 1;
+		float normalizedSide = 0.0f;
+		if (side > 0.3f) normalizedSide = 1.0f;
+		if (side < -0.3f) normalizedSide = -1.0f;
+
+		cmd->sidemove -= cl_sidespeed.GetFloat() * normalizedSide;
+		cmd->forwardmove += cl_forwardspeed.GetFloat() * normalizedForward;
 	}
 
 	gTouch.GetTouchDelta( yaw, pitch, &dx, &dy );
