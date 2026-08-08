@@ -133,7 +133,13 @@ void CMaster::RunFrame()
 		static char buffer[2048];
 		int fromLen = sizeof(fromAddr);
 		int nBytes = 0;
+#ifndef ANDROID
+		// other: read until no packets
 		while ((nBytes = recvfrom(m_nSocket, buffer, sizeof(buffer), 0, &fromAddr, &fromLen)) > 0)
+#else
+		// android: only 1 packet per frame
+		if ((nBytes = recvfrom(m_nSocket, buffer, sizeof(buffer), 0, &fromAddr, &fromLen)) > 0)
+#endif
 		{
 			if (*(unsigned int*)buffer == CONNECTIONLESS_HEADER)
 			{
