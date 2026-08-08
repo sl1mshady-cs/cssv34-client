@@ -239,7 +239,7 @@ void CSDKPlayer::InitialSpawn( void )
 	data->SetString( "title", title );		// info panel title
 	data->SetString( "type", "1" );			// show userdata from stringtable entry
 	data->SetString( "msg",	"motd" );		// use this stringtable entry
-	data->SetInt( "cmd", TEXTWINDOW_CMD_IMPULSE101 );// exec this command if panel closed
+	data->SetString( "cmd", "impulse 101" );// exec this command if panel closed
 	data->SetBool( "unload", sv_motd_unload_on_dismissal.GetBool() );
 
 	ShowViewPortPanel( PANEL_INFO, true, data );

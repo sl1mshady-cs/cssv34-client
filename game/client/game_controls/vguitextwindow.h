@@ -51,7 +51,7 @@ public:
 
 public:
 
-	virtual void SetData( int type, const char *title, const char *message, const char *message_fallback, int command, bool bUnload );
+	virtual void SetData( int type, const char *title, const char *message, const char *message_fallback, const char* command, bool bUnload );
 	virtual void ShowFile( const char *filename );
 	virtual void ShowText( const char *text );
 	virtual void ShowURL( const char *URL, bool bAllowUserToDisable = true );
@@ -71,16 +71,7 @@ protected:
 	char		m_szTitle[255];
 	char		m_szMessage[2048];
 	char		m_szMessageFallback[2048];
-	//=============================================================================
-	// HPE_BEGIN:
-	// [Forrest] Replaced text window command string with TEXTWINDOW_CMD enumeration
-	// of options.  Passing a command string is dangerous and allowed a server network
-	// message to run arbitrary commands on the client.
-	//=============================================================================
-	int			m_nExitCommand;
-	//=============================================================================
-	// HPE_END
-	//=============================================================================
+	char		m_szExitCommand[255];
 	int			m_nContentType;
 	bool		m_bShownURL;
 	bool		m_bUnloadOnDismissal;
