@@ -1062,6 +1062,7 @@ void CTouchControls::FingerMotion(touch_event_t *ev) // finger in my ass
 				pitch += ev->dy;
 				if (pitch > 89.0f) pitch = 89.0f;
 				else if (pitch < -89.0f) pitch = -89.0f;
+				Msg("pitch %f yaw %f\n", pitch, yaw);
 			}
 		}
 	}
