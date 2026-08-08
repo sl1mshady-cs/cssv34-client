@@ -329,16 +329,26 @@ void CTouchControls::ResetToDefaults()
 		AddButton( "attack2", "vgui/touch/shoot_alt", "+attack2", 0.760000, 0.320000, 0.880000, 0.533333, color );
 		AddButton( "duck", "vgui/touch/crouch", "+duck", 0.880000, 0.746667, 1.000000, 0.960000, color );
 		AddButton( "tduck", "vgui/touch/tduck", ";+duck", 0.560000, 0.817778, 0.620000, 0.924444, color );
-		AddButton( "zoom", "vgui/touch/zoom", "+zoom", 0.680000, 0.00000, 0.760000, 0.142222, color );
+		
+		//AddButton( "zoom", "vgui/touch/zoom", "+zoom", 0.680000, 0.00000, 0.760000, 0.142222, color );
+
 		AddButton( "speed", "vgui/touch/speed", "+speed", 0.180000, 0.568889, 0.280000, 0.746667, color );
-		AddButton( "loadquick", "vgui/touch/load", "load quick", 0.760000, 0.000000, 0.840000, 0.142222, color );
-		AddButton( "savequick", "vgui/touch/save", "save quick", 0.840000, 0.000000, 0.920000, 0.142222, color );
+		//AddButton( "loadquick", "vgui/touch/load", "load quick", 0.760000, 0.000000, 0.840000, 0.142222, color );
+		//AddButton( "savequick", "vgui/touch/save", "save quick", 0.840000, 0.000000, 0.920000, 0.142222, color );
+
 		AddButton( "reload", "vgui/touch/reload", "+reload", 0.000000, 0.320000, 0.120000, 0.533333, color );
 		AddButton( "flashlight", "vgui/touch/flash_light_filled", "impulse 100", 0.920000, 0.000000, 1.000000, 0.142222, color );
+		
 		AddButton( "invnext", "vgui/touch/next_weap", "invnext", 0.000000, 0.533333, 0.120000, 0.746667, color );
 		AddButton( "invprev", "vgui/touch/prev_weap", "invprev", 0.000000, 0.071111, 0.120000, 0.284444, color );
+		
 		AddButton( "edit", "vgui/touch/settings", "touch_enableedit", 0.420000, 0.000000, 0.500000, 0.151486, color );
 		AddButton( "menu", "vgui/touch/menu", "gameui_activate", 0.000000, 0.00000, 0.080000, 0.142222, color );
+		
+		AddButton( "chat", "vgui/touch/chat", "messagemode", 0.000000, 0.00000, 0.080000, 0.142222, color );
+		AddButton( "voicechat", "vgui/touch/voicechat", "+voicerecord", 0.000000, 0.00000, 0.080000, 0.142222, color );
+		
+		AddButton( "scoreboard", "", "+showscores", 0, 0, 0.5, 1, color, 0, 0, 0 );
 	}
 	else
 	{
@@ -380,25 +390,36 @@ void CTouchControls::Init()
 
 	rgba_t color(255, 255, 255, 155);
 
-	AddButton( "look", "", "_look", 0.5, 0, 1, 1, color, 0, 0, 0 );
-	AddButton( "move", "", "_move", 0, 0, 0.5, 1, color, 0, 0, 0 );
 
-	AddButton( "use", "vgui/touch/use", "+use", 0.880000, 0.213333, 1.000000, 0.426667, color );
-	AddButton( "jump", "vgui/touch/jump", "+jump", 0.880000, 0.462222, 1.000000, 0.675556, color );
-	AddButton( "attack", "vgui/touch/shoot", "+attack", 0.760000, 0.583333, 0.880000, 0.796667, color );
-	AddButton( "attack2", "vgui/touch/shoot_alt", "+attack2", 0.760000, 0.320000, 0.880000, 0.533333, color );
-	AddButton( "duck", "vgui/touch/crouch", "+duck", 0.880000, 0.746667, 1.000000, 0.960000, color );
-	AddButton( "tduck", "vgui/touch/tduck", ";+duck", 0.560000, 0.817778, 0.620000, 0.924444, color );
-	AddButton( "zoom", "vgui/touch/zoom", "+zoom", 0.680000, 0.00000, 0.760000, 0.142222, color );
-	AddButton( "speed", "vgui/touch/speed", "+speed", 0.180000, 0.568889, 0.280000, 0.746667, color );
-	AddButton( "loadquick", "vgui/touch/load", "load quick", 0.760000, 0.000000, 0.840000, 0.142222, color );
-	AddButton( "savequick", "vgui/touch/save", "save quick", 0.840000, 0.000000, 0.920000, 0.142222, color );
-	AddButton( "reload", "vgui/touch/reload", "+reload", 0.000000, 0.320000, 0.120000, 0.533333, color );
-	AddButton( "flashlight", "vgui/touch/flash_light_filled", "impulse 100", 0.920000, 0.000000, 1.000000, 0.142222, color );
-	AddButton( "invnext", "vgui/touch/next_weap", "invnext", 0.000000, 0.533333, 0.120000, 0.746667, color );
-	AddButton( "invprev", "vgui/touch/prev_weap", "invprev", 0.000000, 0.071111, 0.120000, 0.284444, color );
-	AddButton( "edit", "vgui/touch/settings", "touch_enableedit", 0.420000, 0.000000, 0.500000, 0.151486, color );
-	AddButton( "menu", "vgui/touch/menu", "gameui_activate", 0.000000, 0.00000, 0.080000, 0.142222, color );
+	AddButton("look", "", "_look", 0.5, 0, 1, 1, color, 0, 0, 0);
+	AddButton("move", "", "_move", 0, 0, 0.5, 1, color, 0, 0, 0);
+
+	AddButton("use", "vgui/touch/use", "+use", 0.880000, 0.213333, 1.000000, 0.426667, color);
+	AddButton("jump", "vgui/touch/jump", "+jump", 0.880000, 0.462222, 1.000000, 0.675556, color);
+	AddButton("attack", "vgui/touch/shoot", "+attack", 0.760000, 0.583333, 0.880000, 0.796667, color);
+	AddButton("attack2", "vgui/touch/shoot_alt", "+attack2", 0.760000, 0.320000, 0.880000, 0.533333, color);
+	AddButton("duck", "vgui/touch/crouch", "+duck", 0.880000, 0.746667, 1.000000, 0.960000, color);
+	AddButton("tduck", "vgui/touch/tduck", ";+duck", 0.560000, 0.817778, 0.620000, 0.924444, color);
+
+	//AddButton( "zoom", "vgui/touch/zoom", "+zoom", 0.680000, 0.00000, 0.760000, 0.142222, color );
+
+	AddButton("speed", "vgui/touch/speed", "+speed", 0.180000, 0.568889, 0.280000, 0.746667, color);
+	//AddButton( "loadquick", "vgui/touch/load", "load quick", 0.760000, 0.000000, 0.840000, 0.142222, color );
+	//AddButton( "savequick", "vgui/touch/save", "save quick", 0.840000, 0.000000, 0.920000, 0.142222, color );
+
+	AddButton("reload", "vgui/touch/reload", "+reload", 0.000000, 0.320000, 0.120000, 0.533333, color);
+	AddButton("flashlight", "vgui/touch/flash_light_filled", "impulse 100", 0.920000, 0.000000, 1.000000, 0.142222, color);
+
+	AddButton("invnext", "vgui/touch/next_weap", "invnext", 0.000000, 0.533333, 0.120000, 0.746667, color);
+	AddButton("invprev", "vgui/touch/prev_weap", "invprev", 0.000000, 0.071111, 0.120000, 0.284444, color);
+
+	AddButton("edit", "vgui/touch/settings", "touch_enableedit", 0.420000, 0.000000, 0.500000, 0.151486, color);
+	AddButton("menu", "vgui/touch/menu", "gameui_activate", 0.000000, 0.00000, 0.080000, 0.142222, color);
+
+	AddButton("chat", "vgui/touch/chat", "messagemode", 0.000000, 0.00000, 0.080000, 0.142222, color);
+	AddButton("voicechat", "vgui/touch/voicechat", "+voicerecord", 0.000000, 0.00000, 0.080000, 0.142222, color);
+
+	AddButton("scoreboard", "", "+showscores", 0, 0, 0.5, 1, color, 0, 0, 0);
 
 	char buf[256];
 

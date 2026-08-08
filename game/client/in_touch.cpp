@@ -52,6 +52,7 @@ ConVar touch_enable_accel( "touch_enable_accel", "0", FCVAR_ARCHIVE );
 ConVar touch_accel( "touch_accel", "1.f", FCVAR_ARCHIVE );
 ConVar touch_reverse( "touch_reverse", "0", FCVAR_ARCHIVE );
 ConVar touch_sensitivity( "touch_sensitivity", "3.0", FCVAR_ARCHIVE, "touch look sensitivity" );
+ConVar touch_dynamic_speed( "touch_dynamic_speed", "0", FCVAR_ARCHIVE );
 
 void CInput::TouchScale( float &dx, float &dy )
 {
@@ -95,8 +96,18 @@ void CInput::TouchMove( CUserCmd *cmd )
 
 	gTouch.GetTouchAccumulators( &side, &forward, &yaw, &pitch );
 
-	cmd->sidemove -= cl_sidespeed.GetFloat() * side;
-	cmd->forwardmove += cl_forwardspeed.GetFloat() * forward;
+	// KAC didn't like this and bans
+	if (touch_dynamic_speed.GetBool()) {
+		cmd->sidemove -= cl_sidespeed.GetFloat() * side;
+		cmd->forwardmove += cl_forwardspeed.GetFloat() * forward;
+	}
+	else {
+		bool side_neg = side < 0;
+		bool forward_neg = forward < 0;
+
+		cmd->sidemove -= cl_sidespeed.GetFloat() * side_neg ? -1 : 1;
+		cmd->forwardmove += cl_forwardspeed.GetFloat() * forward_neg ? -1 : 1;
+	}
 
 	gTouch.GetTouchDelta( yaw, pitch, &dx, &dy );
 
