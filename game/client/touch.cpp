@@ -346,9 +346,10 @@ void CTouchControls::ResetToDefaults()
 		AddButton( "menu", "vgui/touch/menu", "gameui_activate", 0.000000, 0.00000, 0.080000, 0.142222, color );
 		
 		AddButton( "chat", "vgui/touch/chat", "messagemode", 0.000000, 0.00000, 0.080000, 0.142222, color );
+		AddButton( "chatteam", "vgui/touch/chat", "messagemode2", 0.000000, 0.00000, 0.080000, 0.142222, color );
 		AddButton( "voicechat", "vgui/touch/voicechat", "+voicerecord", 0.000000, 0.00000, 0.080000, 0.142222, color );
 		
-		AddButton( "scoreboard", "", "+showscores", 0, 0, 0.5, 1, color, 0, 0, 0 );
+		AddButton( "scoreboard", "vgui/touch/scoreboard", "+showscores", 0.000000, 0.00000, 0.080000, 0.142222, color );
 	}
 	else
 	{
@@ -417,9 +418,10 @@ void CTouchControls::Init()
 	AddButton("menu", "vgui/touch/menu", "gameui_activate", 0.000000, 0.00000, 0.080000, 0.142222, color);
 
 	AddButton("chat", "vgui/touch/chat", "messagemode", 0.000000, 0.00000, 0.080000, 0.142222, color);
+	AddButton("chatteam", "vgui/touch/chat", "messagemode2", 0.000000, 0.00000, 0.080000, 0.142222, color);
 	AddButton("voicechat", "vgui/touch/voicechat", "+voicerecord", 0.000000, 0.00000, 0.080000, 0.142222, color);
 
-	AddButton("scoreboard", "", "+showscores", 0, 0, 0.5, 1, color, 0, 0, 0);
+	AddButton("scoreboard", "vgui/touch/scoreboard", "+showscores", 0.000000, 0.00000, 0.080000, 0.142222, color);
 
 	char buf[256];
 
