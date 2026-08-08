@@ -210,13 +210,11 @@ static ConVar sv_consistency( "sv_consistency", "1", FCVAR_REPLICATED, "Legacy v
 
 /// XXX(JohnS): When steam voice gets ugpraded to Opus we will probably default back to steam.  At that time we should
 ///             note that Steam voice is the highest quality codec below.
-static ConVar sv_voicecodec( "sv_voicecodec", "vaudio_opus", 0,
+static ConVar sv_voicecodec( "sv_voicecodec", "vaudio_speex", 0,
                              "Specifies which voice codec to use. Valid options are:\n"
-                             "vaudio_speex - Legacy Speex codec (lowest quality)\n"
-                             "vaudio_celt - Newer CELT codec\n"
-							 "vaudio_opus - Latest Opus codec (highest quality, comes by default)\n"
-                             "steam - Use Steam voice API" );
-
+                             "vaudio_speex - Legacy Speex codec (lowest quality, comes by default)\n"
+							 "vaudio_opus - Latest Opus codec (highest quality)\n");
+static ConVar se_voice_opus( "se_voice_opus", "0", FCVAR_REPLICATED, "Allow opus voice codec on client");
 
 ConVar  sv_mincmdrate( "sv_mincmdrate", "20", FCVAR_REPLICATED, "This sets the minimum value for cl_cmdrate. 0 == unlimited." );
 ConVar  sv_maxcmdrate( "sv_maxcmdrate", "100", FCVAR_REPLICATED, "(If sv_mincmdrate is > 0), this sets the maximum value for cl_cmdrate." );

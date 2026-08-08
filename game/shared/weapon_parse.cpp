@@ -210,6 +210,9 @@ KeyValues* ReadEncryptedKVFile( IFileSystem *filesystem, const char *szFilenameW
 
 	Q_snprintf(szFullName,sizeof(szFullName), "%s.txt", szFilenameWithoutExtension);
 
+	char szDecryptedFileName[512];
+	V_strcpy_safe(szDecryptedFileName, szFullName);
+
 	if ( bForceReadEncryptedFile || !pKV->LoadFromFile( filesystem, szFullName, pSearchPath ) ) // try to load the normal .txt file first
 	{
 #ifndef _XBOX
@@ -242,9 +245,14 @@ KeyValues* ReadEncryptedKVFile( IFileSystem *filesystem, const char *szFilenameW
 
 			if ( !retOK )
 			{
+				Msg("Failed loading %s\n", szFullName);
 				pKV->deleteThis();
 				return NULL;
 			}
+
+			// Save decrypted one
+			if (!pKV->SaveToFile(filesystem, szDecryptedFileName, pSearchPath))
+				Msg("Failed to save decrypted weapon data to %s\n", szDecryptedFileName);
 		}
 		else
 		{

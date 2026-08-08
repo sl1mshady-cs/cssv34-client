@@ -2684,6 +2684,50 @@ void CCSPlayer::CheckTKPunishment( void )
 	}
 }
 
+//=========================================================
+// ResetMaxSpeed
+//
+// Reset this player's max speed via the active item
+//=========================================================
+void CCSPlayer::ResetMaxSpeed()
+{
+	float speed;
+
+	CWeaponCSBase *pWeapon = GetActiveCSWeapon();
+	if ( IsObserver() )
+	{
+		// Player gets speed bonus in observer mode
+		speed = 900;
+	}
+	else if ( CSGameRules()->IsFreezePeriod() )
+	{
+		// Player should not move during the freeze period
+		speed = 1;
+	}
+	else if ( m_bIsVIP == true )  // VIP is slow due to the armour he's wearing
+	{
+		speed = 227;
+	}
+	else if ( pWeapon )
+	{
+		if ( HasShield() && IsShieldDrawn() )
+		{
+			speed = 160;
+		}
+		else
+			speed = pWeapon->GetMaxSpeed(); // Get player speed from selected weapon
+	}
+	else
+	{
+		// No active item, set the player's speed to default
+		speed = 240;
+	}
+
+	
+
+	SetMaxSpeed( speed );
+}
+
 CWeaponCSBase* CCSPlayer::GetActiveCSWeapon() const
 {
 	return dynamic_cast< CWeaponCSBase* >( GetActiveWeapon() );
@@ -2704,6 +2748,7 @@ void CCSPlayer::PreThink()
 	if ( g_fGameOver )
 		return;
 
+	ResetMaxSpeed();
 	State_PreThink();
 
 	if ( m_pHintMessageQueue )
@@ -4926,6 +4971,18 @@ bool CCSPlayer::HandleCommand_JoinClass( int iClass )
 	return true;
 }
 
+bool CCSPlayer::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex )
+{
+	if ( BaseClass::Weapon_Switch( pWeapon, viewmodelindex ) )
+	{
+		ResetMaxSpeed();
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 
 /*
 void CheckStartMoney( void )
@@ -4947,6 +5004,7 @@ void CCSPlayer::GetIntoGame()
 	//SetPlayerModel( iClass );
 
 	SetFOV( this, 0 );
+	ResetMaxSpeed();
 	m_flLastMovement = gpGlobals->curtime;
 
 	CCSGameRules *MPRules = CSGameRules();
@@ -5467,6 +5525,8 @@ void CCSPlayer::State_Enter_OBSERVER_MODE()
 
 	StartObserverMode( observerMode );
 
+	// Set the player's speed
+	ResetMaxSpeed();
 	PhysObjectSleep();
 }
 
@@ -5504,6 +5564,8 @@ void CCSPlayer::State_Enter_PICKINGCLASS()
 
 	m_iClass = (int)CS_CLASS_NONE;
 
+	// Set the player's speed
+	ResetMaxSpeed();
 	PhysObjectSleep();
 
 	// show the class menu:

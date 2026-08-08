@@ -24,11 +24,11 @@
 #define STAMINA_RECOVER_RATE	19.0
 #define CS_WALK_SPEED			100.0f
 
-#ifdef BUGFIXED
-static ConVar sv_enablebunnyhopping("sv_enablebunnyhopping", "0", FCVAR_NONE, "Allow player speed to exceed maximum running speed");
-#endif
-
 extern bool g_bMovementOptimizations;
+
+ConVar sv_timebetweenducks("sv_timebetweenducks", "0", FCVAR_REPLICATED, "Minimum time before recognizing consecutive duck key", true, 0.0, true, 2.0);
+ConVar sv_enableboost("sv_enableboost", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Allow boost exploits");
+ConVar cs_autojump("cs_autojump", "0", FCVAR_REPLICATED | FCVAR_NOTIFY);
 
 class CCSGameMovement : public CGameMovement
 {
@@ -40,6 +40,7 @@ public:
 	virtual void ProcessMovement(CBasePlayer* pPlayer, CMoveData* pMove);
 	virtual bool CanAccelerate();
 	virtual bool CheckJumpButton(void);
+	virtual void PreventBunnyJumping(void);
 	virtual void ReduceTimers(void);
 	virtual void WalkMove(void);
 	virtual void AirMove(void);
@@ -590,6 +591,33 @@ void CCSGameMovement::ReduceTimers(void)
 	BaseClass::ReduceTimers();
 }
 
+ConVar se_disablebunnyhopping("se_disablebunnyhopping", "0", FCVAR_REPLICATED | FCVAR_NOTIFY);
+ConVar se_autobunnyhopping("se_autobunnyhopping", "0", FCVAR_REPLICATED | FCVAR_NOTIFY);
+
+// Only allow bunny jumping up to 1.1x server / player maxspeed setting
+#define BUNNYJUMP_MAX_SPEED_FACTOR 1.4f
+
+// taken from TF2 but changed BUNNYJUMP_MAX_SPEED_FACTOR from 1.1 to 1.0
+void CCSGameMovement::PreventBunnyJumping()
+{
+	// Speed at which bunny jumping is limited
+	float maxscaledspeed = BUNNYJUMP_MAX_SPEED_FACTOR * player->m_flMaxspeed;
+	if (maxscaledspeed <= 0.0f)
+		return;
+
+	// Current player speed
+	float spd = mv->m_vecVelocity.Length();
+
+	if (spd <= maxscaledspeed)
+		return;
+
+	// Apply this cropping fraction to velocity
+	float fraction = (maxscaledspeed / spd);
+	fraction = MAX(fraction, 0.75f);
+
+	mv->m_vecVelocity *= fraction;
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -641,29 +669,11 @@ bool CCSGameMovement::CheckJumpButton(void)
 		return false;		// in air, so no effect
 	}
 
-	if (mv->m_nOldButtons & IN_JUMP)
+	if (!se_autobunnyhopping.GetBool() && (mv->m_nOldButtons & IN_JUMP))
 		return false;		// don't pogo stick
 
-#ifdef BUGFIXED
-	if (!sv_enablebunnyhopping.GetBool())
-	{
-		float maxspd = player->MaxSpeed() * 1.1f;
-
-		if (maxspd != 0.0f)
-		{
-			float spd = mv->m_vecVelocity.Length();
-
-			if (spd > maxspd)
-			{
-				float ratio = maxspd / spd;
-
-				mv->m_vecVelocity.x *= ratio;
-				mv->m_vecVelocity.y *= ratio;
-				mv->m_vecVelocity.z *= ratio;
-			}
-		}
-	}
-#endif
+	if (se_disablebunnyhopping.GetBool())
+		PreventBunnyJumping();
 
 	// In the air now.
 	SetGroundEntity(NULL);

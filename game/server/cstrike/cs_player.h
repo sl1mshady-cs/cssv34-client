@@ -443,6 +443,8 @@ public:
 
 	void EmitPrivateSound( const char *soundName );		///< emit given sound that only we can hear
 
+	void ResetMaxSpeed();
+
 	CWeaponCSBase* GetActiveCSWeapon() const;
 
 	void PreThink();
@@ -475,6 +477,8 @@ public:
 	int PlayerClass() const;
 
 	void MoveToNextIntroCamera();
+
+	virtual bool Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex=0 );
 
 	// Used to be GETINTOGAME state.
 	void GetIntoGame();
