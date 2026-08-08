@@ -84,8 +84,8 @@ void CInput::ApplyTouch(QAngle& viewangles, CUserCmd* cmd, float dx, float dy)
 	else if (viewangles[YAW] < -180.0f) viewangles[YAW] += 360.0f;
 
 	viewangles[PITCH] += dy;
-	if (pitch > 89.0f) pitch = 89.0f;
-	else if (pitch < -89.0f) pitch = -89.0f;
+	if (viewangles[PITCH] > 89.0f) viewangles[PITCH] = 89.0f;
+	else if (viewangles[PITCH] < -89.0f) viewangles[PITCH] = -89.0f;
 
 	cmd->mousedx = dx;
 	cmd->mousedy = dy;
