@@ -162,11 +162,9 @@ void VoiceEncoder_Speex::DecodeFrame(const char *pCompressed, char *pDecompresse
 	/*Copy from float to short (16 bits) for output*/
 	for (int i=0;i<RAW_FRAME_SIZE;i++)
 	{
-		Msg(" %f", output[i]);
 		*out = (short)output[i];
 		out++;
 	}
-	Msg("\n");
 }
 
 bool VoiceEncoder_Speex::ResetState()
