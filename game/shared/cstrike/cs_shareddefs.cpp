@@ -7,7 +7,7 @@
 #include "cbase.h"
 #include "cs_shareddefs.h"
 
-const float CS_PLAYER_SPEED_RUN		 = 260.0f;
+const float CS_PLAYER_SPEED_RUN		 = 250.0f;
 const float CS_PLAYER_SPEED_VIP		 = 227.0f;
 const float CS_PLAYER_SPEED_WALK	 = 100.0f;
 const float CS_PLAYER_SPEED_SHIELD	 = 160.0f;

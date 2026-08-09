@@ -49,6 +49,7 @@
 #include "steam/steam_api.h"
 #include "sourcevr/isourcevirtualreality.h"
 #include "client_virtualreality.h"
+#include "model_types.h"
 
 #if defined USES_ECON_ITEMS
 #include "econ_wearable.h"
@@ -112,6 +113,7 @@ ConVar	spec_freeze_distance_max( "spec_freeze_distance_max", "200", FCVAR_CHEAT,
 #endif
 
 static ConVar	cl_first_person_uses_world_model ( "cl_first_person_uses_world_model", "0", FCVAR_ARCHIVE, "Causes the third person model to be drawn instead of the view model" );
+static ConVar cl_firstperson_shadow("cl_firstperson_shadow", "0", FCVAR_ARCHIVE, "Enable first person shadow using third person model");
 
 ConVar demo_fov_override( "demo_fov_override", "0", FCVAR_CLIENTDLL | FCVAR_DONTRECORD, "If nonzero, this value will be used to override FOV during demo playback." );
 
@@ -1220,6 +1222,13 @@ void C_BasePlayer::AddEntity( void )
 		CreateWaterEffects();
 	}
 
+	if (IsLocalPlayer() && cl_firstperson_shadow.GetBool() && !ShouldDrawThisPlayer())
+	{
+		// Force render
+		BaseClass::AddEntity();
+		return;
+	}
+
 	// If set to invisible, skip. Do this before resetting the entity pointer so it has 
 	// valid data to decide whether it's visible.
 	if ( !IsVisible() || !g_pClientMode->ShouldDrawLocalPlayer( this ) )
@@ -1341,11 +1350,30 @@ bool C_BasePlayer::ShouldInterpolate()
 
 bool C_BasePlayer::ShouldDraw()
 {
+	// Default
+	if (!cl_firstperson_shadow.GetBool())
+		return ShouldDrawThisPlayer() && BaseClass::ShouldDraw();
+
+	// Include our model
+	if (IsLocalPlayer() && !ShouldDrawThisPlayer())
+		return true;
+
 	return ShouldDrawThisPlayer() && BaseClass::ShouldDraw();
 }
 
 int C_BasePlayer::DrawModel( int flags )
 {
+
+	if (IsLocalPlayer() && cl_firstperson_shadow.GetBool() && !ShouldDrawThisPlayer())
+	{
+		// Shadow depth texture
+		if (!(flags & STUDIO_SHADOWDEPTHTEXTURE))
+			return 0;
+
+		// No ShouldDrawThisPlayer check
+		return BaseClass::DrawModel(flags);
+	}
+
 #ifndef PORTAL
 	// In Portal this check is already performed as part of
 	// C_Portal_Player::DrawModel()
