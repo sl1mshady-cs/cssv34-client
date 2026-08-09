@@ -113,7 +113,7 @@ ConVar	spec_freeze_distance_max( "spec_freeze_distance_max", "200", FCVAR_CHEAT,
 #endif
 
 static ConVar	cl_first_person_uses_world_model ( "cl_first_person_uses_world_model", "0", FCVAR_ARCHIVE, "Causes the third person model to be drawn instead of the view model" );
-static ConVar cl_firstperson_shadow("cl_firstperson_shadow", "0", FCVAR_ARCHIVE, "Enable first person shadow using third person model");
+static ConVar cl_firstperson_shadow("cl_firstperson_shadow", "0", 0, "Enable first person shadow using third person model");
 
 ConVar demo_fov_override( "demo_fov_override", "0", FCVAR_CLIENTDLL | FCVAR_DONTRECORD, "If nonzero, this value will be used to override FOV during demo playback." );
 
