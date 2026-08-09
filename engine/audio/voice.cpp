@@ -1375,7 +1375,7 @@ int Voice_AddIncomingData(int nChannel, const char *pchData, int nCount, int iSe
 		g_VoiceTweakSpeakingVolume &= 0xFE00;
 	}
 
-	pChannel->m_AutoGain.ProcessSamples((short*)decompressed, nDecompressed);
+	//pChannel->m_AutoGain.ProcessSamples((short*)decompressed, nDecompressed);
 
 	// Upsample into the dest buffer. We could do this in a mixer but it complicates the mixer.
 	pChannel->m_LastFraction = UpsampleIntoBuffer( (short*)decompressed,
