@@ -124,21 +124,13 @@ void VoiceEncoder_Speex::Release()
 
 void VoiceEncoder_Speex::EncodeFrame(const char *pUncompressedBytes, char *pCompressed)
 {
-	float input[RAW_FRAME_SIZE];
 	short * in = (short*)pUncompressedBytes;
-
-	/*Copy the 16 bits values to float so Speex can work on them*/
-	for (int i=0;i<RAW_FRAME_SIZE;i++)
-	{
-		input[i]=(float)*in;
-		in++;
-	}
 
 	/*Flush all the bits in the struct so we can encode a new frame*/
 	speex_bits_reset( &m_Bits );
 
 	/*Encode the frame*/
-	speex_encode( m_EncoderState, input, &m_Bits );
+	speex_encode_int( m_EncoderState, in, &m_Bits );
 
 	/*Copy the bits to an array of char that can be written*/
 	int size = speex_bits_write(&m_Bits, pCompressed, ENCODED_FRAME_SIZE[m_Quality] );
@@ -149,28 +141,11 @@ void VoiceEncoder_Speex::EncodeFrame(const char *pUncompressedBytes, char *pComp
 
 void VoiceEncoder_Speex::DecodeFrame(const char *pCompressed, char *pDecompressedBytes)
 {
-	float output[RAW_FRAME_SIZE];
 	short * out = (short*)pDecompressedBytes;
-
 	/*Copy the data into the bit-stream struct*/
 	speex_bits_read_from(&m_Bits, (char *)pCompressed, ENCODED_FRAME_SIZE[m_Quality] );
-
 	/*Decode the data*/
-	speex_decode(m_DecoderState, &m_Bits, output);
-	
-	/*Copy from float to short (16 bits) for output*/
-	for (int i=0;i<RAW_FRAME_SIZE;i++)
-	{
-#ifdef ANDROID
-		int sample = (output[i] * 32768.0f);
-		if (sample > 32767) sample = 32767;
-		else if (sample < -32768) sample = -32768;
-#else
-		int sample = output[i];
-#endif
-		*out = (short)sample;
-		out++;
-	}
+	speex_decode_int(m_DecoderState, &m_Bits, out);
 }
 
 bool VoiceEncoder_Speex::ResetState()
