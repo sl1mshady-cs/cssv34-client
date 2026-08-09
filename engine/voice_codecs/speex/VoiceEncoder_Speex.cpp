@@ -161,7 +161,14 @@ void VoiceEncoder_Speex::DecodeFrame(const char *pCompressed, char *pDecompresse
 	/*Copy from float to short (16 bits) for output*/
 	for (int i=0;i<RAW_FRAME_SIZE;i++)
 	{
-		*out = (short)output[i];
+#ifdef ANDROID
+		int sample = (output[i] * 32768.0f);
+		if (sample > 32767) sample = 32767;
+		else if (sample < -32768) sample = -32768;
+#else
+		int sample = output[i];
+#endif
+		*out = (short)sample;
 		out++;
 	}
 }
