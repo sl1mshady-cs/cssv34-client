@@ -281,7 +281,7 @@ void CHudHintDisplay::FireGameEvent( IGameEvent * event)
 }
 
 extern ConVar sv_hudhint_sound;
-ConVar cl_hudhint_sound( "cl_hudhint_sound", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE, "Disable hudhint sounds." );
+ConVar cl_hudhint_sound( "cl_hudhint_sound", "0", FCVAR_CLIENTDLL, "Disable hudhint sounds." );
 
 //-----------------------------------------------------------------------------
 // Purpose: Localize, display, and animate the hud element

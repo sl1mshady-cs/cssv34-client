@@ -4151,7 +4151,7 @@ void Host_Init( bool bDedicated )
 	// Check for special -dev flag
 	if ( CommandLine()->FindParm( "-dev" ) || ( CommandLine()->FindParm( "-allowdebug" ) && !CommandLine()->FindParm( "-nodev" ) ) )
 	{
-		sv_cheats.SetValue( 1 );
+		//sv_cheats.SetValue( 1 );
 		developer.SetValue( 1 );
 	}
 #ifdef _DEBUG

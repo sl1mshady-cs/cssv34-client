@@ -29,13 +29,44 @@ public:
 	CMixerControls() {}
 	virtual			~CMixerControls() {}
 	
-	virtual void	Release() {}
-	virtual bool	GetValue_Float(Control iControl, float &value ) {return false;}
-	virtual bool	SetValue_Float(Control iControl, float value) {return false;}
-	virtual bool	SelectMicrophoneForWaveInput() {return false;}
-	virtual const char *GetMixerName() {return "Linux"; }
+	virtual void	Release() {
+	}
+	virtual bool	GetValue_Float(Control iControl, float &value ) {
+		if (iControl == MicMute) { value = mute; }
+		else if (iControl == MicBoost) { value = boost; }
+		else if (iControl == MicVolume) { value = vol; }
+		return true;
+	}
+	virtual bool	SetValue_Float(Control iControl, float value) {
+		if (iControl == MicMute)
+		{
+			mute = value;
+			return true;
+		}
+		else if (iControl == MicBoost)
+		{
+			boost = value;
+			return true;
+		}
+		else if (iControl == MicVolume)
+		{
+			vol = value;
+			return true;
+		}
+		
+		return false;
+	}
+	virtual bool	SelectMicrophoneForWaveInput() {
+		return true;
+	}
+	virtual const char *GetMixerName() {
+		return "Linux"; 
+	}
 	
 private:
+	float vol = 1.0f;
+	float mute = 0.0f;
+	float boost = 0.0f;
 };
 
 IMixerControls* g_pMixerControls = NULL;
