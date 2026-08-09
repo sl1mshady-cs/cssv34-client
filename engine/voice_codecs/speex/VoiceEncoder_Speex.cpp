@@ -41,6 +41,7 @@ damage. */
 #include "ivoicecodec.h"
 #include "VoiceEncoder_Speex.h"
 #include <stdio.h>
+#include <tier0/dbg.h>
 
 #define SAMPLERATE			8000	// get 8000 samples/sec
 #define RAW_FRAME_SIZE		160		// in 160 samples per frame
