@@ -309,7 +309,7 @@ static bool Sys_GetExecutableName( char *out, int len )
 bool FileSystem_GetExecutableDir(char* exedir, int exeDirLen)
 {
 #ifdef ANDROID
-	Q_snprintf(exedir, exeDirLen, "%s", getenv("APP_LIB_PATH"));
+	Q_snprintf(exedir, exeDirLen, "%s", getenv("APP_DATA_PATH"));
 #else
 	exedir[0] = 0;
 
