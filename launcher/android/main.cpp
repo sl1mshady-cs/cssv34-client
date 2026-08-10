@@ -30,29 +30,13 @@ int iLastArgs = 0;
 extern void InitCrashHandler();
 DLL_EXPORT int LauncherMain( int argc, char **argv ); // from launcher.cpp
 
-// compatibility with Source Engine v1.09 launcher
-DLL_EXPORT void Java_com_valvesoftware_ValveActivity2_setDataDirectoryPath(JNIEnv* env, jclass* clazz, jstring path)
-{
-	setenv("APP_DATA_PATH", env->GetStringUTFChars(path, NULL), 1);
-}
-
-DLL_EXPORT void Java_com_valvesoftware_ValveActivity2_setGameDirectoryPath(JNIEnv* env, jclass* clazz, jstring path)
-{
-	setenv("VALVE_GAME_PATH", env->GetStringUTFChars(path, NULL), 1);
-}
-
-DLL_EXPORT int Java_com_valvesoftware_ValveActivity2_setenv(JNIEnv *jenv, jclass *jclass, jstring env, jstring value, jint over)
+DLL_EXPORT int Java_com_entityname_cssv34_MainActivity_setenv(JNIEnv *jenv, jclass *jclass, jstring env, jstring value, jint over)
 {
 	Msg( "Java_com_valvesoftware_ValveActivity2_setenv %s=%s\n", jenv->GetStringUTFChars(env, NULL), jenv->GetStringUTFChars(value, NULL) );
 	return setenv( jenv->GetStringUTFChars(env, NULL), jenv->GetStringUTFChars(value, NULL), over );
 }
 
-DLL_EXPORT void Java_com_valvesoftware_ValveActivity2_nativeOnActivityResult()
-{
-//	Msg( "Java_com_valvesoftware_ValveActivity_nativeOnActivityResult\n" );
-}
-
-DLL_EXPORT void Java_com_valvesoftware_ValveActivity2_setArgs(JNIEnv *env, jclass *clazz, jstring str)
+DLL_EXPORT void Java_com_entityname_cssv34_MainActivity_setArgs(JNIEnv *env, jclass *clazz, jstring str)
 {
 	strncpy( java_args, env->GetStringUTFChars(str, NULL), sizeof java_args );
 }
