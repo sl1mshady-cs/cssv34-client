@@ -284,27 +284,27 @@ bool foundLibraryWithPrefix( char *pModuleAbsolutePath, size_t AbsolutePathSize,
 
 	struct stat statBuf;
 	Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/" DEFAULT_LIB_PATH "lib%s", pPath, str);
-	Msg("1. %s\n", pModuleAbsolutePath);
+	Warning("1. %s\n", pModuleAbsolutePath);
 	bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 
 	if( !bFound )
 	{
 		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/" DEFAULT_LIB_PATH "%s", pPath, str);
-		Msg("2. %s\n", pModuleAbsolutePath);
+		Warning("2. %s\n", pModuleAbsolutePath);
 		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 	}
 
 	if( !bFound )
 	{
 		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib%s", pPath, str);
-		Msg("3. %s\n", pModuleAbsolutePath);
+		Warning("3. %s\n", pModuleAbsolutePath);
 		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 	}
 
 	if( !bFound )
 	{
 		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/%s", pPath, str);
-		Msg("4. %s\n", pModuleAbsolutePath);
+		Warning("4. %s\n", pModuleAbsolutePath);
 		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 	}
 
