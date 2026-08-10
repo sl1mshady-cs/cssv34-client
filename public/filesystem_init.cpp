@@ -305,56 +305,59 @@ static bool Sys_GetExecutableName( char *out, int len )
 	return true;
 }
 
-bool FileSystem_GetExecutableDir( char *exedir, int exeDirLen )
+
+bool FileSystem_GetExecutableDir(char* exedir, int exeDirLen)
 {
+#ifdef ANDROID
+	Q_snprintf(exedir, exeDirLen, "%s", getenv("APP_LIB_PATH"));
+#else
 	exedir[0] = 0;
 
-	if ( s_bUseVProjectBinDir )
+	if (s_bUseVProjectBinDir)
 	{
-		const char *pProject = GetVProjectCmdLineValue();
-		if ( !pProject )
+		const char* pProject = GetVProjectCmdLineValue();
+		if (!pProject)
 		{
 			// Check their registry.
-			pProject = getenv( GAMEDIR_TOKEN );
+			pProject = getenv(GAMEDIR_TOKEN);
 		}
-		if ( pProject )
+		if (pProject)
 		{
-			Q_snprintf( exedir, exeDirLen, "%s%c..%cbin", pProject, CORRECT_PATH_SEPARATOR, CORRECT_PATH_SEPARATOR );
+			Q_snprintf(exedir, exeDirLen, "%s%c..%cbin", pProject, CORRECT_PATH_SEPARATOR, CORRECT_PATH_SEPARATOR);
 			return true;
 		}
 		return false;
 	}
 
-	if ( !Sys_GetExecutableName( exedir, exeDirLen ) )
+	if (!Sys_GetExecutableName(exedir, exeDirLen))
 		return false;
-	Q_StripFilename( exedir );
+	Q_StripFilename(exedir);
 
-	if ( IsX360() )
+	if (IsX360())
 	{
 		// The 360 can have its exe and dlls reside on different volumes
 		// use the optional basedir as the exe dir
-		if ( CommandLine()->FindParm( "-basedir" ) )
+		if (CommandLine()->FindParm("-basedir"))
 		{
-			strcpy( exedir, CommandLine()->ParmValue( "-basedir", "" ) );
+			strcpy(exedir, CommandLine()->ParmValue("-basedir", ""));
 		}
 	}
 
-	Q_FixSlashes( exedir );
-#ifdef ANDROID
-	const char* libDir = "lib";
-#else
+	Q_FixSlashes(exedir);
+
 	const char* libDir = "bin";
-#endif
+
 	// Return the bin directory as the executable dir if it's not in there
 	// because that's really where we're running from...
 	char ext[MAX_PATH];
-	Q_StrRight( exedir, 4, ext, sizeof( ext ) );
-	if ( ext[0] != CORRECT_PATH_SEPARATOR || Q_stricmp( ext+1, libDir ) != 0 )
+	Q_StrRight(exedir, 4, ext, sizeof(ext));
+	if (ext[0] != CORRECT_PATH_SEPARATOR || Q_stricmp(ext + 1, libDir) != 0)
 	{
-		Q_strncat( exedir, CORRECT_PATH_SEPARATOR_S, exeDirLen, COPY_ALL_CHARACTERS );
-		Q_strncat( exedir, libDir, exeDirLen, COPY_ALL_CHARACTERS );
-		Q_FixSlashes( exedir );
+		Q_strncat(exedir, CORRECT_PATH_SEPARATOR_S, exeDirLen, COPY_ALL_CHARACTERS);
+		Q_strncat(exedir, libDir, exeDirLen, COPY_ALL_CHARACTERS);
+		Q_FixSlashes(exedir);
 	}
+#endif
 
 	return true;
 }
