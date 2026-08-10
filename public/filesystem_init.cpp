@@ -262,7 +262,9 @@ const char *FileSystem_GetLastErrorString()
 
 KeyValues* ReadKeyValuesFile( const char *pFilename )
 {
-	Msg("ReadKeyValuesFile: %s\n", pFilename);
+	char szCwd[256];
+	getcwd(szCwd, sizeof(szCwd));
+	Msg("ReadKeyValuesFile: %s, cwd %s\n", pFilename, szCwd);
 	// Read in the gameinfo.txt file and null-terminate it.
 	FILE *fp = fopen( pFilename, "rb" );
 	if ( !fp )
