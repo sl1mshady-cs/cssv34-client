@@ -353,7 +353,7 @@ CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NO
 
 		char szAbsoluteModuleName[2048];
 #ifdef ANDROID
-		char *dataPath = getenv("APP_DATA_PATH");
+		char *dataPath = getenv("APP_LIB_PATH");
 		char *modLibPath = getenv("APP_MOD_LIB");
 		bool bFound;
 
