@@ -294,21 +294,21 @@ bool foundLibraryWithPrefix( char *pModuleAbsolutePath, size_t AbsolutePathSize,
 
 	if( !bFound )
 	{
-#ifdef ANDROID
-		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib/lib%s", pPath, str);
-#else
+//#ifdef ANDROID
+//		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib/lib%s", pPath, str);
+//#else
 		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib%s", pPath, str);
-#endif
+//#endif
 		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 	}
 
 	if( !bFound )
 	{
-#ifdef ANDROID
-		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib/%s", pPath, str);
-#else
+//#ifdef ANDROID
+//		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib/%s", pPath, str);
+//#else
 		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/%s", pPath, str);
-#endif
+//#endif
 		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 	}
 
