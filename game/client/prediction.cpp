@@ -885,9 +885,9 @@ void CPrediction::RunCommand( C_BasePlayer *player, CUserCmd *ucmd, IMoveHelper 
 		pVehicle->ProcessMovement( player, g_pMoveData );
 	}
 
-	FinishMove( player, ucmd, g_pMoveData );
-
 	RunPostThink( player );
+
+	FinishMove( player, ucmd, g_pMoveData );
 
 // TODO:  Predict impacts?
 //	// Let server invoke any needed impact functions
