@@ -987,7 +987,7 @@ void UTIL_StringToColor32( color32 *color, const char *pString )
 }
 
 #ifndef _XBOX
-void UTIL_DecodeICE( unsigned char * buffer, int size, const unsigned char *key)
+void UTIL_DecodeICE( unsigned char * buffer, int size, const unsigned char *key )
 {
 	if ( !key )
 		return;
@@ -1013,6 +1013,36 @@ void UTIL_DecodeICE( unsigned char * buffer, int size, const unsigned char *key)
 
 	// copy encrypted data back to original buffer
 	Q_memcpy( buffer, temp, size-bytesLeft );
+}
+
+int UTIL_EncodeICE( unsigned char* buffer, int size, const unsigned char* key )
+{
+	if (!key)
+		return 0;
+
+	IceKey ice(0); // level 0 = 64bit key
+	ice.set(key); // set key
+
+	int blockSize = ice.blockSize();
+
+	const int ecryptedSize = PAD_NUMBER(size, blockSize);
+	unsigned char* temp = (unsigned char*)_alloca(ecryptedSize);
+	unsigned char* plaintext = buffer;
+	unsigned char* ciphertext = temp;
+
+	// encrypt data in 8 byte blocks
+	int bytesLeft = size;
+	while (bytesLeft >= blockSize)
+	{
+		ice.encrypt(plaintext, ciphertext);
+		bytesLeft -= blockSize;
+		plaintext += blockSize;
+		ciphertext += blockSize;
+	}
+
+	// copy encrypted data back to original buffer
+	Q_memcpy(buffer, temp, size - bytesLeft);
+	return size - bytesLeft;
 }
 #endif
 

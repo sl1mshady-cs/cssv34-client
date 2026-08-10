@@ -66,13 +66,13 @@ void CWeaponCSBaseGun::ItemPostFrame()
 	// And Scout.
 	if ( (m_flNextPrimaryAttack <= gpGlobals->curtime) && (pPlayer->m_bResumeZoom == TRUE) )
 	{
-		pPlayer->m_bResumeZoom = false;
-		
-		if ( m_iClip1 != 0 || ( GetWeaponFlags() & ITEM_FLAG_NOAUTORELOAD ) )
+		pPlayer->SetFOV( pPlayer, pPlayer->m_iLastZoom, 0.05f );
+		m_zoomFullyActiveTime = gpGlobals->curtime + 0.05f;// Make sure we think that we are zooming on the server so we don't get instant acc bonus
+
+		if ( pPlayer->GetFOV() == pPlayer->m_iLastZoom )
 		{
-			//m_weaponMode = Secondary_Mode;
-			pPlayer->SetFOV( pPlayer, pPlayer->m_iLastZoom, 0.05f );
-			m_zoomFullyActiveTime = gpGlobals->curtime + 0.05f;// Make sure we think that we are zooming on the server so we don't get instant acc bonus
+			// return the fade level in zoom.
+			pPlayer->m_bResumeZoom = false;
 		}
 	}
 

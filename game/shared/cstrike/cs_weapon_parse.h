@@ -116,7 +116,7 @@ public:
 
 	CSWeaponType m_WeaponType;
 
-	bool	m_bFullAuto;		// is this a fully automatic weapon?
+	bool	m_bFullAuto;		// is this a fully automatic weapon? (TODO: delete this eventually)
 
 	int m_iTeam;				// Which team can have this weapon. TEAM_UNASSIGNED if both can have it.
 	float m_flBotAudibleRange;	// How far away a bot can hear this weapon.

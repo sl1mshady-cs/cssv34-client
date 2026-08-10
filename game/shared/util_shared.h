@@ -372,6 +372,8 @@ CBasePlayer *UTIL_PlayerByUserId( int userID );
 // decodes a buffer using a 64bit ICE key (inplace)
 void		UTIL_DecodeICE( unsigned char * buffer, int size, const unsigned char *key);
 
+// encodes a buffer using a 64bit ICE key (inplace)
+int			UTIL_EncodeICE( unsigned char * buffer, int size, const unsigned char *key);
 
 //--------------------------------------------------------------------------------------------------------------
 /**

@@ -265,6 +265,76 @@ KeyValues* ReadEncryptedKVFile( IFileSystem *filesystem, const char *szFilenameW
 }
 
 
+#ifdef CLIENT_DLL
+// Helper ConCommand to encrypt & save weapon script
+CON_COMMAND_F(encrypt_weapon_keyvalue, "Helper console command to ICE-encrypt input file", FCVAR_CLIENTDLL)
+{
+	const char *key = "d7NSuLq2";
+	const char *pathID = "MOD";
+
+	if (args.ArgC() < 2)
+	{
+		Msg("<inputFile> <key> [pathID]\n");
+		Msg("inputFile:necessary, key:optional (def. %s), pathID:optional (def. %s)\n", key, pathID);
+		return;
+	}
+
+	if (args.ArgC() > 2)
+	{
+		key = (char*)args[2];
+
+		if (args.ArgC() > 3)
+			pathID = (char*)args[3];
+	}
+
+	char fileName[512];
+	V_strcpy_safe(fileName, args[1]);
+	FileHandle_t fh = filesystem->Open(fileName, "rb+", pathID);
+
+	if (!fh)
+	{
+		Warning("Failed opening %s.\n", fileName);
+		return;
+	}
+
+	// load file into a null-terminated buffer
+	int fileSize = filesystem->Size(fh);
+	char* buffer = (char*)malloc(fileSize + 1);
+
+	Assert(buffer);
+
+	filesystem->Read(buffer, fileSize, fh); // read into local buffer
+	buffer[fileSize] = 0; // null terminate file as EOF
+
+	int encSize = UTIL_EncodeICE((unsigned char*)buffer, fileSize, (unsigned char*)key);
+	if (!encSize)
+	{
+		Warning("Encryption with key %s failed.\n", key);
+		return;
+	}
+
+	filesystem->Close(fh);	// close file after reading
+
+	char encryptedFileName[512];
+	V_StripExtension(fileName, encryptedFileName, 512);
+	V_strncat(encryptedFileName, ".ctx", 512);
+
+	fh = filesystem->Open(encryptedFileName, "wb", pathID);
+
+	if (!fh)
+	{
+		Warning("Failed saving encrypted data to %s.\n", encryptedFileName);
+		return;
+	}
+
+	// Write out our data
+	filesystem->Write(buffer, encSize, fh);
+	filesystem->Close(fh);	// close file after writing
+
+	Msg("Successfully exported encrypted weapon script to %s\n", encryptedFileName);
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Read data on weapon from script file
 // Output:  true  - if data2 successfully read

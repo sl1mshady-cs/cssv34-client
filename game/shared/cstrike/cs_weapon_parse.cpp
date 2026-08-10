@@ -353,7 +353,7 @@ void CCSWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName )
 	m_flAccuracyOffset	= pKeyValuesData->GetFloat( "AccuracyOffset", 0 );
 	m_flMaxInaccuracy	= pKeyValuesData->GetFloat( "MaxInaccuracy", 0 );
 
-	// new accuracy model parameters
+	// new accuracy model parameters (crosshair only)
 	m_fSpread[0]				= pKeyValuesData->GetFloat("Spread", 0.0f);
 	m_fInaccuracyCrouch[0]		= pKeyValuesData->GetFloat("InaccuracyCrouch", 0.0f);
 	m_fInaccuracyStand[0]		= pKeyValuesData->GetFloat("InaccuracyStand", 0.0f);
@@ -424,7 +424,7 @@ void CCSWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName )
 	const char *pTypeString = pKeyValuesData->GetString( "WeaponType", "" );
 	m_WeaponType = WeaponClassFromString(pTypeString);
 
-	m_bFullAuto = pKeyValuesData->GetBool("FullAuto");
+	//m_bFullAuto = pKeyValuesData->GetBool("FullAuto");
 
 	// Read the addon model.
 	Q_strncpy( m_szAddonModel, pKeyValuesData->GetString( "AddonModel" ), sizeof( m_szAddonModel ) );

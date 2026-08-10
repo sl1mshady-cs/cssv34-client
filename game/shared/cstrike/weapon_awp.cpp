@@ -135,6 +135,10 @@ void CWeaponAWP::SecondaryAttack()
 		//m_weaponMode = Primary_Mode;
 	}
 
+	// reset serverside maxspeed
+#ifndef CLIENT_DLL
+	pPlayer->ResetMaxSpeed();
+#endif
 
 #ifndef CLIENT_DLL
 	// If this isn't guarded, the sound will be emitted twice, once by the server and once by the client.
@@ -214,7 +218,7 @@ void CWeaponAWP::PrimaryAttack()
 	if ( !CSBaseGunFire( GetCSWpnData().m_flCycleTime, Primary_Mode ) )
 		return;
 
-	if ( 0 )//m_weaponMode == Secondary_Mode )
+	if ( pPlayer->GetFOV() != pPlayer->GetDefaultFOV() )
 	{	
 		float	midFOVdistance = fabs( pPlayer->GetFOV() - (float)cAWPMidZoomFOV );
 		float	farFOVdistance = fabs( pPlayer->GetFOV() - (float)cAWPMaxZoomFOV );
