@@ -40,55 +40,6 @@ public class MainActivity extends Activity {
     public static native int setenv(String name, String value, int overwrite);
     public static native void setArgs(String args);
 
-    static private void copyFonts(Context ctx)
-    {
-        AssetManager assetManager = ctx.getAssets();
-        try {
-            String[] assetFiles = assetManager.list("");
-            if (assetFiles == null) {
-                return;
-            }
-
-            File destDir = ctx.getFilesDir();
-            Log.v("ASSETS", destDir.toString());
-
-            if (!destDir.exists())
-            {
-                if (!destDir.mkdirs())
-                {
-                    return;
-                }
-            }
-
-            for (String fileName : assetFiles) {
-                if (!fileName.toLowerCase().endsWith(".ttf")) {
-                    continue;
-                }
-                File destFile = new File(destDir, fileName);
-                if (!destFile.exists()) {
-                    continue;
-                }
-                try (InputStream in = assetManager.open(fileName); OutputStream out = new FileOutputStream(destFile)) {
-                    byte[] buffer = new byte[8192];
-                    int read;
-                    while ((read = in.read(buffer)) != -1)
-                    {
-                        out.write(buffer, 0, read);
-                    }
-                    Log.v("ASSETS", "Copied file "+fileName+" -> "+destFile.getPath());
-                }
-                catch (IOException e)
-                {
-                    Log.v("ASSETS", "Failed to copy file "+fileName+": "+e.toString());
-                }
-            }
-        }
-        catch (IOException e)
-        {
-            Log.v("ASSETS", "Failed to copy files: "+e.toString());
-        }
-    }
-
     public static String getDefaultDir() {
         File dir = Environment.getExternalStorageDirectory();
         Log.v("cssv34", "Dir:"+dir);
@@ -99,6 +50,7 @@ public class MainActivity extends Activity {
 
     static public void initNatives(Context context, Intent intent) {
         ExtractAssets.extractVPK(context);
+        ExtractAssets.extractFonts(context);
         String vpks = context.getFilesDir().getPath()+"/"+ExtractAssets.VPK_NAME;
 
         ApplicationInfo appinf = context.getApplicationInfo();
@@ -111,13 +63,12 @@ public class MainActivity extends Activity {
 
         setenv( "LANG", Locale.getDefault().toString(), 1 );
         setenv( "APP_DATA_PATH", appinf.dataDir, 1);
-        setenv( "APP_DATA_PATH", appinf.nativeLibraryDir, 1);
+        setenv( "APP_LIB_PATH", appinf.nativeLibraryDir, 1);
         setenv( "EXTRAS_VPK_PATH", vpks, 1);
 
         setenv( "VALVE_GAME_PATH", gamepath, 1 );
 
         setArgs(argv);
-        copyFonts(context);
     }
 
     @Override
