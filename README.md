@@ -60,7 +60,7 @@ Windows:
 
 # How to Run?
 
-- You need to download content. Download it from: [here](https://drive.google.com/file/d/1Jtc9HfyoX88ENAxPzjHopECaX9wsiaWI/view)
+- You need to download content. Download it from: [here](https://drive.google.com/file/d/1wzovBhjmJ_mDTpS3Lq89x57zhHTykgcN/view)
 - Unpack this content into `__build__` folder
 - Run hl2_launcher.exe with `-game cstrike` (you can create .bat file for it)
 
