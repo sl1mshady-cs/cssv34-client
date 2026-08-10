@@ -284,31 +284,27 @@ bool foundLibraryWithPrefix( char *pModuleAbsolutePath, size_t AbsolutePathSize,
 
 	struct stat statBuf;
 	Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/" DEFAULT_LIB_PATH "lib%s", pPath, str);
+	Msg("1. %s\n", pModuleAbsolutePath);
 	bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 
 	if( !bFound )
 	{
 		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/" DEFAULT_LIB_PATH "%s", pPath, str);
+		Msg("2. %s\n", pModuleAbsolutePath);
 		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 	}
 
 	if( !bFound )
 	{
-//#ifdef ANDROID
-//		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib/lib%s", pPath, str);
-//#else
 		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib%s", pPath, str);
-//#endif
+		Msg("3. %s\n", pModuleAbsolutePath);
 		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 	}
 
 	if( !bFound )
 	{
-//#ifdef ANDROID
-//		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib/%s", pPath, str);
-//#else
 		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/%s", pPath, str);
-//#endif
+		Msg("4. %s\n", pModuleAbsolutePath);
 		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 	}
 
