@@ -1,23 +1,23 @@
-name: Build Android ARM64 v8a
+name: Build Android aarch64
 
 on: [push, pull_request]
 
 jobs:
-  build-android-armv8a:
+  build-android-aarch64:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: Build android-armv8a
+    - name: Build android-aarch64
       run: |
         chmod +x waf
-        chmod +x scripts/build-android-armv8a.sh
-        ./scripts/build-android-armv8a.sh
+        chmod +x scripts/build-android-aarch64.sh
+        ./scripts/build-android-aarch64.sh
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v7.0.1
       with:
-        name: android_armv8a_build
-        path: android_armv8a_build
+        name: android_aarch64_build
+        path: android_aarch64_build
         if-no-files-found: error
         retention-days: 7
