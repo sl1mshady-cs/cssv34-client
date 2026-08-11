@@ -3,7 +3,7 @@ name: Build Android ARM64 v8a
 on: [push, pull_request]
 
 jobs:
-  build-android-armv7a:
+  build-android-armv8a:
     runs-on: ubuntu-latest
 
     steps:
