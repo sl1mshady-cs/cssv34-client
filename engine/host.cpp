@@ -626,9 +626,9 @@ CON_COMMAND( host_timer_report, "Spew CPU timer jitter for the last 128 frames i
 
 #ifdef REL_TO_STAGING_MERGE_TODO							 
 // Do this when merging the game DLLs so FCVAR_CHEAT can be set on them at the same time.
-ConVar  developer( "developer", "0", /*FCVAR_CHEAT|*/0, "Set developer message level");
+ConVar  developer( "developer", "0", FCVAR_NONE, "Set developer message level");
 #else
-ConVar  developer( "developer", "0", 0, "Set developer message level");
+ConVar  developer( "developer", "0", FCVAR_NONE, "Set developer message level");
 #endif
 
 ConVar	skill( "skill","1", FCVAR_ARCHIVE | FCVAR_ARCHIVE_XBOX, "Game skill level (1-3).", true, 1, true, 3 );			// 1 - 3

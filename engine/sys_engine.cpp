@@ -51,7 +51,7 @@ int Sys_InitGame( CreateInterfaceFn appSystemFactory,
 			char const* pBaseDir, void *pwnd, int bIsDedicated );
 
 // Sleep time when not focus. Set to 0 to not sleep even if app doesn't have focus.
-ConVar engine_no_focus_sleep( "engine_no_focus_sleep", "50", FCVAR_ARCHIVE );
+ConVar engine_no_focus_sleep( "engine_no_focus_sleep", "50", FCVAR_ARCHIVE, "Sleep time when not focus. Set to 0 to not sleep even if app doesn't have focus.");
 
 // sleep time when not focus
 #define NOT_FOCUS_SLEEP	50				
@@ -72,7 +72,7 @@ static void fps_max_callback( IConVar *var, const char *pOldValue, float flOldVa
 		s_nDesiredFPSMax = ( (ConVar *)var)->GetInt();
 	}
 }
-ConVar fps_max( "fps_max", DEFAULT_FPS_MAX_S, FCVAR_NOT_CONNECTED, "Frame rate limiter, cannot be set while connected to a server.", fps_max_callback );
+ConVar fps_max( "fps_max", DEFAULT_FPS_MAX_S, FCVAR_ARCHIVE, "Frame rate limiter.", fps_max_callback );
 
 // When set, this ConVar (typically driven from the advanced video settings) will drive fps_max (see above) to
 // half of the refresh rate, if the user hasn't otherwise set fps_max (via console, commandline etc)

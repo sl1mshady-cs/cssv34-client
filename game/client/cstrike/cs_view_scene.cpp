@@ -62,7 +62,7 @@ ConVarFlags s_flaggedConVars[] =
 {
 	{ "r_screenfademinsize", FCVAR_CHEAT },
 	{ "r_screenfademaxsize", FCVAR_CHEAT },
-	{ "developer", /*FCVAR_CHEAT |*/ 0},
+	{ "developer", FCVAR_NONE},
 };
 
 void CCSViewRender::Init( void )
