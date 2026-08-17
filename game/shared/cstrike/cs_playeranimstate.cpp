@@ -979,7 +979,7 @@ Activity CCSPlayerAnimState::CalcMainActivity()
 	{
 		Activity idealActivity = ACT_IDLE;
 
-		if ( m_pOuter->GetFlags() & FL_ANIMDUCKING )
+		if ( m_pOuter->GetFlags() & FL_DUCKING )
 		{
 			if ( flOuterSpeed > MOVING_MINIMUM_SPEED )
 				idealActivity = ACT_RUN_CROUCH;
