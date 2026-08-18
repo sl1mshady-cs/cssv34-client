@@ -57,11 +57,14 @@
 
 // game list
 #include "BaseGamesPage.h"
+//#include "BlacklistedServers.h"
 #include "InternetGames.h"
 #include "FavoriteGames.h"
 //#include "SpectateGames.h"
 #include "LanGames.h"
+#include "FriendsGames.h"
 #include "HistoryGames.h"
+#include "CustomGames.h"
 #include "ServerBrowserDialog.h"
 #include "QuickListPanel.h"
 #include "vgui_controls/PanelListPanel.h"
@@ -69,7 +72,7 @@
 #include "replay/ienginereplay.h"
 
 extern bool GameSupportsReplay();
-extern bool IsReplayServer( newgameserver_t &server );
+extern bool IsReplayServer( gameserveritem_t &server );
 
 #pragma warning( disable: 4355 )  //  warning C4355: 'this' : used in base member initializer list
 

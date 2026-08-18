@@ -1447,24 +1447,24 @@ bool CBaseServer::CheckChallengeType( CBaseClient * client, int nNewUserID, neta
 		client->SetSteamID( CSteamID() ); // set an invalid SteamID
 
 		// Convert raw certificate back into data
-/*		if ( cbCookie <= 0 || cbCookie >= STEAM_KEYSIZE )
+		if ( cbCookie <= 0 || cbCookie >= STEAM_KEYSIZE )
 		{
 			RejectConnection( adr, clientChallenge, "#GameUI_ServerRejectInvalidSteamCertLen" );
 			return false;
-		}*/
+		}
+
 		netadr_t checkAdr = adr;
 		if ( adr.GetType() == NA_LOOPBACK || adr.IsLocalhost() )
 		{
 			checkAdr.SetIP( net_local_adr.GetIPHostByteOrder() );
 		}
-#if 0
+
 		if ( !Steam3Server().NotifyClientConnect( client, nNewUserID, checkAdr, pchLogonCookie, cbCookie ) 
 			&& !Steam3Server().BLanOnly() ) // the userID isn't alloc'd yet so we need to fill it in manually
 		{
 			RejectConnection( adr, clientChallenge, "#GameUI_ServerRejectSteam" );
 			return false;
 		}
-#endif
 
 		//
 		// Any rejections below this must call SendUserDisconnect

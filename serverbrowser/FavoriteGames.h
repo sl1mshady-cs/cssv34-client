@@ -30,7 +30,7 @@ public:
 	virtual bool SupportsItem(InterfaceItem_e item);
 
 	// called when the current refresh list is complete
-	virtual void RefreshComplete( NServerResponse response );
+	virtual void RefreshComplete( HServerListRequest hReq, EMatchMakingServerResponse response );
 
 	// passed from main server browser window instead of messages
 	void OnConnectToGame();

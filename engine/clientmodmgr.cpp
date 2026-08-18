@@ -45,7 +45,7 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 		CGameEventDescriptor* descriptor = g_GameEventManager.GetEventDescriptor(eventid);
 		const char* name = descriptor->name;
 
-		DevMsg("svc_GameEvent: %s (%d)\n", name, eventid);
+		//ConDLog("svc_GameEvent: %s (%d)\n", name, eventid);
 
 		if (name && !strcmp(name, "player_disconnect"))
 		{
@@ -56,9 +56,8 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 			buf.ReadString(name, sizeof(name));
 			char networkid[1024];
 			buf.ReadString(networkid, sizeof(networkid));
-			DevMsg("player_disconnect %d name %s reason %s networkid %s\n", userid, name, reason, networkid);
+			//DevMsg("player_disconnect %d name %s reason %s networkid %s\n", userid, name, reason, networkid);
 
-			//if (userid < 1)
 			return false;
 		}
 
@@ -66,7 +65,7 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 		{
 			char databuf[1024];
 			buf.ReadString(databuf, sizeof(databuf));
-			DevMsg("player_info buffer %s\n", databuf);
+			//DevMsg("player_info buffer %s\n", databuf);
 			buf.ReadString(databuf, sizeof(databuf));
 			return false;
 		}
@@ -84,7 +83,7 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 
 		if (msgType < 0)
 		{
-			DevMsg("UserMsg Rejected: type %d dataLengthInBits %d\n", msgType, dataLengthInBits);
+			DevMsg("svc_UserMessage Rejected: type %d dataLengthInBits %d\n", msgType, dataLengthInBits);
 			return false;
 		}
 
@@ -107,7 +106,7 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 		{
 			char stringcmd[1024];
 			buf.ReadString(stringcmd, sizeof(stringcmd));
-			DevMsg("Net_StringCmd Rejected: %s\n", stringcmd);
+			DevMsg("net_StringCmd Rejected: %s\n", stringcmd);
 			return false;
 		}
 	}

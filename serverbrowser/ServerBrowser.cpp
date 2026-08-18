@@ -19,7 +19,6 @@ CServerBrowser &ServerBrowser()
 }
 
 IRunGameEngine *g_pRunGameEngine = NULL;
-IServersInfo *g_pServersInfo = NULL;
 
 static CSteamAPIContext g_SteamAPIContext;
 CSteamAPIContext *steamapicontext = &g_SteamAPIContext;
@@ -80,12 +79,11 @@ bool CServerBrowser::Initialize(CreateInterfaceFn *factorylist, int factoryCount
 	for ( int i = 0; i < factoryCount; ++i )
 	{
 		if ( !g_pEngineReplay )
+		{
 			g_pEngineReplay = ( IEngineReplay * )factorylist[ i ]( ENGINE_REPLAY_INTERFACE_VERSION, NULL );
-		if( !g_pServersInfo )
-			g_pServersInfo = ( IServersInfo * )factorylist[ i ]( SERVERLIST_INTERFACE_VERSION, NULL );
+		}
 	}
 	
-
 	SteamAPI_InitSafe();
 	SteamAPI_SetTryCatchCallbacks( false ); // We don't use exceptions, so tell steam not to use try/catch in callback handlers
 	steamapicontext->Init();
@@ -306,7 +304,7 @@ void CServerBrowser::Shutdown()
 //-----------------------------------------------------------------------------
 bool CServerBrowser::OpenGameInfoDialog( uint64 ulSteamIDFriend, const char *pszConnectCode )
 {
-#if 0
+#if !defined( _X360 ) // X360TBD: SteamFriends()
 	if ( m_hInternetDlg.Get() )
 	{
 		// activate an already-existing dialog
@@ -339,11 +337,11 @@ bool CServerBrowser::OpenGameInfoDialog( uint64 ulSteamIDFriend, const char *psz
 //-----------------------------------------------------------------------------
 bool CServerBrowser::JoinGame( uint64 ulSteamIDFriend, const char *pszConnectCode )
 {
-/*	if ( OpenGameInfoDialog( ulSteamIDFriend, pszConnectCode ) )
+	if ( OpenGameInfoDialog( ulSteamIDFriend, pszConnectCode ) )
 	{
 		CDialogGameInfo *pDialogGameInfo = m_hInternetDlg->GetDialogGameInfoForFriend( ulSteamIDFriend );
 		pDialogGameInfo->Connect();
-	}*/
+	}
 
 	return false;
 }
@@ -364,13 +362,11 @@ bool CServerBrowser::JoinGame( uint32 unGameIP, uint16 usGamePort, const char *p
 //-----------------------------------------------------------------------------
 void CServerBrowser::CloseGameInfoDialog( uint64 ulSteamIDFriend )
 {
-#if 0
 	CDialogGameInfo *pDialogGameInfo = m_hInternetDlg->GetDialogGameInfoForFriend( ulSteamIDFriend );
 	if ( pDialogGameInfo )
 	{
 		pDialogGameInfo->Close();
 	}
-#endif
 }
 
 

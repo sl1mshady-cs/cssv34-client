@@ -717,10 +717,14 @@ bool CSteam3Server::NotifyClientConnect( CBaseClient *client, uint32 unUserID, n
 	}
 
 	// steamID is prepended to the ticket
-	CUtlBuffer buffer( pvCookie, ucbCookie, CUtlBuffer::READ_ONLY );
-	uint64 ulSteamID = buffer.GetInt64();
+	CSteamID steamID;
 
-	CSteamID steamID( ulSteamID );
+	if (!SteamGameServer()->SendUserConnectAndAuthenticate(
+		adr.GetIPHostByteOrder(), pvCookie, ucbCookie, &steamID)) {
+		WarningAndLog("Client %d failed game server authentication\n", unUserID);
+		return false;
+	}
+
 	if ( steamID.GetEUniverse() != SteamGameServer()->GetSteamID().GetEUniverse() )
 	{
 		WarningAndLog("Client %d %s connected to universe %d, but game server %s is running in universe %d\n", unUserID, steamID.Render(),
@@ -734,13 +738,13 @@ bool CSteam3Server::NotifyClientConnect( CBaseClient *client, uint32 unUserID, n
 	}
 
 	// skip the steamID
-	pvCookie = (uint8 *)pvCookie + sizeof( uint64 );
+	pvCookie = (uint8 *)pvCookie + sizeof( uint64 ); 
 	ucbCookie -= sizeof( uint64 );
 	EBeginAuthSessionResult eResult = SteamGameServer()->BeginAuthSession( pvCookie, ucbCookie, steamID );
 	switch ( eResult )
 	{
 	case k_EBeginAuthSessionResultOK:
-		//Msg("S3: BeginAuthSession request for %x was good.\n", steamID.ConvertToUint64( ) );
+		MsgAndLog("S3: BeginAuthSession request for %x was good.\n", steamID.ConvertToUint64( ) );
 		break;
 	case k_EBeginAuthSessionResultInvalidTicket:
 		WarningAndLog("S3: Client connected with invalid ticket: UserID: %x\n", unUserID );
@@ -817,7 +821,7 @@ void CSteam3Server::NotifyClientDisconnect( CBaseClient *client )
 		if ( id.idtype != IDTYPE_STEAM )
 			return;
 	
-		// Msg("S3: Sending client disconnect for %x\n", steamIDClient.ConvertToUint64( ) );
+		Msg("S3: Sending client disconnect for %x [%s]\n", client->m_SteamID.ConvertToUint64( ), client->m_SteamID.Render() );
 		SteamGameServer()->EndAuthSession( client->m_SteamID );
 	}
 }

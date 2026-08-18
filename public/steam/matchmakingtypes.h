@@ -1,4 +1,4 @@
-//========= Copyright � 1996-2008, Valve LLC, All rights reserved. ============
+//========= Copyright   1996-2008, Valve LLC, All rights reserved. ============
 //
 // Purpose: 
 //
@@ -57,6 +57,18 @@ enum EMatchMakingServerResponse
 	eServerResponded = 0,
 	eServerFailedToRespond,
 	eNoServersListedOnMasterServer // for the Internet query type, returned in response callback if no servers of this type match
+};
+
+// RuSHeRR NOTE: this was EMatchMakingType in source2007, i simplified that since why not :)
+enum EServerType
+{
+	eInternetServer = 0,
+	eLANServer,
+	eFriendsServer,
+	eFavoritesServer,
+	eHistoryServer,
+	eSpectatorServer,
+	eInvalidServer 
 };
 
 // servernetadr_t is all the addressing info the serverbrowser needs to know about a game server,
@@ -221,6 +233,15 @@ public:
 
 	/// steamID of the game server - invalid if it's doesn't have one (old server, or not connected to Steam)
 	CSteamID m_steamID;
+
+	/*
+	* ADDED BY SHMELLE
+	* 
+	* NOTE: those are from legacy 2003 serveritem_t
+	*
+	*/
+	int received;
+	unsigned int serverID;
 };
 
 

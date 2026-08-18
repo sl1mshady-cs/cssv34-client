@@ -177,13 +177,15 @@ void CDialogAddServer::OnOK()
 
 	if ( AllowInvalidIPs() || netaddr.IsValid() )
 	{
-		newgameserver_t server;
+		gameserveritem_t server;
 		memset(&server, 0, sizeof(server));
-		strncpy( server.m_szServerName, address, sizeof(server.m_szServerName) );
+		server.SetName( address );
 
 		// We assume here that the query and connection ports are the same. This is why it's much
 		// better if they click "Servers" and choose a server in there.
-		server.m_NetAdr = netaddr;
+		server.m_NetAdr.Init( netaddr.GetIPHostByteOrder(), netaddr.GetPort(), netaddr.GetPort() );
+
+		server.m_nAppID = 0;
 		FinishAddServer( server );
 	}
 	else
@@ -255,21 +257,21 @@ void CDialogAddServer::TestServers()
 	m_pTabPanel->AddPage( m_pDiscoveredGames, str );
 	m_pTabPanel->InvalidateLayout();
 	
-/*	FOR_EACH_VEC( vecAdress, iAddress )
+	FOR_EACH_VEC( vecAdress, iAddress )
 	{
 		m_Queries.AddToTail( steamapicontext->SteamMatchmakingServers()->PingServer( vecAdress[ iAddress ].GetIPHostByteOrder(), vecAdress[ iAddress ].GetPort(), this ) );
-	}*/
+	}
 }
 
 
 //-----------------------------------------------------------------------------
 // Purpose: A server answered our ping
 //-----------------------------------------------------------------------------
-void CDialogAddServer::ServerResponded( newgameserver_t &server )
+void CDialogAddServer::ServerResponded( gameserveritem_t &server )
 {
 	KeyValues *kv = new KeyValues( "Server" );
 
-	kv->SetString( "name", server.m_szServerName );
+	kv->SetString( "name", server.GetName() );
 	kv->SetString( "map", server.m_szMap );
 	kv->SetString( "GameDir", server.m_szGameDir );
 	kv->SetString( "GameDesc", server.m_szGameDescription );
@@ -277,9 +279,21 @@ void CDialogAddServer::ServerResponded( newgameserver_t &server )
 	kv->SetInt( "password", server.m_bPassword ? 1 : 0);
 	kv->SetInt( "bots", server.m_nBotPlayers ? 2 : 0);
 	kv->SetInt( "Replay", IsReplayServer( server ) ? 5 : 0 );
-	kv->SetInt("secure", 0);
 
-	kv->SetString("IPAddr", server.m_NetAdr.ToString() );
+	if ( server.m_bSecure )
+	{
+		// show the denied icon if banned from secure servers, the secure icon otherwise
+		kv->SetInt("secure", ServerBrowser().IsVACBannedFromGame( server.m_nAppID ) ?  4 : 3);
+	}
+	else
+	{
+		kv->SetInt("secure", 0);
+	}
+
+	netadr_t reportedIPAddr;
+	reportedIPAddr.SetIP( server.m_NetAdr.GetIP() );
+	reportedIPAddr.SetPort( server.m_NetAdr.GetConnectionPort() );
+	kv->SetString("IPAddr", reportedIPAddr.ToString() );
 
 	char buf[32];
 	Q_snprintf(buf, sizeof(buf), "%d / %d", server.m_nPlayers, server.m_nMaxPlayers);
@@ -352,7 +366,27 @@ void CDialogAddServer::OnItemSelected()
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CDialogAddServer::FinishAddServer( newgameserver_t &pServer )
+void CDialogAddServer::FinishAddServer( gameserveritem_t &pServer )
 {
 	ServerBrowserDialog().AddServerToFavorites( pServer );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CDialogAddBlacklistedServer::FinishAddServer( gameserveritem_t &pServer )
+{
+	ServerBrowserDialog().AddServerToBlacklist( pServer );
+	ServerBrowserDialog().BlacklistsChanged();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CDialogAddBlacklistedServer::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	m_pAddServerButton->SetText( "#ServerBrowser_AddAddressToBlacklist" );
+	m_pAddSelectedServerButton->SetText( "#ServerBrowser_AddSelectedToBlacklist" );
 }

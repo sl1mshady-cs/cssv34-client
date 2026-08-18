@@ -20,16 +20,16 @@ struct challenge_s
 //-----------------------------------------------------------------------------
 // Purpose: Dialog for displaying information about a game server
 //-----------------------------------------------------------------------------
-class CDialogGameInfo : public vgui::Frame, public IServerPlayersResponse, public IServerPingResponse
+class CDialogGameInfo : public vgui::Frame, public ISteamMatchmakingPlayersResponse, public ISteamMatchmakingPingResponse
 {
 	DECLARE_CLASS_SIMPLE( CDialogGameInfo, vgui::Frame ); 
 
 public:
-	CDialogGameInfo(vgui::Panel *parent, int serverIP, int port, const char *pszConnectCode );
+	CDialogGameInfo(vgui::Panel *parent, int serverIP, int queryPort, unsigned short connectionPort, const char *pszConnectCode );
 	~CDialogGameInfo();
 
 	void Run(const char *titleName);
-	void ChangeGame(int serverIP, int port);
+	void ChangeGame(int serverIP, int queryPort, unsigned short connectionPort);
 	void SetFriend( uint64 ulSteamIDFriend );
 	uint64 GetAssociatedFriend();
 
@@ -38,7 +38,7 @@ public:
 
 	// implementation of IServerRefreshResponse interface
 	// called when the server has successfully responded
-	virtual void ServerResponded( newgameserver_t &server );
+	virtual void ServerResponded( gameserveritem_t &server );
 
 	// called when a server response has timed out
 	virtual void ServerFailedToRespond();
@@ -46,9 +46,7 @@ public:
 	// on individual player added
 	virtual void AddPlayerToList(const char *playerName, int score, float timePlayedSeconds);
 	virtual void PlayersFailedToRespond() {}
-	virtual void PlayersRefreshComplete() { }
-
-	virtual bool IsForThisServer(const netadr_t& adr);
+	virtual void PlayersRefreshComplete() { m_hPlayersQuery = HSERVERQUERY_INVALID; }
 
 	// called when the current refresh list is complete
 	virtual void RefreshComplete( EMatchMakingServerResponse response );
@@ -57,7 +55,7 @@ public:
 	virtual void ClearPlayerList();
 
 	//virtual void SendChallengeQuery( const netadr_t & to );
-	virtual void SendPlayerQuery( uint32 unIP, uint16 usPort );
+	virtual void SendPlayerQuery( uint32 unIP, uint16 usQueryPort );
 	//virtual void InsertChallengeResponse( const netadr_t & to, int nChallenge );
 
 protected:
@@ -91,8 +89,8 @@ private:
 	void RequestInfo();
 	void ConnectToServer();
 	void ShowAutoRetryOptions(bool state);
-	void ConstructConnectArgs( char *pchOptions, int cchOptions, const newgameserver_t &server );
-	void ApplyConnectCommand( const newgameserver_t &server );
+	void ConstructConnectArgs( char *pchOptions, int cchOptions, const gameserveritem_t &server );
+	void ApplyConnectCommand( const gameserveritem_t &server );
 
 	vgui::Button *m_pConnectButton;
 	vgui::Button *m_pCloseButton;
@@ -119,7 +117,9 @@ private:
 	uint64 m_SteamIDFriend;
 
 	CUtlString m_sConnectCode;
-	newgameserver_t m_Server;
+	gameserveritem_t m_Server;
+	HServerQuery m_hPingQuery;
+	HServerQuery m_hPlayersQuery;
 	bool m_bPlayerListUpdatePending;
 };
 

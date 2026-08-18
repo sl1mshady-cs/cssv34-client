@@ -1,0 +1,69 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from waflib import Utils
+import os
+
+top = '.'
+PROJECT_NAME = 'steam_api'
+
+def options(opt):
+	# stub
+	return
+
+def configure(conf):
+	conf.define('STEAM_API_EXPORTS',1)
+#	conf.define('_USE_32BIT_TIME_T',1)
+
+def build(bld):
+	source = [
+		'steam_api.cpp',
+		'steam.cpp',
+		'../common/steamid.cpp',
+		'murmur32.cpp',
+		'vdf.cpp',
+		'logging.cpp',
+		'useridvalidation.cpp',
+		'steamclient/steamapps.cpp',
+		'steamclient/steammatchmaking.cpp',
+		'steamclient/steammatchmakingservers.cpp',
+		'steamclient/steamuser.cpp',
+		'steamclient/steamgameserver.cpp',
+		'steamclient/serverlist/masterserver.cpp',
+		'steamclient/serverlist/serverinfo.cpp',
+		'steamclient/serverlist/serverlan.cpp',
+		'steamclient/serverlist/serverlist.cpp',
+		'steamclient/serverlist/servermanager.cpp',
+		'steamclient/serverlist/servermaster.cpp'
+	]
+
+	includes = [
+		'.',
+		'./steamclient',
+		'./serverlist',
+		'../common',
+		'../public',
+		'../public/steam',
+		'../public/tier0',
+		'../public/tier1',
+	] + bld.env.INCLUDES_SDL2
+
+	defines = []
+
+	libs = ['tier0', 'tier1']
+
+	install_path = None if bld.env.BUILD_SDK else bld.env.LIBDIR
+
+	bld.shlib(
+		source   = source,
+		target   = PROJECT_NAME,
+		name     = PROJECT_NAME,
+		features = 'c cxx',
+		includes = includes,
+		defines  = defines,
+		install_path = install_path,
+		use      = libs,
+		subsystem = bld.env.MSVC_SUBSYSTEM,
+		idx      = bld.get_taskgen_count()
+	)
+

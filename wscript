@@ -76,7 +76,7 @@ projects={
 		'serverbrowser',
 		'soundemittersystem',
 		'studiorender',
-		'stub_steam',
+		'steam_api',
 		'tier0',
 		'tier1',
 		'tier2',
@@ -145,7 +145,7 @@ projects={
 		'vpklib',
 		'vstdlib',
 		'vtf',
-		'stub_steam'
+		'steam_api'
 	]
 }
 
