@@ -4,11 +4,6 @@
 #include "servermanager.h"
 #include "logging.h"
 
-#ifndef _WIN32
-#define __try if (1)
-#define __except if
-#endif
-
 extern CLoggingSystem* Logger;
 extern bool g_bLogging;
 extern char g_pchServerBrowser[MAX_PATH];
@@ -54,10 +49,6 @@ CServerList::CServerList(const CServerList& serverList, EServerType eType)
 CServerList::~CServerList()
 {
 	delete m_pQuery;
-}
-
-int filter(unsigned int code, struct _EXCEPTION_POINTERS* ep) {
-	return 1;
 }
 
 unsigned int CServerList::AddNewServer(gameserveritem_t* server, bool bAddToRefreshList)

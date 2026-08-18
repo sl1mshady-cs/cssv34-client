@@ -1,5 +1,7 @@
+#include <thread>
 #include <cstdio>
-#include "ServerInfo.h"
+#include "serverinfo.h"
+#include "tier1/bitbuf.h"
 
 //--------------------------------------------------------------------------
 // $CServerInfo
@@ -29,7 +31,8 @@ CServerInfo::CServerInfo(CServerManager * pServerManager,
 	pServer->pResponse = pResponse;
 
 	// Start the Thread.
-	_beginthread( RefreshServer, 0, (void*)pServer );
+	std::thread thread(CServerInfo::RefreshServer, pServer);
+	thread.detach();
 }
 
 CServerInfo::~CServerInfo(void)
@@ -120,33 +123,21 @@ void CServerInfo::RefreshServer(void * pServer)
 	if(!pServerRefresh)
 	{
 		delete pServerRefresh; // No Pointer, do not clean up!
-		_endthread();
+		return;
 	}
 
 	// Reference Class
 	CServerInfo * pServerInfo = (CServerInfo*)pServerRefresh->pServerInfo;
 	if(!pServerInfo)
-		_endthread();
+		return;
 		
-	__try {
+	// Get Server Info
+	pServerInfo->GetServerInfo(pServerRefresh->szAddress,
+		pServerRefresh->sPort,
+		pServerRefresh->pResponse);
 
-		// Get Server Info
-		pServerInfo->GetServerInfo(pServerRefresh->szAddress, 
-			pServerRefresh->sPort,
-			pServerRefresh->pResponse);
-		goto end_thread;
-
-	} __except( exceptionhandler( GetExceptionCode(), GetExceptionInformation() ) ) {
-
-		// Error inside function.
-		printf("Error (%s): %u", __FUNCTION__, GetLastError());
-		goto end_thread;
-	}
-
-end_thread:
 	delete pServerRefresh;
 	delete pServerInfo;
-	_endthread();
 }
 
 void CServerInfo::GetServerInfo(const char * cszAddress, 
@@ -162,7 +153,7 @@ void CServerInfo::GetServerInfo(const char * cszAddress,
 	char			szPacket[25];
 	char *			szData;
 	int iRemoteAddrSize = sizeof(SOCKADDR_IN);
-	byte			bytEDF;
+	byte			EDF;
 	DWORD			dwStartTime;
 
 	// Socket
@@ -170,19 +161,31 @@ void CServerInfo::GetServerInfo(const char * cszAddress,
 	if(m_sckQuery == -1)
 		return;
 
-	// Set Connection
-	if(!CServerManager::SetConnectionInfo(sckAddress, netadr_t(cszAddress)))
-		return;
+	netadr_t adr(cszAddress);
+	adr.SetType(NA_IP);
+	adr.SetPort(sPort);
 
-	char * szRequest = (char*)&szPacket;
-	memset(szRequest, 0xFF, 4);
-	memcpy(szRequest + 4, "TSource Engine Query\x00", strlen("TSource Engine Query") + 1);
+	// Set Connection
+	if (!CServerManager::SetConnectionInfo(sckAddress, adr))
+	{
+		Msg("Failed setting connection info for socket %i\n", m_sckQuery);
+		return;
+	}
+
+	bf_write packet(szPacket, sizeof(szPacket));
+	packet.WriteLong(-1);
+	packet.WriteByte('T');
+	packet.WriteString("Source Engine Query");
+
+	//DevMsg("Send %s (sz=%i) to %s\n", szPacket, packet.GetNumBytesWritten(), cszAddress);
 
 	// Send Request
-	if(!sendto(m_sckQuery, szPacket, 25, 0, (sockaddr*)&sckAddress, sizeof(SOCKADDR_IN)))
+	if (!sendto(m_sckQuery, szPacket, packet.GetNumBytesWritten(), 0, (sockaddr*)&sckAddress, sizeof(SOCKADDR_IN))) {
+		Msg("Failed sending Server Info Query to %s\n", cszAddress);
 		return;
+	}
 
-	dwStartTime = GetTickCount();
+	dwStartTime = Plat_MSTime();
 
 	// Timeout
 	FD_ZERO(&stReadFDS);
@@ -227,7 +230,7 @@ void CServerInfo::GetServerInfo(const char * cszAddress,
 	// Looks like a valid Packet
 	gameserveritem_t * pGameServer = new gameserveritem_t;
 
-	pGameServer->m_nPing = GetTickCount() - dwStartTime;
+	pGameServer->m_nPing = Plat_MSTime() - dwStartTime;
 	// Goldsource | Source
 	byte bytGameType = ReadByte(&szData);
 	if(bytGameType == 0x49) 
@@ -249,12 +252,12 @@ void CServerInfo::GetServerInfo(const char * cszAddress,
 		ReadString(&szData);	// 'Game Version', not used.
 		pGameServer->m_bHadSuccessfulResponse = true;
 
-		bytEDF = ReadByte(&szData);
-		if(bytEDF & 0x80)
+		EDF = ReadByte(&szData);
+		if(EDF & 0x80)
 			ReadShort(&szData);	
-		if(bytEDF & 0x40)
+		if(EDF & 0x40)
 			ReadShort(&szData) && ReadString(&szData);
-		if(bytEDF & 0x20)
+		if(EDF & 0x20)
 			strcpy(pGameServer->m_szGameTags, ReadString(&szData));
 	}
 	else if(bytGameType == 0x6D)
@@ -317,8 +320,8 @@ CServerInfoPlayers::CServerInfoPlayers(const char * cszIP,
 	pQuery->sPort = sPort;
 	pQuery->szAddress = (char*)cszIP;
 
-	_beginthread(GetPlayerInfo, 0, (void*)pQuery);
-
+	std::thread thread(CServerInfoPlayers::GetPlayerInfo, (void*)pQuery);
+	thread.detach();
 }
 
 CServerInfoPlayers::~CServerInfoPlayers()
@@ -331,31 +334,20 @@ void CServerInfoPlayers::GetPlayerInfo( void * pQuery )
 {
 	TPlayerQuery * pPlayerQuery = (TPlayerQuery*)pQuery;
 	if(!pPlayerQuery)
-		_endthread();
+		return;
 
 	CServerInfoPlayers * pServerPlayers = (CServerInfoPlayers*)pPlayerQuery->pPlayerInfo;
 	if(!pServerPlayers)
-		_endthread();
+		return;
 
-	__try {
+	// Get Players
+	pServerPlayers->GetPlayers(pPlayerQuery->szAddress,
+		pPlayerQuery->sPort,
+		pPlayerQuery->pResponse);
 
-		// Get Players
-		pServerPlayers->GetPlayers(pPlayerQuery->szAddress, 
-			pPlayerQuery->sPort,
-			pPlayerQuery->pResponse);
-		goto end_thread;
-
-	} __except( exceptionhandler( GetExceptionCode(), GetExceptionInformation() ) ) {
-		// Error inside function.
-		printf("Error (%s): %u", __FUNCTION__, GetLastError());
-		goto end_thread;
-	}
-
-end_thread:
 	// Cleanup
 	delete pPlayerQuery;
 	delete pServerPlayers;
-	_endthread();
 }
 
 unsigned int CServerInfoPlayers::GetChallenge(SOCKADDR_IN sckAddress)
@@ -418,7 +410,7 @@ void CServerInfoPlayers::GetPlayers(const char * cszAddress,
 	int				iSelectStatus;
 	int				iBytesReceived;
 	char			szBuffer[NET_UDP_RECVSIZE];
-	char			szPacket[9];
+	char			szPacket[10];
 	unsigned int	uChallenge = 0;
 	int iRemoteAddrSize = sizeof(SOCKADDR_IN);
 	byte			bytNumOfPlayers;
@@ -432,8 +424,12 @@ void CServerInfoPlayers::GetPlayers(const char * cszAddress,
 	if(m_sckQuery == -1)
 		return;
 
+	netadr_t adr(cszAddress);
+	adr.SetType(NA_IP);
+	adr.SetPort(sPort);
+
 	// Set Connection.
-	if (!CServerManager::SetConnectionInfo(sckAddress, netadr_t(cszAddress)))
+	if (!CServerManager::SetConnectionInfo(sckAddress, adr))
 		return;
 
 	// Get Challenge.
@@ -442,13 +438,17 @@ void CServerInfoPlayers::GetPlayers(const char * cszAddress,
 		return;
 
 	// Construct Packet
-	char * szRequest = (char*)&szPacket;
-	memcpy(szRequest, "\xFF\xFF\xFF\xFF\x55", 5);
-	memcpy(szRequest + 5, &uChallenge, 4);
+	bf_write packet(szPacket, sizeof(szPacket));
+	packet.WriteLong(-1);
+	packet.WriteByte('U');
+	packet.WriteLong(uChallenge);
+
+	//DevMsg("Send %s (sz=%i) to %s\n", szPacket, packet.GetNumBytesWritten(), cszAddress);
 
 	// Send Request
-	if(!sendto(m_sckQuery, szRequest, 9, 0, (sockaddr*)&sckAddress, sizeof(SOCKADDR_IN)))
+	if(!sendto(m_sckQuery, szPacket, packet.GetNumBytesWritten(), 0, (sockaddr*)&sckAddress, sizeof(SOCKADDR_IN)))
 	{
+		Msg("Failed sending Server Player Query to %s\n", cszAddress);
 		pResponse->PlayersFailedToRespond();
 		return;
 	}

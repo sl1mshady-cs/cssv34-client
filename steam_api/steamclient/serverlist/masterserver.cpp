@@ -1,3 +1,4 @@
+#if 0
 #include "masterserver.h"
 #include "serverlist.h"
 
@@ -731,3 +732,4 @@ bool CMasterServer::StopRefresh() {
 bool CMasterServer::IsRefreshing() {
 	return m_bIsRefresh;
 }
+#endif

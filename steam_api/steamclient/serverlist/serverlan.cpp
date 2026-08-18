@@ -1,4 +1,5 @@
-#include "ServerLan.h"
+#include <thread>
+#include "serverlan.h"
 
 CServerLan::CServerLan(CServerManager * pManager, unsigned short sPort)
 {
@@ -9,7 +10,9 @@ CServerLan::CServerLan(CServerManager * pManager, unsigned short sPort)
 	TServerRefreshLan * pLan = new TServerRefreshLan;
 	pLan->pServerInfo = this;
 	pLan->sPort = sPort;
-	_beginthread(RefreshServer, 0, (void*)pLan);
+
+	std::thread thread(CServerLan::RefreshServer, pLan);
+	thread.detach();
 }
 
 CServerLan::~CServerLan(void)
@@ -99,31 +102,20 @@ void CServerLan::RefreshServer(void * pServer)
 	if(!pServerRefresh)
 	{
 		delete pServerRefresh; // No Pointer, do not clean up!
-		_endthread();
+		return;
 	}
 
 	// Reference Class
 	CServerLan * pServerLan = (CServerLan*)pServerRefresh->pServerInfo;
 	if(!pServerLan)
-		_endthread();
+		return;
 
-	__try {
+	// Get Server Info
+	pServerLan->GetLanIP(pServerRefresh->sPort);
 
-		// Get Server Info
-		pServerLan->GetLanIP(pServerRefresh->sPort);
-		goto end_thread;
-
-	} __except( exceptionhandler( GetExceptionCode(), GetExceptionInformation() ) ) {
-
-		// Error inside function.
-		printf("Error (%s): %u", __FUNCTION__, GetLastError());
-		goto end_thread;
-	}
-
-end_thread:
 	delete pServerRefresh;
 	delete pServerLan;
-	_endthread();
+	return;
 }
 
 void CServerLan::GetLanIP(unsigned short sPort)

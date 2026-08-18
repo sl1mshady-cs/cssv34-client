@@ -1,5 +1,5 @@
 #pragma once
-#include "ServerManager.h"
+#include "servermanager.h"
 
 struct TServerRefresh {
 	ISteamMatchmakingPingResponse * pResponse;

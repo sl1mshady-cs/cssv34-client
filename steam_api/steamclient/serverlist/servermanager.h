@@ -1,6 +1,7 @@
 #pragma once
 #include <mutex>
 #include "socket.h"
+#include "tier0/threadtools.h"
 #include "tier1/utlvector.h"
 #include "tier1/netadr.h"
 #include "steam/steam_api.h"
@@ -59,7 +60,7 @@ public:
 	void ServerIterator();
 
 public:
-	static bool SetConnectionInfo(SOCKADDR_IN& sckAddrIn, netadr_t& netAddress);
+	static bool SetConnectionInfo(sockaddr_in& sckAddrIn, netadr_t& netAddress);
 
 	void PingServer(unsigned int uAddr,
 		unsigned short sPort,
