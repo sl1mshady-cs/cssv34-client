@@ -593,15 +593,13 @@ void CCSGameMovement::ReduceTimers(void)
 
 ConVar se_disablebunnyhopping("se_disablebunnyhopping", "0", FCVAR_REPLICATED | FCVAR_NOTIFY);
 ConVar se_autobunnyhopping("se_autobunnyhopping", "0", FCVAR_REPLICATED | FCVAR_NOTIFY);
+ConVar se_disablebunnyhopping_scale("se_disablebunnyhopping_scale", "1.2", FCVAR_REPLICATED | FCVAR_NOTIFY);
 
-// Only allow bunny jumping up to 1.1x server / player maxspeed setting
-#define BUNNYJUMP_MAX_SPEED_FACTOR 1.4f
-
-// taken from TF2 but changed BUNNYJUMP_MAX_SPEED_FACTOR from 1.1 to 1.0
+// taken from TF2 but changed BUNNYJUMP_MAX_SPEED_FACTOR to se_disablebunnyhopping_scale
 void CCSGameMovement::PreventBunnyJumping()
 {
 	// Speed at which bunny jumping is limited
-	float maxscaledspeed = BUNNYJUMP_MAX_SPEED_FACTOR * player->m_flMaxspeed;
+	float maxscaledspeed = se_disablebunnyhopping_scale.GetFloat() * player->m_flMaxspeed;
 	if (maxscaledspeed <= 0.0f)
 		return;
 
