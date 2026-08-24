@@ -55,13 +55,13 @@ void CL_NotifyRPTOfDisconnect( );
 #if !defined( NO_STEAM ) 
 void UpdateNameFromSteamID( IConVar *pConVar, CSteamID *pSteamID )
 {
-#ifndef SWDS
+#if !defined( SWDS ) && defined( NAME_LOCKED_TO_STEAMID )
 	if ( !pConVar || !pSteamID || !Steam3Client().SteamFriends() )
 		return;
 
 	const char *pszName = Steam3Client().SteamFriends()->GetFriendPersonaName( *pSteamID );
 	pConVar->SetValue( pszName );
-#endif // SWDS
+#endif // !SWDS && NAME_LOCKED_TO_STEAMID
 }
 
 void SetNameToSteamIDName( IConVar *pConVar )
@@ -528,7 +528,7 @@ void CBaseClientState::SendConnectPacket (int challengeNr, int authProtocol, uin
 	msg.WriteString( GetClientName() );	// Name
 	msg.WriteString( password.GetString() );		// password
 	//msg.WriteString( GetSteamInfIDVersionInfo().szVersionString );	// product version
-//	msg.WriteByte( ( g_pServerPluginHandler->GetNumLoadedPlugins() > 0 ) ? 1 : 0 ); // have any client-side server plug-ins been loaded?
+	//msg.WriteByte( ( g_pServerPluginHandler->GetNumLoadedPlugins() > 0 ) ? 1 : 0 ); // have any client-side server plug-ins been loaded?
 
 	switch ( authProtocol )
 	{
@@ -577,7 +577,23 @@ bool CBaseClientState::PrepareSteamConnectResponse( uint64 unGSSteamID, bool bGS
 		checkAdr.SetIP( net_local_adr.GetIPHostByteOrder() );
 	}
 
-	ticketmgr->WriteTicket(msg);
+#ifndef SWDS
+	// now append the steam3 cookie
+	char steam3Cookie[ STEAM_KEYSIZE ];
+	uint32 steam3CookieLen = 0;
+
+	Steam3Client().GetAuthSessionTicket( steam3Cookie, sizeof(steam3Cookie), &steam3CookieLen, checkAdr.GetIPHostByteOrder(), checkAdr.GetPort(), unGSSteamID, bGSSecure );
+	Msg("PrepareSteamConnectResponse auth ticket len %u\n", steam3CookieLen);
+	if ( steam3CookieLen == 0 )
+	{
+		COM_ExplainDisconnection( true, "#GameUI_ServerRequireSteam" );
+		Disconnect( "#GameUI_ServerRequireSteam", true );
+		return false;
+	}
+
+	msg.WriteShort( steam3CookieLen );
+	msg.WriteBytes( steam3Cookie, steam3CookieLen );
+#endif
 
 	return true;
 }

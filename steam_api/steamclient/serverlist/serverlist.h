@@ -12,6 +12,7 @@
 
 class CServerManager;
 
+// holds a single query - needs to public unfortunately
 struct query_t
 {
 	servernetadr_t addr;
@@ -19,6 +20,7 @@ struct query_t
 	float sendTime;
 };
 
+// query status, placed inside of gameserveritem_t::received
 typedef enum
 {
 	NONE = 0,
@@ -26,8 +28,7 @@ typedef enum
 	INFO_RECEIVED
 } QUERYSTATUS;
 
-extern void v_strncpy(char *dest, const char *src, int bufsize);
-
+// server_t
 struct TServer
 {
 	char chServerName[255];
@@ -35,6 +36,11 @@ struct TServer
 	unsigned long long ulLastPlayed;
 };
 
+////// REF https://github.com/Clepoy3/LeakNet/blob/master/Tracker/ServerBrowser/ServerList.h
+
+//-----------------------------------------------------------------------------
+// Purpose: Handles a list of servers, and can refresh them
+//-----------------------------------------------------------------------------
 class CServerList
 {
 public:
@@ -57,8 +63,9 @@ public:
 	bool				GetSingleServer(unsigned int nServerIP, unsigned short nServerPort, gameserveritem_t* serverItem);
 	EServerType			GetType();
 	void				GetServers(EServerType eType);
-	void				PingServer(unsigned int a1, unsigned short a2, ISteamMatchmakingPingResponse * a3);
-	void				PlayerDetails(unsigned int a1, unsigned short a2, ISteamMatchmakingPlayersResponse * a3);
+	int					PingServer(unsigned int a1, unsigned short a2, ISteamMatchmakingPingResponse * a3);
+	int					PlayerDetails(unsigned int a1, unsigned short a2, ISteamMatchmakingPlayersResponse * a3);
+	void				CancelServerQuery(int query);
 	void				QuickRefresh();
 	void				AddToFavorites(uint32 nAppID, uint32 nIP, uint16 nConnPort, uint32 rTime32LastPlayedOnServer);
 	void				RemoveFromFavorites(uint32 nAppID, uint32 nIP, uint16 nConnPort);

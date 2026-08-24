@@ -33,6 +33,9 @@
 #include "replayserver.h"
 #endif
 
+// Enable New auth system APIs (aka AuthSession api)
+#define ENABLE_NEW_AUTHSYSTEM_API 0
+
 extern ConVar sv_lan;
 extern ConVar sv_visiblemaxplayers;
 extern ConVar sv_region;
@@ -256,6 +259,7 @@ steam_no_good:
 	Init(); // Steam API context init
 	if ( SteamGameServer() == NULL )
 	{
+		Warning("NULL SteamGameServer\n");
 		Assert( false );
 		goto steam_no_good;
 	}
@@ -720,7 +724,7 @@ bool CSteam3Server::NotifyClientConnect( CBaseClient *client, uint32 unUserID, n
 	CSteamID steamID;
 
 	if (!SteamGameServer()->SendUserConnectAndAuthenticate(
-		adr.GetIPHostByteOrder(), pvCookie, ucbCookie, &steamID)) {
+		adr.GetIPNetworkByteOrder(), pvCookie, ucbCookie, &steamID)) {
 		WarningAndLog("Client %d failed game server authentication\n", unUserID);
 		return false;
 	}
@@ -737,9 +741,9 @@ bool CSteam3Server::NotifyClientConnect( CBaseClient *client, uint32 unUserID, n
 		return false;
 	}
 
-	// skip the steamID
-	pvCookie = (uint8 *)pvCookie + sizeof( uint64 ); 
-	ucbCookie -= sizeof( uint64 );
+#if ENABLE_NEW_AUTHSYSTEM_API
+
+	// Verify
 	EBeginAuthSessionResult eResult = SteamGameServer()->BeginAuthSession( pvCookie, ucbCookie, steamID );
 	switch ( eResult )
 	{
@@ -766,6 +770,10 @@ bool CSteam3Server::NotifyClientConnect( CBaseClient *client, uint32 unUserID, n
 		WarningAndLog("S3: Client failed auth session for unknown reason. UserID: %x\n", unUserID );
 		return false;
 	}
+
+#endif
+
+	MsgAndLog("S3: Sending client connect for %x\n", steamID.ConvertToUint64());
 
 	// first checks ok, we know now the SteamID
 	client->SetSteamID( steamID );
@@ -813,7 +821,6 @@ void CSteam3Server::NotifyClientDisconnect( CBaseClient *client )
 	}
 	else
 	{
-
 		// All bots should have an anonymous account ID
 		Assert( !client->IsFakeClient() );
 
@@ -821,8 +828,12 @@ void CSteam3Server::NotifyClientDisconnect( CBaseClient *client )
 		if ( id.idtype != IDTYPE_STEAM )
 			return;
 	
-		Msg("S3: Sending client disconnect for %x [%s]\n", client->m_SteamID.ConvertToUint64( ), client->m_SteamID.Render() );
+		MsgAndLog("S3: Sending client disconnect for %x\n", client->m_SteamID.ConvertToUint64( ) );
+		SteamGameServer()->SendUserDisconnect(client->m_SteamID);
+
+#if ENABLE_NEW_AUTHSYSTEM_API
 		SteamGameServer()->EndAuthSession( client->m_SteamID );
+#endif
 	}
 }
 

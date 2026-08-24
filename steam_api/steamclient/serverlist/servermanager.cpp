@@ -6,9 +6,6 @@
 
 CServerManager::CServerManager(CServerList* pList)
 {
-	// Start WSA
-	WSADATA wsData;
-	int uRes = WSAStartup(MAKEWORD(2, 0), &wsData);
 	m_pServerList = pList;
 	m_uActiveThreads = 0;
 	m_bIsRefresh = false;
@@ -18,21 +15,6 @@ CServerManager::CServerManager(CServerList* pList)
 
 CServerManager::~CServerManager(void)
 {
-	// Shutdown WSA
-	WSACleanup();
-}
-
-bool CServerManager::SetConnectionInfo(sockaddr_in& sckAddrIn, netadr_t& netAddress)
-{
-	// Resolve IP (If Host)
-	if (netAddress.IsValid()) {
-		// Remote Host information
-		sckAddrIn.sin_family = AF_INET;
-		netAddress.ToSockadr((sockaddr*)&sckAddrIn);
-		return true;
-	}
-
-	return false;
 }
 
 void CServerManager::ServerIterator()
@@ -44,11 +26,12 @@ void CServerManager::ServerIterator()
 		{
 			if (m_pServerHandle->bAllowRefresh)
 				CServerInfo* pInfo = new CServerInfo(this,
-					m_pServerHandle->szIP, m_pServerHandle->sPort);
+					m_pServerHandle->serverAddress);
 		}
 		else
 		{
 			m_bIsRefresh = false;
+			Msg("ServerIterator #if!m_pServerHandle: set m_bIsRefresh to 0\n");
 			m_pServerList->RefreshComplete();
 		}
 	}
@@ -58,10 +41,11 @@ void CServerManager::ServerIterator()
 		{
 			if (m_pServerHandle->bAllowRefresh)
 				CServerInfo* pInfo = new CServerInfo(this,
-					m_pServerHandle->szIP, m_pServerHandle->sPort);
+					m_pServerHandle->serverAddress);
 		}
 		else {
 			m_pServerHandle = GetCloseServer(m_pServerHandle);
+			Msg("ServerIterator #if.m_pServerHandle.!GetNextServer: set m_bIsRefresh to 0\n");
 			m_bIsRefresh = false;
 			m_pServerList->RefreshComplete();
 		}
@@ -73,6 +57,7 @@ bool CServerManager::StartRefresh(TMasterRequest* pRequest, bool bQuick)
 	if (!m_bIsRefresh)
 	{
 		m_bIsQuick = bQuick;
+
 		if (!bQuick)
 		{
 			Clear();
@@ -80,26 +65,25 @@ bool CServerManager::StartRefresh(TMasterRequest* pRequest, bool bQuick)
 		}
 		else
 		{
-			m_vecServer.RemoveAll();
+			m_vecServer.PurgeAndDeleteElements();
+
 			for (int i = 0; i < m_pServerList->m_RefreshList.Count(); i++)
 			{
-				TServerIP* pIP = new TServerIP;
-				char szIP[19];
-				unsigned int uAddr = m_pServerList->m_RefreshList[i]->GetIP();
-				sprintf(szIP, "%d.%d.%d.%d",
-					((unsigned char*)&uAddr)[3],
-					((unsigned char*)&uAddr)[2],
-					((unsigned char*)&uAddr)[1],
-					((unsigned char*)&uAddr)[0]);
-				strcpy(pIP->szIP, szIP);
-				pIP->sPort = m_pServerList->m_RefreshList[i]->GetQueryPort();
-				m_vecServer.AddToTail(pIP);
+				netadr_t *adr = new netadr_t();
+				uint32 unIP = m_pServerList->m_RefreshList[i]->GetIP();
+				uint16 usPort = m_pServerList->m_RefreshList[i]->GetQueryPort();
+				adr->SetIPAndPort(unIP, usPort);
+
+				m_vecServer.AddToTail(adr);
 			}
-			m_pServerList->m_RefreshList.RemoveAll();
+
+			m_pServerList->m_RefreshList.PurgeAndDeleteElements();
 		}
+
 		m_bIsRefresh = true;
 		return true;
 	}
+
 	return false;
 }
 
@@ -108,22 +92,21 @@ bool CServerManager::StartRefreshFavorites()
 	if (!m_bIsRefresh)
 	{
 		m_bIsQuick = false;
-		m_vecServer.RemoveAll();
+
+		m_vecServer.PurgeAndDeleteElements();
+
 		for (int i = 0; i < m_pServerList->m_RefreshList.Count(); i++)
 		{
-			TServerIP* pIP = new TServerIP;
-			char szIP[19];
-			unsigned int uAddr = m_pServerList->m_RefreshList[i]->GetIP();
-			sprintf(szIP, "%d.%d.%d.%d",
-				((unsigned char*)&uAddr)[0],
-				((unsigned char*)&uAddr)[1],
-				((unsigned char*)&uAddr)[2],
-				((unsigned char*)&uAddr)[3]);
-			strcpy(pIP->szIP, szIP);
-			pIP->sPort = m_pServerList->m_RefreshList[i]->GetQueryPort();
-			m_vecServer.AddToTail(pIP);
+			netadr_t* adr = new netadr_t();
+			uint32 unIP = m_pServerList->m_RefreshList[i]->GetIP();
+			uint16 usPort = m_pServerList->m_RefreshList[i]->GetQueryPort();
+			adr->SetIPAndPort(unIP, usPort);
+
+			m_vecServer.AddToTail(adr);
 		}
-		m_pServerList->m_RefreshList.RemoveAll();
+
+		m_pServerList->m_RefreshList.PurgeAndDeleteElements();
+
 		m_bIsRefresh = true;
 		return true;
 	}
@@ -132,23 +115,40 @@ bool CServerManager::StartRefreshFavorites()
 
 bool CServerManager::StartRefreshLan(unsigned short uAppId)
 {
-	if (!m_bIsRefresh)
-	{
-		m_bIsQuick = false;
-		CServerLan* pLan1 = new CServerLan(this, htons(27015));
-		CServerLan* pLan2 = new CServerLan(this, htons(27016));
-		CServerLan* pLan3 = new CServerLan(this, htons(27017));
-		CServerLan* pLan4 = new CServerLan(this, htons(27018));
-		CServerLan* pLan5 = new CServerLan(this, htons(27019));
-		CServerLan* pLan6 = new CServerLan(this, htons(27020));
-		m_bIsRefresh = true;
-	}
+	if (m_bIsRefresh)
+		return true;
+
+	m_bIsQuick = false;
+	netadr_t broadcast;
+	broadcast.SetType(NA_BROADCAST);
+
+	broadcast.SetPort(27015);
+	CServerInfo* pLan1 = new CServerInfo(this, broadcast);
+
+	broadcast.SetPort(27016);
+	CServerInfo* pLan2 = new CServerInfo(this, broadcast);
+
+	broadcast.SetPort(27017);
+	CServerInfo* pLan3 = new CServerInfo(this, broadcast);
+
+	broadcast.SetPort(27018);
+	CServerInfo* pLan4 = new CServerInfo(this, broadcast);
+
+	broadcast.SetPort(27019);
+	CServerInfo* pLan5 = new CServerInfo(this, broadcast);
+
+	broadcast.SetPort(27020);
+	CServerInfo* pLan6 = new CServerInfo(this, broadcast);
+
+	m_bIsRefresh = true;
+
+
 	return true;
 }
 
 bool CServerManager::StopRefresh()
 {
-	//m_vecRefreshed.RemoveAll();
+	//m_vecRefreshed.PurgeAndRemoveElements();
 	m_bIsRefresh = false;
 	return true;
 }
@@ -165,8 +165,7 @@ TServerHandle* CServerManager::GetFirstServer()
 	}
 
 	pHandle->bAllowRefresh = true;
-	strcpy(pHandle->szIP, m_vecServer[0]->szIP);
-	pHandle->sPort = m_vecServer[0]->sPort;
+	pHandle->serverAddress = *m_vecServer[0];
 	m_vecServer.Remove(0);
 
 	return pHandle;
@@ -188,8 +187,7 @@ bool CServerManager::GetNextServer(TServerHandle* pHandle)
 		//	LeaveCriticalSection(&m_gCritical);
 		//	return true;
 		//}
-		pHandle->sPort = m_vecServer[0]->sPort;
-		strcpy(pHandle->szIP, m_vecServer[0]->szIP);
+		pHandle->serverAddress = *m_vecServer[0];
 		m_vecServer.Remove(0);
 		return true;
 	}
@@ -225,13 +223,8 @@ TServerHandle* CServerManager::GetCloseServer(TServerHandle* pHandle)
 
 void CServerManager::Clear()
 {
-	//while(m_vecServer.IsValidIndex(0))
-	//{
-	//	delete m_vecServer[0];
-	//	m_vecServer.Remove(0);
-	//}
 	StopRefresh();
-	m_vecServer.RemoveAll();
+	m_vecServer.PurgeAndDeleteElements();
 }
 
 void CServerManager::RunFrame()
@@ -247,30 +240,27 @@ void CServerManager::RunFrame()
 	}
 }
 
-void CServerManager::PingServer(unsigned int uAddr,
-	unsigned short sPort,
-	ISteamMatchmakingPingResponse* pResponse)
+int CServerManager::PingServer(uint32 unIP, uint16 usPort, ISteamMatchmakingPingResponse* pResponse)
 {
-	static char szIP[19];
-	sprintf(szIP, "%d.%d.%d.%d",
-		((unsigned char*)&uAddr)[3],
-		((unsigned char*)&uAddr)[2],
-		((unsigned char*)&uAddr)[1],
-		((unsigned char*)&uAddr)[0]);
+	CServerInfo* info = new CServerInfo(this, netadr_t(unIP, usPort), pResponse);
 
-	CServerInfo* pServerInfo = new CServerInfo(this, szIP, sPort, pResponse);
+	return info->GetID();
 }
 
-void CServerManager::PlayerDetails(unsigned int uAddr,
-	unsigned short sPort,
-	ISteamMatchmakingPlayersResponse* pResponse)
+int CServerManager::PlayerDetails(uint32 unIP, uint16 usPort, ISteamMatchmakingPlayersResponse* pResponse)
 {
-	static char szIP[19];
-	sprintf(szIP, "%d.%d.%d.%d",
-		((unsigned char*)&uAddr)[3],
-		((unsigned char*)&uAddr)[2],
-		((unsigned char*)&uAddr)[1],
-		((unsigned char*)&uAddr)[0]);
+	CServerInfo* info = new CServerInfo(netadr_t(unIP, usPort), pResponse);
 
-	CServerInfoPlayers* pPlayers = new CServerInfoPlayers(szIP, sPort, pResponse);
+	return info->GetID();
+}
+
+int CServerManager::ServerRules(uint32 unIP, uint16 usPort, ISteamMatchmakingRulesResponse* pResponse)
+{
+	CServerInfo *info = new CServerInfo(netadr_t(unIP, usPort), pResponse);
+
+	return info->GetID();
+}
+
+void CServerManager::CancelServerQuery(int query) {
+	ServerRefreshThreads_Stop(query);
 }

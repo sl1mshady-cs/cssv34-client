@@ -1,507 +1,607 @@
-#include <thread>
-#include <cstdio>
+// a bunch of STL here
 #include "serverinfo.h"
-#include "tier1/bitbuf.h"
+
+// threads
+std::vector<ServerRefreshThread> g_vecServerRefreshThreads;
+
+/* 
+* Worker function that needs to be runned every frame
+*/
+class ServerRefreshThreadsWorker
+{
+public:
+	std::thread t;
+	std::atomic<bool> running;
+
+	ServerRefreshThreadsWorker() {
+		running.store(true);
+
+		t = std::thread(&ServerRefreshThreadsWorker::Worker, this);
+	}
+
+	~ServerRefreshThreadsWorker() {
+		running.store(false);
+
+		if (t.joinable()) t.join();
+	}
+
+	void Worker()
+	{
+		while (running.load())
+		{
+			for (auto it = g_vecServerRefreshThreads.begin();
+				it != g_vecServerRefreshThreads.end();)
+			{
+				if (it->is_alive)
+				{
+					if (it->is_alive->load())
+					{
+						++it;
+					}
+					else
+					{
+						it = g_vecServerRefreshThreads.erase(it);
+					}
+				}
+			}
+		}
+	}
+};
+
+static ServerRefreshThreadsWorker s_threadsworker;
+
+//////////////////////////////////////////
+/* --------- Public Functions --------- */
+//////////////////////////////////////////
+
+// Find a thread
+ServerRefreshThread* ServerRefreshThreads_Find(std::thread::id threadID)
+{
+	for (auto& it : g_vecServerRefreshThreads)
+	{
+		if (it.is_alive->load())
+		{
+			if (it.t.get_id() == threadID)
+				return &it;
+		}
+	}
+
+	return nullptr;
+}
+
+// Start the Thread.
+void ServerRefreshThreads_Start(server_refresh_t serverRefresh)
+{
+	ServerRefreshThread thread(serverRefresh);
+	g_vecServerRefreshThreads.emplace_back(std::move(thread));
+}
+
+// Terminate the thread (bad!)
+void ServerRefreshThreads_Stop(std::thread::id threadID)
+{
+	ServerRefreshThread* pThread = ServerRefreshThreads_Find(threadID);
+	if (!pThread)
+		return;
+
+	// platform specific
+#ifdef _WIN32
+	//TerminateThread(pThread->t.native_handle(), 0);
+#else
+	pthread_cancel(pThread->t.native_handle());
+#endif
+
+	Warning("[srt] stopping thread under id %u\n", threadID);
+	
+	/// freeing memory now ///
+	if (pThread->is_alive->load()) {
+		pThread->is_alive->store(false);
+	}
+}
 
 //--------------------------------------------------------------------------
-// $CServerInfo
 // Purpose: Retrieves Information from Server.
 //--------------------------------------------------------------------------
-CServerInfo::CServerInfo(CServerManager * pServerManager, 
-						 const char * cszIp, 
-						 unsigned short sPort,
+CServerInfo::CServerInfo(CServerManager * pServerManager, netadr_t& adr,
 						 ISteamMatchmakingPingResponse * pResponse)
 {
-
 	m_pServerManager = pServerManager;
 	m_pServerManager->m_uActiveThreads++;
-	m_sckQuery = -1;
+	m_pQuery = new CSocket();
 
-	TServerRefresh * pServer = new TServerRefresh;
+	if (!pServerManager && !pResponse)
+		return;
 
-	// Server Address.
-	pServer->szAddress = (char*)cszIp;
-
-	// Server Port.
-	pServer->sPort = sPort;
+	server_refresh_t serverRefresh{};
 
 	// Reference.
-	pServer->pServerInfo = this;
+	serverRefresh.pThis = this;
 
-	pServer->pResponse = pResponse;
+	serverRefresh.pResponse = pResponse;
 
-	// Start the Thread.
-	std::thread thread(CServerInfo::RefreshServer, pServer);
-	thread.detach();
+	// Request type
+	serverRefresh.nRequest = 1;
+
+	// Server Address and port.
+	serverRefresh.adr = adr;
+
+	// Start the thread
+	ServerRefreshThreads_Start(serverRefresh);
 }
 
+//--------------------------------------------------------------------------
+// Purpose: Retrieves Information about players from Server.
+//--------------------------------------------------------------------------
+CServerInfo::CServerInfo(netadr_t& adr,
+	ISteamMatchmakingPlayersResponse* pResponse)
+{
+	m_pServerManager = 0;
+	m_pQuery = new CSocket();
+
+	if (!pResponse)
+		return;
+
+	server_refresh_t serverRefresh{};
+
+	// Reference.
+	serverRefresh.pThis = this;
+
+	serverRefresh.pResponse = pResponse;
+
+	// Request type
+	serverRefresh.nRequest = 2;
+
+	// Server Address and port.
+	serverRefresh.adr = adr;
+
+	// Start the thread
+	ServerRefreshThreads_Start(serverRefresh);
+}
+
+//--------------------------------------------------------------------------
+// Purpose: Retrieves rules from Server.
+//--------------------------------------------------------------------------
+CServerInfo::CServerInfo(netadr_t& adr,
+	ISteamMatchmakingRulesResponse* pResponse)
+{
+	m_pServerManager = 0;
+	m_pQuery = new CSocket();
+
+	if (!pResponse)
+		return;
+
+	server_refresh_t serverRefresh{};
+
+	// Reference.
+	serverRefresh.pThis = this;
+
+	serverRefresh.pResponse = pResponse;
+
+	// Request type
+	serverRefresh.nRequest = 3;
+
+	// Server Address and port.
+	serverRefresh.adr = adr;
+
+	// Start the thread
+	ServerRefreshThreads_Start(serverRefresh);
+}
+
+//--------------------------------------------------------------------------
+// Purpose: Destructor
+//--------------------------------------------------------------------------
 CServerInfo::~CServerInfo(void)
 {
-	if(m_sckQuery != -1)
-		closesocket(m_sckQuery);
-	m_pServerManager->m_uActiveThreads--;
+	delete m_pQuery;
+
+	if (m_pServerManager)
+		m_pServerManager->m_uActiveThreads--;
 }
 
-byte CServerInfo::ReadByte(char ** szData)
+/*
+* Get server info (now allows broadcasting)
+*/
+void CServerInfo::GetServerInfo(netadr_t& adr, ISteamMatchmakingPingResponse* pResponse)
 {
-	byte bytRet = 0;
-	if(*szData)
-	{
-		memcpy(&bytRet, *szData, sizeof(byte));
-		*szData += sizeof(byte);
-	}
-	return bytRet;
-}
+	m_bIsRefreshing = true;
 
-float CServerInfo::ReadFloat(char ** szData)
-{
-	float fRet = 0;
-	if(*szData)
-	{
-		memcpy(&fRet, szData, sizeof(float));
-		*szData += sizeof(float);
-	}
-	return fRet;
-}
-
-bool CServerInfo::ReadBool(char ** szData)
-{
-	return (ReadByte(szData) == 1 ? true : false);
-}
-
-char * CServerInfo::ReadString(char ** szData)
-{
-	char * szRet = new char[NET_UDP_RECVSIZE];
-	unsigned int i = 0;
-	char * szBuffer = *szData;
-
-	if(*szData)
-	{
-		memset(szRet, 0, sizeof(szRet));
-		while(szBuffer[i] != '\0')
-		{
-			if(i >= NET_UDP_RECVSIZE)
-				break;
-			szRet[i] = szBuffer[i];
-			i++;
-			//Sleep(1);
-		}
-		szRet[i] = '\0';
-		*szData += i + 1;
-	}
-	
-	return szRet;
-}
-
-int CServerInfo::ReadInt32(char ** szData)
-{
-	int iRet = 0;
-	if(*szData)
-	{
-		memcpy(&iRet, *szData, sizeof(int));
-		*szData += sizeof(int);
-	}
-	return iRet;
-}
-
-short CServerInfo::ReadShort(char ** szData)
-{
-	short sRet = 0;
-	if(*szData)
-	{
-		memcpy(&sRet, *szData, sizeof(short));
-		*szData += sizeof(short);
-	}
-	return sRet;
-}
-
-void CServerInfo::RefreshServer(void * pServer)
-{
-
-	// Reference Arguments
-	TServerRefresh * pServerRefresh = (TServerRefresh*)pServer;
-	if(!pServerRefresh)
-	{
-		delete pServerRefresh; // No Pointer, do not clean up!
-		return;
-	}
-
-	// Reference Class
-	CServerInfo * pServerInfo = (CServerInfo*)pServerRefresh->pServerInfo;
-	if(!pServerInfo)
-		return;
-		
-	// Get Server Info
-	pServerInfo->GetServerInfo(pServerRefresh->szAddress,
-		pServerRefresh->sPort,
-		pServerRefresh->pResponse);
-
-	delete pServerRefresh;
-	delete pServerInfo;
-}
-
-void CServerInfo::GetServerInfo(const char * cszAddress, 
-								unsigned short sPort, 
-								ISteamMatchmakingPingResponse * pResponse)
-{
-	struct timeval	stTime;
-	SOCKADDR_IN		sckAddress;
-	fd_set			stReadFDS;
-	int				iSelectStatus;
-	int				iBytesReceived;
-	char			szBuffer[NET_UDP_RECVSIZE];
-	char			szPacket[25];
-	char *			szData;
-	int iRemoteAddrSize = sizeof(SOCKADDR_IN);
-	byte			EDF;
-	DWORD			dwStartTime;
+	// are we broadcasting
+	bool bBroadcast = (adr.GetType() == NA_BROADCAST);
 
 	// Socket
-	m_sckQuery = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if(m_sckQuery == -1)
+	m_pQuery->Open(0, bBroadcast);
+	if (!m_pQuery->IsValid())
 		return;
 
-	netadr_t adr(cszAddress);
-	adr.SetType(NA_IP);
-	adr.SetPort(sPort);
-
-	// Set Connection
-	if (!CServerManager::SetConnectionInfo(sckAddress, adr))
-	{
-		Msg("Failed setting connection info for socket %i\n", m_sckQuery);
-		return;
-	}
-
+	char szPacket[25];
 	bf_write packet(szPacket, sizeof(szPacket));
-	packet.WriteLong(-1);
+	packet.WriteLong(0xFFFFFFFF);
 	packet.WriteByte('T');
 	packet.WriteString("Source Engine Query");
 
-	//DevMsg("Send %s (sz=%i) to %s\n", szPacket, packet.GetNumBytesWritten(), cszAddress);
-
 	// Send Request
-	if (!sendto(m_sckQuery, szPacket, packet.GetNumBytesWritten(), 0, (sockaddr*)&sckAddress, sizeof(SOCKADDR_IN))) {
-		Msg("Failed sending Server Info Query to %s\n", cszAddress);
-		return;
+	if (bBroadcast)
+	{
+		if (m_pQuery->Broadcast(adr.GetPort(), packet) == -1) {
+			Msg("Failed sending server info query to %s\n", adr.ToString());
+			return;
+		}
 	}
+	else
+	{
+		if (m_pQuery->Send(adr, packet) == -1) {
+			Msg("Failed broadcasting server info query to port %u\n", adr.GetPort());
+			return;
+		}
+	}
+	uint32 dwStartTime = Plat_MSTime();
 
-	dwStartTime = Plat_MSTime();
+	fd_set stReadFDS; // read fds
+	timeval	stTime{};
 
 	// Timeout
 	FD_ZERO(&stReadFDS);
 	stTime.tv_sec = 3;
 	stTime.tv_usec = 0;
-	FD_SET(m_sckQuery, &stReadFDS);
+	FD_SET(m_pQuery->GetSocket(), &stReadFDS);
+
+	if (m_pServerManager)
+		m_pServerManager->m_bIsDownloading = true;
+
+	while (true)
+	{
+		// Select
+		int iSelectStatus = select(m_pQuery->GetSocket(), &stReadFDS, NULL, NULL, &stTime);
+		if (!(iSelectStatus > 0))
+		{
+			if (pResponse)
+				pResponse->ServerFailedToRespond();
+			return;
+		}
+
+		// read out received message
+		char recvBuffer[MAX_RECEIVEABLE_PACKET];
+		bf_read read;
+		netadr_t from;
+
+		int iBytesReceived = m_pQuery->Receive(recvBuffer, MAX_RECEIVEABLE_PACKET, from);
+		read.StartReading(recvBuffer, iBytesReceived);
+
+		if (!(iBytesReceived > 0))
+		{
+			if (pResponse)
+				pResponse->ServerFailedToRespond();
+
+			return;
+		}
+
+		// Connectionless header
+		int nConnectionless = read.ReadLong();
+
+		if (nConnectionless != -1)
+		{
+			if (pResponse)
+				pResponse->ServerFailedToRespond();
+
+			return;
+		}
+
+		// Looks like a valid Packet
+		gameserveritem_t* pGameServer = new gameserveritem_t();
+
+		pGameServer->m_NetAdr.Init(from.GetIPHostByteOrder(), from.GetPort(), from.GetPort());
+		pGameServer->m_nPing = Plat_MSTime() - dwStartTime;
+		pGameServer->m_bHadSuccessfulResponse = false;
+
+		// Goldsource | Source
+		byte gameType = read.ReadByte();
+		byte EDF; // extra data flag
+
+		if (gameType == 0x49)
+		{
+			// Source
+			pGameServer->m_nServerVersion = read.ReadByte();;
+
+			char szName[64];
+			read.ReadString(szName, sizeof(szName));
+			pGameServer->SetName(szName);
+
+			read.ReadString(pGameServer->m_szMap, sizeof(pGameServer->m_szMap));
+			read.ReadString(pGameServer->m_szGameDir, sizeof(pGameServer->m_szGameDir));
+			read.ReadString(pGameServer->m_szGameDescription, sizeof(pGameServer->m_szGameDescription));
+
+			pGameServer->m_nAppID = read.ReadShort();
+			pGameServer->m_nPlayers = read.ReadByte();
+			pGameServer->m_nMaxPlayers = read.ReadByte();
+			pGameServer->m_nBotPlayers = read.ReadByte();
+
+			read.ReadByte();		// 'Dedicated', not used.
+			read.ReadByte();		// 'OS', not used.
+
+			pGameServer->m_bPassword = read.ReadByte();
+			pGameServer->m_bSecure = read.ReadByte();
+
+			// 'Game Version', not used.
+			char szVersion[64];
+			read.ReadString(szVersion, sizeof(szVersion));
+
+			pGameServer->m_bHadSuccessfulResponse = true;
+
+			// Read out EDF (if present)
+			EDF = read.ReadByte();
+
+			if (EDF)
+			{
+				if (EDF & 0x80) // ???
+					read.ReadShort();
+				if (EDF & 0x40) { // ???
+					read.ReadShort();
+					char unused[64];
+					read.ReadString(unused, sizeof(unused));
+				}
+				if (EDF & 0x20) // tags
+					read.ReadString(pGameServer->m_szGameTags, sizeof(pGameServer->m_szGameTags));
+			}
+		}
+
+		if (pResponse)
+		{
+			pResponse->ServerResponded(*pGameServer);
+			delete pGameServer;
+		}
+		else
+		{
+			if (bBroadcast) {
+				std::lock_guard<std::mutex> lock(m_pServerManager->m_Critical);
+
+				if (m_pServerManager->m_bIsRefresh)
+					m_pServerManager->m_vecRefreshed.AddToTail(pGameServer);
+			}
+			else
+			{
+				if (m_pServerManager->m_bIsRefresh)
+					m_pServerManager->m_vecRefreshed.AddToTail(pGameServer);
+			}
+		}
+
+		if (!bBroadcast)
+			break;
+	}
+
+	if (m_pServerManager)
+		m_pServerManager->m_bIsDownloading = false;
+
+	m_bIsRefreshing = false;
+}
+
+/*
+* Get server info
+*/
+void CServerInfo::GetPlayers(netadr_t& adr, ISteamMatchmakingPlayersResponse* pResponse)
+{
+	m_bIsRefreshing = true;
+
+	// Socket
+	m_pQuery->Open();
+	if (!m_pQuery->IsValid())
+		return;
+
+	// first, request challenge
+	static int32 iChallengeNr = -1;
+
+	char szPacket[25];
+	bf_write packet(szPacket, sizeof(szPacket));
+	packet.WriteLong(0xFFFFFFFF);
+	packet.WriteByte('U');
+	packet.WriteLong(iChallengeNr);
+
+	// Send Request
+	if (m_pQuery->Send(adr, packet) == -1) {
+		Msg("Failed sending player info query to %s\n", adr.ToString());
+		return;
+	}
+
+	uint32 dwStartTime = Plat_MSTime();
+
+	fd_set stReadFDS; // read fds
+	timeval	stTime{};
+
+	// Timeout
+	FD_ZERO(&stReadFDS);
+	stTime.tv_sec = 3;
+	stTime.tv_usec = 0;
+	FD_SET(m_pQuery->GetSocket(), &stReadFDS);
 
 	// Select
-	iSelectStatus = select(m_sckQuery, &stReadFDS, NULL, NULL, &stTime);
+	int iSelectStatus = select(m_pQuery->GetSocket(), &stReadFDS, NULL, NULL, &stTime);
 	if(!(iSelectStatus > 0)) 
 	{
 		if(pResponse)
-			pResponse->ServerFailedToRespond();
+			pResponse->PlayersFailedToRespond();
+
 		return;
 	}
 
-	iBytesReceived = recvfrom( m_sckQuery, 
-		szBuffer, 
-		NET_UDP_RECVSIZE, 
-		0, 
-		(SOCKADDR*)&sckAddress, 
-		&iRemoteAddrSize );
+	// read out received message
+	char recvBuffer[MAX_RECEIVEABLE_PACKET];
+	bf_read read;
+	netadr_t from;
 
-	if(!(iBytesReceived > 0))
+	int iBytesReceived = m_pQuery->Receive(recvBuffer, MAX_RECEIVEABLE_PACKET, from);
+	read.StartReading(recvBuffer, iBytesReceived);
+
+	if (!(iBytesReceived > 0))
 	{
-		if(pResponse)
-			pResponse->ServerFailedToRespond();
+		if (pResponse)
+			pResponse->PlayersFailedToRespond();
+
 		return;
 	}
 
-	szData = (char*)&szBuffer;
+	// update bytes and bits
+	read.m_nDataBytes = iBytesReceived;
+	read.m_nDataBits = read.m_nDataBytes << 3;
 
-	// Magic Key
-	int iMagicKey = ReadInt32(&szData);
-	if(iMagicKey != -1)
+	// Connectionless header
+	int nConnectionless = read.ReadLong();
+
+	if (nConnectionless != -1)
 	{
-		if(pResponse)
-			pResponse->ServerFailedToRespond();
+		if (pResponse)
+			pResponse->PlayersFailedToRespond();
+
 		return;
 	}
 
 	// Looks like a valid Packet
-	gameserveritem_t * pGameServer = new gameserveritem_t;
+	byte packetType = read.ReadByte();
 
-	pGameServer->m_nPing = Plat_MSTime() - dwStartTime;
-	// Goldsource | Source
-	byte bytGameType = ReadByte(&szData);
-	if(bytGameType == 0x49) 
+	if (packetType == 'A')
 	{
-		// Source
-		pGameServer->m_nServerVersion = (int)ReadByte(&szData);
-		pGameServer->SetName(ReadString(&szData));
-		strcpy(pGameServer->m_szMap, ReadString(&szData));
-		strcpy(pGameServer->m_szGameDir, ReadString(&szData));
-		strcpy(pGameServer->m_szGameDescription, ReadString(&szData));
-		pGameServer->m_nAppID = (int)ReadShort(&szData);
-		pGameServer->m_nPlayers = (int)ReadByte(&szData);
-		pGameServer->m_nMaxPlayers = (int)ReadByte(&szData);
-		pGameServer->m_nBotPlayers = (int)ReadByte(&szData);
-		ReadByte(&szData);		// 'Dedicated', not used.
-		ReadByte(&szData);		// 'OS', not used.
-		pGameServer->m_bPassword = ReadBool(&szData);
-		pGameServer->m_bSecure = ReadBool(&szData);
-		ReadString(&szData);	// 'Game Version', not used.
-		pGameServer->m_bHadSuccessfulResponse = true;
-
-		EDF = ReadByte(&szData);
-		if(EDF & 0x80)
-			ReadShort(&szData);	
-		if(EDF & 0x40)
-			ReadShort(&szData) && ReadString(&szData);
-		if(EDF & 0x20)
-			strcpy(pGameServer->m_szGameTags, ReadString(&szData));
+		iChallengeNr == read.ReadLong();
+		return GetPlayers(adr, pResponse);
 	}
-	else if(bytGameType == 0x6D)
+	else if (packetType == 'D')
 	{
-		// Gold Source
-		ReadString(&szData);	// 'Game IP', <- They are pretty stupid.
-		pGameServer->SetName(ReadString(&szData));
-		strcpy(pGameServer->m_szMap, ReadString(&szData));
-		strcpy(pGameServer->m_szGameDir, ReadString(&szData));
-		strcpy(pGameServer->m_szGameDescription, ReadString(&szData));
-		pGameServer->m_nPlayers = (int)ReadByte(&szData);
-		pGameServer->m_nMaxPlayers = (int)ReadByte(&szData);
-		pGameServer->m_nServerVersion = (int)ReadByte(&szData);
-		ReadByte(&szData);		// 'Dedicated', not used.
-		ReadByte(&szData);		// 'OS', not used.
-		pGameServer->m_bPassword = ReadBool(&szData);
-		if(ReadBool(&szData)) 
+		int numPlayers = read.ReadByte();
+		int id, score;
+		float time;
+		char name[64];
+
+		for (int i = 0; i != numPlayers; i++)
 		{
-			ReadString(&szData);	// URLInfo
-			ReadString(&szData);	// URLDL
-			ReadByte(&szData);		// Null
-			ReadInt32(&szData);		// Mod Version
-			ReadInt32(&szData);		// Mod Size
-			ReadByte(&szData);		// SvOnly
-			ReadByte(&szData);		// CIDLL
+			memset(name, 0, sizeof(name));
+			id = read.ReadByte();
+			read.ReadString(name, sizeof(name));
+			score = read.ReadLong();
+			time = read.ReadFloat();
+
+			pResponse->AddPlayerToList(name, score, time);
 		}
-		pGameServer->m_bSecure = ReadBool(&szData);
-		pGameServer->m_nBotPlayers = ReadByte(&szData);
-		pGameServer->m_bHadSuccessfulResponse = true;
-	}
-	pGameServer->m_NetAdr.Init( ntohl(sckAddress.sin_addr.S_un.S_addr) , sPort, sPort);
-	//m_pServerManager->m_vecRefreshed.AddToHead(pGameServer);
-	if(pResponse)
-	{
-		pResponse->ServerResponded(*pGameServer);
-		delete pGameServer;
-	} 
-	else 
-	{
-		if(m_pServerManager->m_bIsRefresh)
-			m_pServerManager->m_vecRefreshed.AddToTail(pGameServer);
-	}
-	return;
-}
 
-//--------------------------------------------------------------------------
-// $CServerInfoPlayers
-// Purpose: Retrieves Players and statistics.
-//--------------------------------------------------------------------------
-CServerInfoPlayers::CServerInfoPlayers(const char * cszIP, 
-									   unsigned short sPort, 
-									   ISteamMatchmakingPlayersResponse * pResponse)
-{
-	m_sckQuery = -1;
-
-	TPlayerQuery * pQuery = new TPlayerQuery;
-
-	pQuery->pPlayerInfo = this;
-	pQuery->pResponse = pResponse;
-	pQuery->sPort = sPort;
-	pQuery->szAddress = (char*)cszIP;
-
-	std::thread thread(CServerInfoPlayers::GetPlayerInfo, (void*)pQuery);
-	thread.detach();
-}
-
-CServerInfoPlayers::~CServerInfoPlayers()
-{
-	if(m_sckQuery != -1)
-		closesocket(m_sckQuery);
-}
-
-void CServerInfoPlayers::GetPlayerInfo( void * pQuery )
-{
-	TPlayerQuery * pPlayerQuery = (TPlayerQuery*)pQuery;
-	if(!pPlayerQuery)
-		return;
-
-	CServerInfoPlayers * pServerPlayers = (CServerInfoPlayers*)pPlayerQuery->pPlayerInfo;
-	if(!pServerPlayers)
-		return;
-
-	// Get Players
-	pServerPlayers->GetPlayers(pPlayerQuery->szAddress,
-		pPlayerQuery->sPort,
-		pPlayerQuery->pResponse);
-
-	// Cleanup
-	delete pPlayerQuery;
-	delete pServerPlayers;
-}
-
-unsigned int CServerInfoPlayers::GetChallenge(SOCKADDR_IN sckAddress)
-{
-	struct timeval	stTime;
-	fd_set			stReadFDS;
-	int				iSelectStatus;
-	int				iBytesReceived;
-	char			szBuffer[NET_UDP_RECVSIZE];
-	int iRemoteAddrSize = sizeof(SOCKADDR_IN);
-
-	// Socket
-	if(m_sckQuery == -1)
-		return 0;
-
-	// Send Request
-	if(!sendto(m_sckQuery, "\xFF\xFF\xFF\xFF\x57", 
-		5, 
-		0, 
-		(sockaddr*)&sckAddress, sizeof(SOCKADDR_IN))
-		)
-		return 0;
-
-	// Timeout
-	FD_ZERO(&stReadFDS);
-	stTime.tv_sec = 3;
-	stTime.tv_usec = 0;
-	FD_SET(m_sckQuery, &stReadFDS);
-
-	// Select
-	iSelectStatus = select(m_sckQuery, &stReadFDS, NULL, NULL, &stTime);
-	if(!(iSelectStatus > 0)) 
-		return 0;
-
-	// Get Challenge
-	iBytesReceived = recvfrom(m_sckQuery, szBuffer, NET_UDP_RECVSIZE, 0,
-		(sockaddr*)&sckAddress, &iRemoteAddrSize);
-	if(!(iBytesReceived > 0))
-		return 0;
-
-	// Challenge
-	char * szData = (char*)&szBuffer;
-	if(CServerInfo::ReadInt32(&szData) != -1)
-		return 0;
-
-	if(CServerInfo::ReadByte(&szData) == 0x41)
-	{
-		return CServerInfo::ReadInt32(&szData);
-	}
-	return 0;
-}
-
-void CServerInfoPlayers::GetPlayers(const char * cszAddress, 
-									unsigned short sPort, 
-									ISteamMatchmakingPlayersResponse * pResponse)
-{
-	struct timeval	stTime;
-	SOCKADDR_IN		sckAddress;
-	fd_set			stReadFDS;
-	int				iSelectStatus;
-	int				iBytesReceived;
-	char			szBuffer[NET_UDP_RECVSIZE];
-	char			szPacket[10];
-	unsigned int	uChallenge = 0;
-	int iRemoteAddrSize = sizeof(SOCKADDR_IN);
-	byte			bytNumOfPlayers;
-	byte bytIndex = 0;
-	char * szPlayer = NULL;
-	long lKills = 0;
-	float fTime = 0;
-
-	// Socket.
-	m_sckQuery = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if(m_sckQuery == -1)
-		return;
-
-	netadr_t adr(cszAddress);
-	adr.SetType(NA_IP);
-	adr.SetPort(sPort);
-
-	// Set Connection.
-	if (!CServerManager::SetConnectionInfo(sckAddress, adr))
-		return;
-
-	// Get Challenge.
-	uChallenge = GetChallenge(sckAddress);
-	if(uChallenge == 0)
-		return;
-
-	// Construct Packet
-	bf_write packet(szPacket, sizeof(szPacket));
-	packet.WriteLong(-1);
-	packet.WriteByte('U');
-	packet.WriteLong(uChallenge);
-
-	//DevMsg("Send %s (sz=%i) to %s\n", szPacket, packet.GetNumBytesWritten(), cszAddress);
-
-	// Send Request
-	if(!sendto(m_sckQuery, szPacket, packet.GetNumBytesWritten(), 0, (sockaddr*)&sckAddress, sizeof(SOCKADDR_IN)))
-	{
-		Msg("Failed sending Server Player Query to %s\n", cszAddress);
-		pResponse->PlayersFailedToRespond();
-		return;
-	}
-
-	// Timeout
-	FD_ZERO(&stReadFDS);
-	stTime.tv_sec = 3;
-	stTime.tv_usec = 0;
-	FD_SET(m_sckQuery, &stReadFDS);
-
-	// Select
-	iSelectStatus = select(m_sckQuery, &stReadFDS, NULL, NULL, &stTime);
-	if(!(iSelectStatus > 0)) 
-	{
-		pResponse->PlayersFailedToRespond();
-		return;
-	}
-
-	// Receive Data
-	iBytesReceived = recvfrom(m_sckQuery, szBuffer, NET_UDP_RECVSIZE, 0,
-		(sockaddr*)&sckAddress, &iRemoteAddrSize);
-	if(!(iBytesReceived > 0))
-	{
-		pResponse->PlayersFailedToRespond();
-		return;
-	}
-
-	char * szData = (char*)&szBuffer;
-	if(CServerInfo::ReadInt32(&szData) != -1)
-	{
-		pResponse->PlayersFailedToRespond();
-		return;
-	}
-
-	if(CServerInfo::ReadByte(&szData) == 0x44)
-	{
-		bytNumOfPlayers = CServerInfo::ReadByte(&szData);
-		for(unsigned int i = 0; i != (unsigned int)bytNumOfPlayers; i++)
-		{
-			bytIndex = CServerInfo::ReadByte(&szData);
-			szPlayer = CServerInfo::ReadString(&szData);
-			lKills = (long)CServerInfo::ReadInt32(&szData);
-			fTime = CServerInfo::ReadFloat(&szData);
-
-			pResponse->AddPlayerToList(szPlayer, lKills, fTime);
-
-			delete szPlayer;
-		}
 		pResponse->PlayersRefreshComplete();
 	}
 	else
-	{
+	{ 
+		// unknown packet
 		pResponse->PlayersFailedToRespond();
 	}
-	return;
+
+	m_bIsRefreshing = false;
+}
+
+
+/*
+* Get server info
+*/
+void CServerInfo::GetRules(netadr_t& adr, ISteamMatchmakingRulesResponse* pResponse)
+{
+	m_bIsRefreshing = true;
+
+	// Socket
+	m_pQuery->Open();
+	if (!m_pQuery->IsValid())
+		return;
+
+	// first, request challenge
+	static int32 iChallengeNr = -1;
+
+	char szPacket[25];
+	bf_write packet(szPacket, sizeof(szPacket));
+	packet.WriteLong(0xFFFFFFFF);
+	packet.WriteByte('V');
+	packet.WriteLong(iChallengeNr);
+
+	// Send Request
+	if (m_pQuery->Send(adr, packet) == -1)
+	{
+		Msg("Failed sending server rules query to %s\n", adr.ToString());
+		return;
+	}
+
+	uint32 dwStartTime = Plat_MSTime();
+
+	fd_set stReadFDS; // read fds
+	timeval	stTime{};
+
+	// Timeout
+	FD_ZERO(&stReadFDS);
+	stTime.tv_sec = 3;
+	stTime.tv_usec = 0;
+	FD_SET(m_pQuery->GetSocket(), &stReadFDS);
+
+	// Select
+	int iSelectStatus = select(m_pQuery->GetSocket(), &stReadFDS, NULL, NULL, &stTime);
+	if (!(iSelectStatus > 0))
+	{
+		if (pResponse)
+			pResponse->RulesFailedToRespond();
+
+		return;
+	}
+
+	// read out received message
+	char recvBuffer[MAX_RECEIVEABLE_PACKET];
+	bf_read read;
+	netadr_t from;
+
+	int iBytesReceived = m_pQuery->Receive(recvBuffer, MAX_RECEIVEABLE_PACKET, from);
+	read.StartReading(recvBuffer, iBytesReceived);
+
+	if (!(iBytesReceived > 0))
+	{
+		if (pResponse)
+			pResponse->RulesFailedToRespond();
+
+		return;
+	}
+
+	// update bytes and bits
+	read.m_nDataBytes = iBytesReceived;
+	read.m_nDataBits = read.m_nDataBytes << 3;
+
+	// Connectionless header
+	int nConnectionless = read.ReadLong();
+
+	if (nConnectionless != -1)
+	{
+		if (pResponse)
+			pResponse->RulesFailedToRespond();
+
+		return;
+	}
+
+	// Looks like a valid Packet
+	byte packetType = read.ReadByte();
+
+	if (packetType == 'A')
+	{
+		iChallengeNr == read.ReadLong();
+		return GetRules(adr, pResponse);
+	}
+	else if (packetType == 'E')
+	{
+		int numRules = read.ReadShort();
+		char name[64]; // names are not bigger than that (i think)
+		char value[256];
+
+		for (int i = 0; i != numRules; i++)
+		{
+			memset(name, 0, sizeof(name));
+			memset(value, 0, sizeof(value));
+
+			read.ReadString(name, sizeof(name));
+			read.ReadString(value, sizeof(value));
+
+			pResponse->RulesResponded(name, value);
+		}
+
+		pResponse->RulesRefreshComplete();
+	}
+	else
+	{
+		// unknown packet
+		pResponse->RulesFailedToRespond();
+	}
+
+	m_bIsRefreshing = false;
 }

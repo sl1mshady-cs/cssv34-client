@@ -21,7 +21,7 @@
 #include "murmur32.h"
 
 // steam common
-#include "steamcommon.h"
+#include "userid.h"
 #include "steam/steam_api.h"
 
 // "rev"

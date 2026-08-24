@@ -175,8 +175,24 @@ bool CSteamGameServer::SendUserConnectAndAuthenticate(uint32 unIPClient, const v
 	if (!pSteamIDUser)
 		return false;
 
+	// BeginAuthSession compatibility
 	pr_unClientIP = unIPClient;
 	pr_pSteamID = pSteamIDUser;
+
+	// Initialize with default values (k_steamIDNotInitYetGS)
+	pSteamIDUser->Set(1, k_EUniversePublic, k_EAccountTypeIndividual);
+
+	TRevUserValidationHandle* handle = nullptr;
+	SteamStartValidatingUserIDTicket((void*)pvAuthBlob, cubAuthBlobSize, unIPClient, &handle);
+	ESteamError err =
+		SteamProcessOngoingUserIDTicketValidation(&handle, (void*)pvAuthBlob, cubAuthBlobSize);
+
+	pSteamIDUser->SetFromUint64(handle->uSteamID.ConvertToUint64());
+
+	LogStats(true, false, handle);
+
+	if (err == eSteamErrorCorruptEncryptedUserIDTicket || err == eSteamErrorInvalidUserIDTicket)
+		return false;
 
 	return true;
 }
@@ -192,7 +208,9 @@ CSteamID CSteamGameServer::CreateUnauthenticatedUserConnection() {
 // Should be called whenever a user leaves our game server, this lets Steam internally
 // track which users are currently on which servers for the purposes of preventing a single
 // account being logged into multiple servers, showing who is currently on a server, etc.
-void CSteamGameServer::SendUserDisconnect(CSteamID steamIDUser) {}
+void CSteamGameServer::SendUserDisconnect(CSteamID steamIDUser) {
+
+}
 
 // Update the data to be displayed in the server browser and matchmaking interfaces for a user
 // currently connected to the server.  For regular users you must call this after you receive a
@@ -224,12 +242,12 @@ EBeginAuthSessionResult CSteamGameServer::BeginAuthSession(const void* pAuthTick
 		ESteamError err = 
 			SteamProcessOngoingUserIDTicketValidation(&handle, (void*)pAuthTicket, cbAuthTicket);
 
+		LogStats(true, false, handle);
+
 		if (err == eSteamErrorCorruptEncryptedUserIDTicket || err == eSteamErrorInvalidUserIDTicket)
 			return k_EBeginAuthSessionResultInvalidTicket;
 
 		pr_pSteamID->SetFromUint64(handle->uSteamID.ConvertToUint64());
-
-		LogStats(true, false, handle);
 
 		//pr_hValidationHandle = handle;
 		pr_pSteamID = 0;
@@ -272,13 +290,20 @@ uint32 CSteamGameServer::GetPublicIP() { return 1; }
 
 // Call this when a packet that starts with 0xFFFFFFFF comes in. That means
 // it's for us.
-bool CSteamGameServer::HandleIncomingPacket(const void* pData, int cbData, uint32 srcIP, uint16 srcPort) { return 1; }
+bool CSteamGameServer::HandleIncomingPacket(const void* pData, int cbData, uint32 srcIP, uint16 srcPort) { 
+	return 1;
+}
 
 // AFTER calling HandleIncomingPacket for any packets that came in that frame, call this.
 // This gets a packet that the master server updater needs to send out on UDP.
 // It returns the length of the packet it wants to send, or 0 if there are no more packets to send.
 // Call this each frame until it returns 0.
-int CSteamGameServer::GetNextOutgoingPacket(void* pOut, int cbMaxOut, uint32* pNetAdr, uint16* pPort) { return 1; }
+int CSteamGameServer::GetNextOutgoingPacket(void* pOut, int cbMaxOut, uint32* pNetAdr, uint16* pPort) { 
+	*pNetAdr = 0;
+	*pPort = 0;
+	memcpy(pOut, "rev", sizeof("rev"));
+	return 0; 
+}
 
 //
 // Control heartbeats / advertisement with master server

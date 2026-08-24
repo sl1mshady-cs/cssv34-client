@@ -1,32 +1,40 @@
+#ifndef _SERVERMASTER_H
+#define _SERVERMASTER_H
+
+#ifdef _WIN32
 #pragma once
+#endif
+
 #include "socket.h"
 #include "tier0/platform.h"
 
+// forward declarations
 struct TMasterRequest;
-struct TServerMaster {
-	void *				pServerMaster;		// Reference to CServerMaster
-	TMasterRequest *	pMasterRequest;		// Request Options
-};
-
 class CServerManager;
 class CServerInfo;
 
+/*
+* Server master class
+*/
 class CServerMaster
 {
-private:
-	CServerManager * m_pServerManager;
-	int m_sckMaster;
 
 public:
-	CServerMaster(CServerManager * pServerManager, TMasterRequest * pMasterRequest);
+	CServerMaster(CServerManager* pServerManager, TMasterRequest* pMasterRequest);
 	~CServerMaster(void);
+
+	void StartQuery(TMasterRequest* pRequest);
+
 private:
-	char * ConstructPacket(byte bytMessageType, 
-		byte bytRegionCode,
-		const char * cszIPIterator,
-		const char * cszFilter,
-		unsigned int * uPacketSize);
-public:
-	static void QueryThread(void * pQuery);
-	void StartQuery(TMasterRequest * pRequest);
+	char* ConstructPacket(byte messageType,
+		byte regionCode,
+		const char* cszIPIterator,
+		const char* cszFilter,
+		unsigned int* uPacketSize);
+
+private:
+	CServerManager* m_pServerManager;
+	CSocket* m_pMasterSocket;
 };
+
+#endif // _SERVERMASTER_H

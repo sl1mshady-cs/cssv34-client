@@ -34,7 +34,8 @@ def build(bld):
 		'steamclient/serverlist/serverlan.cpp',
 		'steamclient/serverlist/serverlist.cpp',
 		'steamclient/serverlist/servermanager.cpp',
-		'steamclient/serverlist/servermaster.cpp'
+		'steamclient/serverlist/servermaster.cpp',
+		'steamclient/serverlist/socket.cpp'
 	]
 
 	includes = [
@@ -50,7 +51,7 @@ def build(bld):
 
 	defines = []
 
-	libs = ['tier0', 'tier1']
+	libs = ['tier0', 'tier1', 'bzip2']
 
 	install_path = None if bld.env.BUILD_SDK else bld.env.LIBDIR
 

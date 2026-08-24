@@ -20,7 +20,7 @@ bool g_bAllowSteamEmu = false;
 /*
 * Convert SteamID to readable format
 */
-const char* GetUserIDString(const CSteamID& steamid)
+const char* GetUserIDString(const CSteamID steamid)
 {
 	static char idstr[128];
 	_snprintf(idstr, sizeof(idstr) - 1, "STEAM_%u:%u:%u", 
@@ -77,11 +77,9 @@ void LogStats(bool bConnecting, bool bDisconnecting, TRevUserValidationHandle* h
 	Logger->Write("Ticket: %s.\n", clientType);
 
 	if (bConnecting)
-		Logger->Write("UserConnect IP = %s | ", clientIP);
+		Logger->Write("UserConnect IP = %s | SteamID = %s\n", clientIP, steamID);
 	else if (bDisconnecting)
-		Logger->Write("SteamDisconnect IP = %s | ", clientIP);
-
-	Logger->Write("SteamID = %s\n", steamID);
+		Logger->Write("SteamDisconnect IP = %s | SteamID = %s\n", clientIP, steamID);
 
 	// Write the timestamp.
 	std::time_t raw_time = std::time(nullptr);
@@ -95,7 +93,7 @@ void LogStats(bool bConnecting, bool bDisconnecting, TRevUserValidationHandle* h
 	localtime_r(&raw_time, &local_tm);
 #endif
 
-	Msg( "%04d/%02d/%02d %02d:%02d:%02d // RevEmu Stats: <%s><%s> <%s> %s\t",
+	Msg( "%04d/%02d/%02d %02d:%02d:%02d // RevEmu Stats: <%s><%s> <%s> %s\n",
 		local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday,
 		local_tm.tm_hour, local_tm.tm_min, local_tm.tm_sec, 
 		steamID,
@@ -109,15 +107,12 @@ void LogStats(bool bConnecting, bool bDisconnecting, TRevUserValidationHandle* h
 */
 S_API ESteamError S_CALLTYPE SteamGetEncryptedUserIDTicket(void* buf, unsigned int buflen, unsigned int* ticketlen)
 {
-	if (!buf) {
-		*ticketlen == 0;
-		return eSteamErrorBadArg;
-	}
+	*ticketlen == 0;
 
-	if (!g_uSteamID.IsValid()) {
-		*ticketlen == 2048;
+	if (!buf)
+		return eSteamErrorBadArg;
+	else if (!g_uSteamID.IsValid())
 		return eSteamErrorLoginFailed;
-	}
 
 	// ticket
 	TRevTicket revTicket{};
@@ -225,14 +220,19 @@ S_API ESteamError S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(TRevUserV
 			hRevHandle->eClientType = eClientRevEmu2;
 
 		// ClientMod check (uses revemu2013, fuck that for now)
-		if (pRevTicket->version >= 85)
+		if (pRevTicket->version >= 85) {
+			hRevHandle->eReturnCode = eSteamErrorInvalidUserIDTicket;
+			hRevHandle->eClientType = eClientUnknown;
 			return eSteamErrorInvalidUserIDTicket;
+		}
 
 		// verify hash
-		int hash = JSHash(pRevTicket->hwid, 16 * sizeof(char));
+		//int hash = JSHash(pRevTicket->hwid, 16 * sizeof(char));
 
-		if (hash != pRevTicket->hash)
-			return eSteamErrorInvalidUserIDTicket;
+		//if (hash != pRevTicket->hash) {
+		//	hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+		//	return eSteamErrorCorruptEncryptedUserIDTicket;
+		//}
 	}
 
 	// check SteamGameServer policy

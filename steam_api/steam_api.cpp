@@ -106,7 +106,7 @@ S_API void S_CALLTYPE SteamAPI_SetBreakpadAppID(uint32 unAppID) { }
 
 //---------------------------------------------------------//
 
-S_API void* g_pSteamClientGameServer = nullptr;
+S_API ISteamClient* g_pSteamClientGameServer = &steamclient;
 
 S_API ISteamGameServer* S_CALLTYPE SteamGameServer() { return g_pSteamGameServer; }
 S_API ISteamUtils* S_CALLTYPE SteamGameServerUtils() { return nullptr; }

@@ -465,29 +465,26 @@ CServerContextMenu *CServerBrowserDialog::GetContextMenu(vgui::Panel *pPanel)
 // Purpose: begins the process of joining a server from a game list
 //			the game info dialog it opens will also update the game list
 //-----------------------------------------------------------------------------
-CDialogGameInfo *CServerBrowserDialog::JoinGame(IGameList *gameList, unsigned int serverIndex)
+CDialogGameInfo *CServerBrowserDialog::JoinGame( IGameList *gameList, unsigned int serverIndex )
 {
-	// open the game info dialog, then mark it to attempt to connect right away
-	CDialogGameInfo *gameDialog = OpenGameInfoDialog(gameList, serverIndex);
+	gameserveritem_t* pServer = gameList->GetServer(serverIndex);
 
-	// set the dialog name to be the server name
-	gameDialog->Connect();
-
-	return gameDialog;
+	return JoinGame(pServer->m_NetAdr.GetIP(), pServer->m_NetAdr.GetConnectionPort(), "");
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: joins a game by a specified IP, not attached to any game list
 //-----------------------------------------------------------------------------
-CDialogGameInfo *CServerBrowserDialog::JoinGame(int serverIP, int serverPort, const char *pszConnectCode)
+CDialogGameInfo *CServerBrowserDialog::JoinGame( int serverIP, int serverPort, const char *pszConnectCode )
 {
-	// open the game info dialog, then mark it to attempt to connect right away
-	CDialogGameInfo *gameDialog = OpenGameInfoDialog( serverIP, serverPort, serverPort, pszConnectCode );
+	char command[256];
 
-	// set the dialog name to be the server name
-	gameDialog->Connect();
+	// send engine command to change servers
+	Q_snprintf(command, Q_ARRAYSIZE(command), "connect %s %s\n", 
+		netadr_t(serverIP, serverPort).ToString(), pszConnectCode);
 
-	return gameDialog;
+	g_pRunGameEngine->AddTextCommand(command);
+	return nullptr;
 }
 
 //-----------------------------------------------------------------------------

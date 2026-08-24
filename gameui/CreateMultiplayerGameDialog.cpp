@@ -140,7 +140,7 @@ bool CCreateMultiplayerGameDialog::OnOK(bool applyOnly)
 	char szMapCommand[1024];
 
 	// create the command to execute
-	Q_snprintf(szMapCommand, sizeof( szMapCommand ), "disconnect\nwait\nwait\nsv_lan 1\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\nhostname \"%s\"\nprogress_enable\nmap %s\n",
+	Q_snprintf(szMapCommand, sizeof( szMapCommand ), "disconnect\nwait\nwait\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\nhostname \"%s\"\nprogress_enable\nmap %s\n",
 		m_pGameplayPage->GetMaxPlayers(),
 		szPassword,
 		szHostName,

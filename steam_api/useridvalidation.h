@@ -29,7 +29,7 @@ struct TRevUserValidationHandle
 	ESteamError		eReturnCode;
 };
 
-const char* GetUserIDString(const CSteamID& steamid);
+const char* GetUserIDString(const CSteamID steamid);
 const char* GetClientTypeString(ERevClientType type);
 
 void LogStats(bool bConnecting, bool bDisconnecting, TRevUserValidationHandle* handle);

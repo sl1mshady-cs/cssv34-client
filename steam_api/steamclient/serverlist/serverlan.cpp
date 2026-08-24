@@ -1,3 +1,4 @@
+#if 0
 #include <thread>
 #include "serverlan.h"
 
@@ -5,7 +6,7 @@ CServerLan::CServerLan(CServerManager * pManager, unsigned short sPort)
 {
 	m_pServerManager = pManager;
 	m_pServerManager->m_uActiveThreads++;
-	m_sckQuery = INVALID_SOCKET;
+	m_sckQuery = -1;
 
 	TServerRefreshLan * pLan = new TServerRefreshLan;
 	pLan->pServerInfo = this;
@@ -17,7 +18,7 @@ CServerLan::CServerLan(CServerManager * pManager, unsigned short sPort)
 
 CServerLan::~CServerLan(void)
 {
-	if(m_sckQuery != INVALID_SOCKET)
+	if(m_sckQuery != -1)
 		closesocket(m_sckQuery);
 	m_pServerManager->m_uActiveThreads--;
 }
@@ -135,14 +136,14 @@ void CServerLan::GetLanIP(unsigned short sPort)
 
 	// Socket
 	m_sckQuery = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if(m_sckQuery == INVALID_SOCKET)
+	if(m_sckQuery == -1)
 		return;
 
 	// Broadcast
 	setsockopt(m_sckQuery, SOL_SOCKET, SO_BROADCAST, (char*)&opt, sizeof(opt));
 
 	// Set it to non-blocking
-	ioctlsocket ( m_sckQuery, FIONBIO, &_true );
+	sock_set_nonblocking( m_sckQuery );
 
 	// Listen on port 0
 	sckAddress.sin_family = AF_INET;
@@ -166,7 +167,7 @@ void CServerLan::GetLanIP(unsigned short sPort)
 	if(!sendto(m_sckQuery, szRequest, 25, 0, (sockaddr*)&sckAddress, sizeof(sockaddr_in)))
 		return;
 	
-	dwStartTime = GetTickCount();
+	dwStartTime = Plat_MSTime();
 
 	// Timeout
 	FD_ZERO(&stReadFDS);
@@ -208,9 +209,11 @@ void CServerLan::GetLanIP(unsigned short sPort)
 		// Looks like a valid Packet
 		gameserveritem_t * pGameServer = new gameserveritem_t;
 		
-		pGameServer->m_nPing = GetTickCount() - dwStartTime;
+		pGameServer->m_nPing = Plat_MSTime() - dwStartTime;
+
 		// Goldsource | Source
 		byte bytGameType = ReadByte(&szData);
+
 		if(bytGameType == 0x49) 
 		{
 			// Source
@@ -267,11 +270,12 @@ void CServerLan::GetLanIP(unsigned short sPort)
 			pGameServer->m_bHadSuccessfulResponse = true;
 		}
 		pGameServer->m_NetAdr.Init( ntohl(sckAddress.sin_addr.S_un.S_addr) , ntohs(sPort), ntohs(sPort));
-		//m_pServerManager->m_vecRefreshed.AddToHead(pGameServer);
 
 		std::lock_guard<std::mutex> lock(m_pServerManager->m_Critical);
+
 		if(m_pServerManager->m_bIsRefresh)
 			m_pServerManager->m_vecRefreshed.AddToTail(pGameServer);
 	}
 	m_pServerManager->m_bIsDownloading = false;
 }
+#endif

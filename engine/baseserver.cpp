@@ -664,7 +664,7 @@ bool CBaseServer::ValidInfoChallenge( netadr_t & adr, const char *nugget )
 
 bool CBaseServer::ProcessConnectionlessPacket(netpacket_t * packet)
 {
-	bf_read& msg = packet->message;	// handy shortcut
+	bf_read msg = packet->message;	// handy shortcut 
 
 	char c = msg.ReadChar();
 
@@ -677,7 +677,8 @@ bool CBaseServer::ProcessConnectionlessPacket(netpacket_t * packet)
 	{
 		case A2S_GETCHALLENGE :
 			{
-				ReplyChallenge( packet->from, 0 );
+				int clientChallenge = msg.ReadLong();
+				ReplyChallenge( packet->from, clientChallenge );
 			}
 
 			break;
@@ -695,11 +696,12 @@ bool CBaseServer::ProcessConnectionlessPacket(netpacket_t * packet)
 				int protocol = msg.ReadLong();
 				int authProtocol = msg.ReadLong();
 				int challengeNr = msg.ReadLong();
+				int clientChallenge = msg.ReadLong();
 
 				// pull the challenge number check early before we do any expensive processing on the connect
 				if ( !CheckChallengeNr( packet->from, challengeNr ) )
 				{
-					RejectConnection( packet->from, 0, "#GameUI_ServerRejectBadChallenge" );
+					RejectConnection( packet->from, clientChallenge, "#GameUI_ServerRejectBadChallenge" );
 					break;
 				}
 
@@ -709,31 +711,25 @@ bool CBaseServer::ProcessConnectionlessPacket(netpacket_t * packet)
 
 				msg.ReadString( name, sizeof(name) );
 				msg.ReadString( password, sizeof(password) );
-				
+
 //				bool bClientPlugins = ( msg.ReadByte() > 0 );
 
-// 				if ( Steam3Server().BSecure() && bClientPlugins )
-// 				{
-// 					RejectConnection( packet->from, "Cannot connect to a secure server while plug-ins are\nloaded on your client\n" );
-//					break;
-// 				}
-
-/*				if ( authProtocol == PROTOCOL_STEAM )
+				if ( authProtocol == PROTOCOL_STEAM )
 				{
 					int keyLen = msg.ReadShort();
 					if ( keyLen < 0 || keyLen > sizeof(cdkey) )
 					{
-						RejectConnection( packet->from, clientChallenge, "#GameUI_ServerRejectBadSteamKey" );
+						RejectConnection( packet->from, clientChallenge, "Invalid Steam key length\n" );
 						break;
 					}
 					msg.ReadBytes( cdkey, keyLen );
 
-					ConnectClient( packet->from, protocol, challengeNr, 0, authProtocol, name, password, cdkey, keyLen );	// cd key is actually a raw encrypted key	
+					ConnectClient( packet->from, protocol, challengeNr, clientChallenge, authProtocol, name, password, cdkey, keyLen );	// cd key is actually a raw encrypted key	
 				}
-				else*/
+				else
 				{
 					msg.ReadString( cdkey, sizeof(cdkey) );
-					ConnectClient( packet->from, protocol, challengeNr, 0, authProtocol, name, password, cdkey, strlen(cdkey) );
+					ConnectClient( packet->from, protocol, challengeNr, clientChallenge, authProtocol, name, password, cdkey, strlen(cdkey) );
 				}
 			}
 
@@ -1405,7 +1401,7 @@ bool CBaseServer::CheckChallengeType( CBaseClient * client, int nNewUserID, neta
 	// Check protocol ID
 	if ( ( nAuthProtocol <= 0 ) || ( nAuthProtocol > PROTOCOL_LASTVALID ) )
 	{
-		RejectConnection( adr, clientChallenge, "#GameUI_ServerRejectInvalidConnection");
+		RejectConnection( adr, clientChallenge, "Invalid connection.\n");
 		return false;
 	}
 
@@ -1449,7 +1445,7 @@ bool CBaseServer::CheckChallengeType( CBaseClient * client, int nNewUserID, neta
 		// Convert raw certificate back into data
 		if ( cbCookie <= 0 || cbCookie >= STEAM_KEYSIZE )
 		{
-			RejectConnection( adr, clientChallenge, "#GameUI_ServerRejectInvalidSteamCertLen" );
+			RejectConnection( adr, clientChallenge, "STEAM certificate length error! %i/%i\n" );
 			return false;
 		}
 
@@ -1462,7 +1458,7 @@ bool CBaseServer::CheckChallengeType( CBaseClient * client, int nNewUserID, neta
 		if ( !Steam3Server().NotifyClientConnect( client, nNewUserID, checkAdr, pchLogonCookie, cbCookie ) 
 			&& !Steam3Server().BLanOnly() ) // the userID isn't alloc'd yet so we need to fill it in manually
 		{
-			RejectConnection( adr, clientChallenge, "#GameUI_ServerRejectSteam" );
+			RejectConnection( adr, clientChallenge, "STEAM validation rejected\n" );
 			return false;
 		}
 
@@ -1480,7 +1476,7 @@ bool CBaseServer::CheckChallengeType( CBaseClient * client, int nNewUserID, neta
 				if ( pSteamGameServer )
 					pSteamGameServer->SendUserDisconnect( client->m_SteamID);
 
-				RejectConnection( adr, clientChallenge, "#GameUI_ServerRejectMustUseMatchmaking" );
+				RejectConnection( adr, clientChallenge, "This server only accepts connections negotiated through matchmaking.\nAd-hoc connections are not allowed\n" );
 				return false;
 			}
 		}
@@ -1489,7 +1485,7 @@ bool CBaseServer::CheckChallengeType( CBaseClient * client, int nNewUserID, neta
 	{
 		if ( !Steam3Server().NotifyLocalClientConnect( client ) ) // the userID isn't alloc'd yet so we need to fill it in manually
 		{
-			RejectConnection( adr, clientChallenge, "#GameUI_ServerRejectGS" );
+			RejectConnection( adr, clientChallenge, "GSCreateLocalUser failed\n" );
 			return false;
 		}
 	}

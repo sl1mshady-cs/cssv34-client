@@ -4,6 +4,7 @@
 #include "servermanager.h"
 #include "logging.h"
 
+// Steam.cpp definitions and variables
 extern CLoggingSystem* Logger;
 extern bool g_bLogging;
 extern char g_pchServerBrowser[MAX_PATH];
@@ -18,7 +19,7 @@ CServerList::CServerList(const CServerList& serverList, EServerType eType)
 	m_chRegion = 0xFF;
 
 	// Initialize filter string
-	strcpy(m_chFilters, "");
+	V_strcpy_safe(m_chFilters, "");
 
 	// Set the MatchMaking type for this CServerList instance
 	m_Type = eType;
@@ -27,10 +28,9 @@ CServerList::CServerList(const CServerList& serverList, EServerType eType)
 	int internetSpeed;
 	char steamRate[16] = "-1";
 
-	//getRegistry("Software\\Valve\\Steam", "Rate", steamRate, (DWORD)16);
-	if (!strcmp(steamRate, "-1"))
+	if (!V_stricmp(steamRate, "-1"))
 		// Default to DSL speed if no reg key found (i.e. if Steam is not installed)
-		strcpy(steamRate, "7500");
+		V_strcpy_safe(steamRate, "7500");
 
 	internetSpeed = atoi(steamRate);
 	int maxSockets = (255 * internetSpeed) / 10000;
@@ -82,7 +82,7 @@ unsigned int CServerList::AddNewServer(gameserveritem_t* server, bool bAddToRefr
 			if (!m_Servers.IsValidIndex(i))
 				continue;
 
-			if (!strcmp(m_Servers[i]->m_NetAdr.GetConnectionAddressString(), server->m_NetAdr.GetConnectionAddressString()))
+			if (!V_stricmp(m_Servers[i]->m_NetAdr.GetConnectionAddressString(), server->m_NetAdr.GetConnectionAddressString()))
 			{
 				m_pResponseTarget->ServerResponded(hRequest, i);
 				return i;
@@ -97,7 +97,6 @@ unsigned int CServerList::AddNewServer(gameserveritem_t* server, bool bAddToRefr
 
 void CServerList::SetListParameters(unsigned int nAppID, EServerType eType, ISteamMatchmakingServerListResponse* target)
 {
-	//if (g_bLogging) Logger->Write("%s\n", __FUNCTION__);
 	m_pResponseTarget = target;
 	m_Type = eType;
 	m_nAppID = nAppID;
@@ -110,7 +109,6 @@ bool CServerList::IsRefreshing(void)
 
 gameserveritem_t* CServerList::GetServer(unsigned int serverID)
 {
-	//if (g_bLogging) Logger->Write("%s\n", __FUNCTION__);
 	if (m_Servers.IsValidIndex(serverID))
 	{
 		return m_Servers[serverID];
@@ -136,11 +134,11 @@ void CServerList::StartRefresh(void)
 	m_nRefreshedServers = 0;
 
 	TMasterRequest* pRequest = new TMasterRequest;
-	pRequest->bytRegionCode = m_chRegion;
+	pRequest->regionCode = m_chRegion;
 	pRequest->masterAddress = netadr_t(g_chMasterServer);
 
-	strcpy(pRequest->szIPIterator, "0.0.0.0:0");
-	strcpy(pRequest->szFilter, GetFilters());
+	V_strcpy_safe(pRequest->szIPIterator, "0.0.0.0:0");
+	V_strcpy_safe(pRequest->szFilter, GetFilters());
 
 	m_pQuery->StartRefresh(pRequest);
 }
@@ -153,42 +151,42 @@ void CServerList::SetFilters(MatchMakingKeyValuePair_t** ppchFilters, uint32 nFi
 	{
 		char chFilter[255] = "";
 		// "region" value should not be included in filter string
-		if (!_stricmp(pchFilters[i].m_szKey, "region"))
+		if (!V_stricmp(pchFilters[i].m_szKey, "region"))
 		{
 			GetRegionCodeToFilter(pchFilters[i].m_szValue);
 			continue;
 		}
 
 		// is "proxy" key set even if we are looking for internet server list ?
-		if (!_stricmp(pchFilters[i].m_szKey, "proxy"))
+		if (!V_stricmp(pchFilters[i].m_szKey, "proxy"))
 		{
 			if (m_Type != eSpectatorServer)
 				continue;
 		}
 
-		if (!strcmp(pchFilters[i].m_szKey, "gametype"))
+		if (!V_stricmp(pchFilters[i].m_szKey, "gametype"))
 		{
 			// prevent tags - disable Custom games :/
 			continue;
 		}
 		else
 		{
-			strcat(chFilter, "\\");
-			strcat(chFilter, pchFilters[i].m_szKey);
-			strcat(chFilter, "\\");
-			strcat(chFilter, pchFilters[i].m_szValue);
+			V_strcat_safe(chFilter, "\\");
+			V_strcat_safe(chFilter, pchFilters[i].m_szKey);
+			V_strcat_safe(chFilter, "\\");
+			V_strcat_safe(chFilter, pchFilters[i].m_szValue);
 		}
 
 		// does the filter already exist? We don't want to have duplicate filters.
 		if (!strstr(m_chFilters, chFilter))
 		{
-			strcat(m_chFilters, chFilter);
+			V_strcat_safe(m_chFilters, chFilter);
 		}
 
 		// is EServerType set to eSpectatorServer but there is no filter key?
 		if (m_Type == eSpectatorServer)
 			if (!strstr(m_chFilters, "proxy"))
-				strcat(m_chFilters, "\\proxy\\1");
+				V_strcat_safe(m_chFilters, "\\proxy\\1");
 	}
 	if (g_bLogging) Logger->Write("Filter string: %s\n", m_chFilters);
 }
@@ -204,7 +202,7 @@ unsigned int CServerList::ServerCount(EServerType eType)
 	VdfKey* VdfFile;
 	unsigned int nNumServers;
 
-	switch ((int)eType)
+	switch (eType)
 	{
 	case eFavoritesServer:
 		VdfFile = vdf::parse(g_pchServerBrowser);
@@ -219,7 +217,7 @@ unsigned int CServerList::ServerCount(EServerType eType)
 
 		VdfFile = VdfFile->firstChild;
 
-		while (_stricmp(VdfFile->name, "Favorites"))
+		while (V_stricmp(VdfFile->name, "Favorites"))
 		{
 			if (!VdfFile->nextSibiling)
 				return 0;
@@ -249,7 +247,7 @@ unsigned int CServerList::ServerCount(EServerType eType)
 		nNumServers = 0;
 		VdfFile = VdfFile->firstChild;
 
-		while (_stricmp(VdfFile->name, "History"))
+		while (V_stricmp(VdfFile->name, "History"))
 		{
 			VdfFile = VdfFile->nextSibiling;
 		}
@@ -268,7 +266,7 @@ unsigned int CServerList::ServerCount(EServerType eType)
 
 		return nNumServers;
 
-	default:
+	default: // unknown?
 		return m_Servers.Count();
 	}
 
@@ -276,7 +274,6 @@ unsigned int CServerList::ServerCount(EServerType eType)
 
 void CServerList::Clear(void)
 {
-	//if (g_bLogging) Logger->Write("%s\n", __FUNCTION__);
 	if (m_pQuery)
 	{
 		m_pQuery->Clear();
@@ -288,7 +285,6 @@ void CServerList::Clear(void)
 
 const char* CServerList::GetFilters()
 {
-	//if (g_bLogging) Logger->Write("%s\n", __FUNCTION__);
 	return m_chFilters;
 }
 
@@ -342,11 +338,11 @@ void CServerList::GetServers(EServerType eType)
 
 	if (eType == eFavoritesServer)
 	{
-		strcpy(pchType, "Favorites");
+		V_strcpy_safe(pchType, "Favorites");
 	}
 	else if (eType == eHistoryServer)
 	{
-		strcpy(pchType, "History");
+		V_strcpy_safe(pchType, "History");
 	}
 	else return;
 
@@ -365,7 +361,7 @@ void CServerList::GetServers(EServerType eType)
 	VdfFile = VdfFile->firstChild;
 
 	// Find the requested subkey
-	while (_stricmp(VdfFile->name, pchType))
+	while (V_stricmp(VdfFile->name, pchType))
 	{
 		// Return if the subkey doesn't exist
 		if (!VdfFile->nextSibiling)
@@ -398,13 +394,17 @@ void CServerList::GetServers(EServerType eType)
 			VdfFile = NULL;
 			continue;
 		}
-		strcpy(test, "");
-		strcpy(test, VdfFile->firstChild->nextSibiling->value);
+		V_strcpy_safe(test, "");
+		V_strcpy_safe(test, VdfFile->firstChild->nextSibiling->value);
 		port = strchr(test, ':') + 1;
+
+		// set ports
 		servers->SetConnectionPort(atoi(port));
 		servers->SetQueryPort(atoi(port));
+
 		port = port - 1;
 		*port = 0;
+
 		servers->SetIP(inet_addr(test));
 		m_RefreshList.AddToTail(servers);
 
@@ -422,21 +422,23 @@ void CServerList::GetServers(EServerType eType)
 	}
 }
 
-void CServerList::PingServer(unsigned int a1, unsigned short a2, ISteamMatchmakingPingResponse* a3)
+int CServerList::PingServer(unsigned int a1, unsigned short a2, ISteamMatchmakingPingResponse* a3)
 {
-	m_pQuery->PingServer(a1, a2, a3);
+	return m_pQuery->PingServer(a1, a2, a3);
 }
 
-void CServerList::PlayerDetails(unsigned int nServerIP, unsigned short nServerPort, ISteamMatchmakingPlayersResponse* a3)
+int CServerList::PlayerDetails(unsigned int nServerIP, unsigned short nServerPort, ISteamMatchmakingPlayersResponse* a3)
 {
-	m_pQuery->PlayerDetails(nServerIP, nServerPort, a3);
+	return m_pQuery->PlayerDetails(nServerIP, nServerPort, a3);
+}
+
+void CServerList::CancelServerQuery(int query) {
+	m_pQuery->CancelServerQuery(query);
 }
 
 void CServerList::QuickRefresh()
 {
 	m_bQuerying = true;
-	//m_nRefreshedServers = 0;
-	//m_Servers.RemoveAll();
 	m_pQuery->StartRefresh(NULL, true);
 }
 
@@ -463,7 +465,7 @@ void CServerList::AddToFavorites(uint32 nAppID, uint32 nIP, uint16 nConnPort, ui
 		VdfFile = DefaultVdfFile();
 	}
 
-	if (_stricmp(VdfFile->firstChild->nextSibiling->name, favsCaption))
+	if (V_stricmp(VdfFile->firstChild->nextSibiling->name, favsCaption))
 	{
 		VdfKey* OldVdf = vdf::parse(g_pchServerBrowser);
 		OldVdf = VdfFile->firstChild->nextSibiling;
@@ -473,14 +475,14 @@ void CServerList::AddToFavorites(uint32 nAppID, uint32 nIP, uint16 nConnPort, ui
 		VdfFile->firstChild->nextSibiling = VdfFavs;
 	}
 
-	_itoa(nAppID, appID, 10);
-	_itoa(nConnPort, port, 10);
+	itoa(nAppID, appID, 10);
+	itoa(nConnPort, port, 10);
 	in_addr test;
 	test.S_un.S_addr = ntohl(nIP);
 	strcpy(ipadr, inet_ntoa(test));
 	strcat(ipadr, ":");
 	strcat(ipadr, port);
-	_itoa(rTime32LastPlayedOnServer, lastplayed, 10);
+	itoa(rTime32LastPlayedOnServer, lastplayed, 10);
 
 	VdfFavs = VdfFile->firstChild->nextSibiling->firstChild;
 
@@ -490,7 +492,7 @@ void CServerList::AddToFavorites(uint32 nAppID, uint32 nIP, uint16 nConnPort, ui
 	while (VdfFavs->nextSibiling)
 	{
 		if (VdfFavs->firstChild && VdfFavs->firstChild->nextSibiling && VdfFavs->firstChild->nextSibiling->value)
-			if (!strcmp(VdfFavs->firstChild->nextSibiling->value, ipadr))
+			if (!V_stricmp(VdfFavs->firstChild->nextSibiling->value, ipadr))
 				goto cleanup;
 
 		VdfFavs = VdfFavs->nextSibiling;
@@ -575,12 +577,12 @@ void CServerList::RemoveFromFavorites(uint32 nAppID, uint32 nIP, uint16 nConnPor
 
 	strcpy(favsCaption, "Favorites");
 
-	if (_stricmp(VdfFile->firstChild->nextSibiling->name, favsCaption))
+	if (V_stricmp(VdfFile->firstChild->nextSibiling->name, favsCaption))
 	{
 		goto cleanup;
 	}
 
-	_itoa(nConnPort, port, 10);
+	itoa(nConnPort, port, 10);
 	in_addr test;
 	test.S_un.S_addr = ntohl(nIP);
 	strcpy(ip, inet_ntoa(test));
@@ -592,7 +594,7 @@ void CServerList::RemoveFromFavorites(uint32 nAppID, uint32 nIP, uint16 nConnPor
 
 	while (VdfFavs)
 	{
-		if (_stricmp(VdfFavs->firstChild->nextSibiling->name, "address") || _stricmp(VdfFavs->firstChild->nextSibiling->value, ip))
+		if (V_stricmp(VdfFavs->firstChild->nextSibiling->name, "address") || V_stricmp(VdfFavs->firstChild->nextSibiling->value, ip))
 		{
 			VdfFavs = VdfFavs->nextSibiling;
 		}
@@ -723,7 +725,7 @@ bool CServerList::GetFavoriteGame(int iGame, uint32* pnAppID, uint32* pnIP, uint
 	VdfFile = VdfFile->firstChild;
 
 	// Find the requested subkey
-	while (_stricmp(VdfFile->name, "Favorites"))
+	while (V_stricmp(VdfFile->name, "Favorites"))
 	{
 		// Return if the subkey doesn't exist
 		if (!VdfFile->nextSibiling)
@@ -743,7 +745,7 @@ bool CServerList::GetFavoriteGame(int iGame, uint32* pnAppID, uint32* pnIP, uint
 
 	VdfFile = VdfFile->firstChild;
 
-	while (strcmp(VdfFile->name, Idx))
+	while (V_stricmp(VdfFile->name, Idx))
 	{
 		if (VdfFile->nextSibiling)
 			VdfFile = VdfFile->nextSibiling;
@@ -751,12 +753,12 @@ bool CServerList::GetFavoriteGame(int iGame, uint32* pnAppID, uint32* pnIP, uint
 			break;
 	}
 
-	if (!strcmp(VdfFile->name, Idx))
+	if (!V_stricmp(VdfFile->name, Idx))
 	{
-		if (!_stricmp(VdfFile->firstChild->nextSibiling->name, "address"))
+		if (!V_stricmp(VdfFile->firstChild->nextSibiling->name, "address"))
 		{
-			strcpy(test, "");
-			strcpy(test, VdfFile->firstChild->nextSibiling->value);
+			V_strcpy_safe(test, "");
+			V_strcpy_safe(test, VdfFile->firstChild->nextSibiling->value);
 			port = strchr(test, ':') + 1;
 			*pnConnPort = atoi(copyStr(port));
 			*pnQueryPort = atoi(copyStr(port));

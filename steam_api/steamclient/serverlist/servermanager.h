@@ -1,74 +1,59 @@
+#ifndef _SERVERMANAGER_H
+#define _SERVERMANAGER_H
+
+#ifdef _WIN32
 #pragma once
+#endif
+
 #include <mutex>
 #include "socket.h"
-#include "tier0/threadtools.h"
-#include "tier1/utlvector.h"
-#include "tier1/netadr.h"
 #include "steam/steam_api.h"
 
-#define NET_UDP_RECVSIZE		8192
 #define MAX_THREADS				200
 
+// forward declarations
+class CServerList;
+
+// Requests & replies
+// * VDC: https://developer.valvesoftware.com/wiki/Master_Server_Query_Protocol
+//////////////
 #pragma pack(push)	// Change alignment
-#pragma pack(1) 
+#pragma pack(1)
 
 struct TMasterReply {
-	byte			bytOctet1;		// First IP octet.
-	byte			bytOctet2;		// Second IP octet.
-	byte			bytOctet3;		// Third IP octet.
-	byte			bytOctet4;		// Fourth IP octet.
-	unsigned short	sPort;			// Server Port
+	uint32	unIP;	// ip in network order, do ntohl!
+	uint16	usPort;	// port in network order, do ntohs!
 };
 
 struct TMasterRequest {
-	byte			bytRegionCode;
-	netadr_t		masterAddress;
-	char			szIPIterator[MAX_PATH];
-	char			szFilter[MAX_PATH];
-};
-
-struct TServerIP {
-	char			szIP[16];
-	unsigned short	sPort;
+	byte	regionCode;
+	netadr_t masterAddress;
+	char	szIPIterator[MAX_PATH];
+	char	szFilter[MAX_PATH];
 };
 
 struct TServerHandle {
-	bool			bAllowRefresh;
-	char			szIP[19];
-	unsigned short	sPort;
+	bool	bAllowRefresh;
+	netadr_t serverAddress;
 };
 
 #pragma pack(pop)
 
-// Exception Handler
-int exceptionhandler(unsigned int code, struct _EXCEPTION_POINTERS* ep);
-
-class CServerList;
-
+/*
+* Server manager class
+*/
 class CServerManager
 {
 public:
 	CServerManager(CServerList*);
 	~CServerManager(void);
 
-private:
-	TServerHandle* GetFirstServer();
-	bool			GetNextServer(TServerHandle* pHandle);
-	TServerHandle* GetCloseServer(TServerHandle* pHandle);
-
-public:
 	void ServerIterator();
 
-public:
-	static bool SetConnectionInfo(sockaddr_in& sckAddrIn, netadr_t& netAddress);
-
-	void PingServer(unsigned int uAddr,
-		unsigned short sPort,
-		ISteamMatchmakingPingResponse* pResponse);
-
-	void PlayerDetails(unsigned int uAddr,
-		unsigned short sPort,
-		ISteamMatchmakingPlayersResponse* pResponse);
+	int PingServer(uint32 unIP, uint16 usPort, ISteamMatchmakingPingResponse* pResponse);
+	int PlayerDetails(uint32 unIP, uint16 usPort, ISteamMatchmakingPlayersResponse* pResponse);
+	int ServerRules(uint32 unIP, uint16 usPort, ISteamMatchmakingRulesResponse* pResponse);
+	void CancelServerQuery(int query);
 
 	bool StartRefreshFavorites();
 	bool StartRefresh(TMasterRequest* pRequest, bool bQuick = false);
@@ -78,17 +63,24 @@ public:
 	void Clear();
 
 private:
+	TServerHandle*	GetFirstServer();
+	bool			GetNextServer(TServerHandle* pHandle);
+	TServerHandle*	GetCloseServer(TServerHandle* pHandle);
+
+private:
 	TServerHandle* m_pServerHandle;
 	CServerList* m_pServerList;
 
 public:
 	std::mutex m_Critical;
 	CUtlVector<gameserveritem_t*> m_vecRefreshed;
-	CUtlVector<TServerIP*> m_vecServer;
-	CUtlVector<TServerIP*> m_vecQuick;
+	CUtlVector<netadr_t*> m_vecServer;
+	CUtlVector<netadr_t*> m_vecQuick;
 	unsigned int m_uActiveThreads;
 	bool m_bIsDownloading;
 	bool m_bIsRefresh;
 	bool m_bIsQuick;
 
 };
+
+#endif // _SERVERMANAGER_H

@@ -231,27 +231,30 @@ void CSteamMatchMakingServers::RefreshServer(HServerListRequest hRequest, int a2
 HServerQuery CSteamMatchMakingServers::PingServer(unsigned int a1, unsigned short a2, ISteamMatchmakingPingResponse* a3)
 {
 	if (m_eActiveType != eInvalidServer)
-		m_pServerList[m_eActiveType]->PingServer(a1, a2, a3);
+		return m_pServerList[m_eActiveType]->PingServer(a1, a2, a3);
 
-	return 1;
+	return 0;
 }
 
 HServerQuery CSteamMatchMakingServers::PlayerDetails(unsigned int a1, unsigned short a2, ISteamMatchmakingPlayersResponse* a3)
 {
 	if (m_eActiveType != eInvalidServer)
-		m_pServerList[m_eActiveType]->PlayerDetails(a1, a2, a3);
+		return m_pServerList[m_eActiveType]->PlayerDetails(a1, a2, a3);
 
-	return 2;
+	return 0;
 }
 
 HServerQuery CSteamMatchMakingServers::ServerRules(unsigned int a1, unsigned short a2, ISteamMatchmakingRulesResponse* a3)
 {
-	return 3;
+	//if (m_eActiveType != eInvalidServer)
+	//	return m_pServerList[m_eActiveType]->ServerRules(a1, a2, a3);
+
+	return 0;
 }
 
 void CSteamMatchMakingServers::CancelServerQuery(HServerQuery query)
 {
-	return;
+	m_pServerList[m_eActiveType]->CancelServerQuery(query);
 }
 
 void CSteamMatchMakingServers::Refresh()
