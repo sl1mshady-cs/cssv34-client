@@ -18,7 +18,7 @@ Source code is based on [nillerusr's source engine](https://github.com/nillerusr
 
 This project is using waf buildsystem. If you have waf-related questions look https://waf.io/book
 
-Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client-releases/releases)
+Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client/releases)
 
 ---
 
