@@ -88,6 +88,8 @@ static char *GetBaseDir( const char *pszBuffer )
 
 #ifdef WIN32
 
+extern int ClearStandbyList();
+
 int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow )
 {
 	// Must add 'bin' to the path....
@@ -136,9 +138,20 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 		LocalFree(pszError);
 		return 0;
 	}
-
+	
+	// execute main function
 	LauncherMain_t main = (LauncherMain_t)GetProcAddress( launcher, "LauncherMain" );
-	return main( hInstance, hPrevInstance, lpCmdLine, nCmdShow );
+	int launcherStatus = main( hInstance, hPrevInstance, lpCmdLine, nCmdShow );
+	int standbyStatus = ClearStandbyList();
+
+	if (standbyStatus != 0)
+	{
+		char buf[256];
+		sprintf(buf, "ClearStandbyList status %i\n", standbyStatus);
+		OutputDebugString(buf);
+	}
+
+	return launcherStatus;
 }
 
 #elif defined (POSIX)
