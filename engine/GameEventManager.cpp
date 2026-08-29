@@ -296,7 +296,7 @@ void CGameEventManager::WriteListenEventList(CLC_ListenEvents *msg)
 
 		if ( descriptor.eventid == -1 )
 		{
-			DevMsg("Warning! Client listens to event '%s' unknown by server.\n", descriptor.name );
+			DevMsg(3, "Warning! Client listens to event '%s' unknown by server.\n", descriptor.name );
 			continue;
 		}
 

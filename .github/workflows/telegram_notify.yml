@@ -11,7 +11,5 @@ jobs:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
           message: |
-            New push into cssv34-client
-            Author: ${{ github.actor }}
-            Title: ${{ github.event.head_commit.message }}
-            Link: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+            Новое изменение от ${{ github.actor }} (${{ github.sha }}) 
+            ${{ github.event.head_commit.message }}

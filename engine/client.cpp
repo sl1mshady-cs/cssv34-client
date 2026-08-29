@@ -1864,6 +1864,11 @@ void CClientState::FinishSignonState_New()
 	// tell server that we entered now that state
 	m_NetChannel->SendNetMsg( NET_SignonState( m_nSignonState, m_nServerCount ) );
 
+	// check if we have clientmod emulation enabled
+	extern ConVar cm_enabled;
+	if (!cm_enabled.GetBool())
+		return;
+
 	// ClientMod sends this: net_SetConVar: 1 cvars, "~clientmod"=""
 	// after SIGNONSTATE_NEW, to verify that this is clientmod client i think
 	m_NetChannel->SendNetMsg(NET_SetConVar("~clientmod", ""));

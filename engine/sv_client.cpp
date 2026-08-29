@@ -367,28 +367,16 @@ void CGameClient::Connect( const char * szName, int nUserID, INetChannel *pNetCh
 	m_PackInfo.m_nPVSSize = sizeof( m_PackInfo.m_PVS );
 				
 	// fire global game event - server only
+	// we don't send an IP to prevent hackers from doing evil things
 	IGameEvent *event = g_GameEventManager.CreateEvent( "player_connect" );
 	{
 		event->SetInt( "userid", m_UserID );
 		event->SetInt( "index", m_nClientSlot );
 		event->SetString( "name", m_Name );
 		event->SetString("networkid", GetNetworkIDString() ); 	
-		event->SetString( "address", m_NetChannel?m_NetChannel->GetAddress():"none" );
+		event->SetString( "address", /*m_NetChannel ? m_NetChannel->GetAddress() : */"none");
 		event->SetInt( "bot", m_bFakePlayer?1:0 );
 		g_GameEventManager.FireEvent( event, true );
-	}
-
-	// the only difference here is we don't send an
-	// IP to prevent hackers from doing evil things
-	event = g_GameEventManager.CreateEvent( "player_connect_client" );
-	if ( event )
-	{
-		event->SetInt( "userid", m_UserID );
-		event->SetInt( "index", m_nClientSlot );
-		event->SetString( "name", m_Name );
-		event->SetString( "networkid", GetNetworkIDString() );
-		event->SetInt( "bot", m_bFakePlayer ? 1 : 0 );
-		g_GameEventManager.FireEvent( event );
 	}
 }
 

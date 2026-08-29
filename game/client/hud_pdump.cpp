@@ -34,12 +34,15 @@ CPDumpPanel *GetPDumpPanel()
 DECLARE_HUDELEMENT( CPDumpPanel );
 
 CPDumpPanel::CPDumpPanel( const char *pElementName ) :
-	CHudElement( pElementName ), BaseClass( NULL, "HudPredictionDump" )
+	CHudElement( pElementName ), BaseClass( NULL )
 {
 	g_pPDumpPanel = this;
 
 	vgui::Panel *pParent = g_pClientMode->GetViewport();
 	SetParent( pParent );
+	SetVisible(true);
+	SetEnabled(true);
+	SetSize(1920, 1080);
 
 	SetProportional( false );
 }
