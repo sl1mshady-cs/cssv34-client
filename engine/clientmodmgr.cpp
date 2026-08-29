@@ -24,6 +24,8 @@ private:
 	const char* connect_method = "8";
 };
 
+ConVar cm_enabled("cm_enabled", "1", FCVAR_HIDDEN_FROM_SERVER, "Enable/Disable clientmod emulation");
+
 static CClientModManager s_mgr;
 IClientModManager* g_pClientModManager = (IClientModManager*)&s_mgr;
 
@@ -49,26 +51,34 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 
 		if (name && !strcmp(name, "player_disconnect"))
 		{
-			short userid = (short)buf.ReadUBitLong(16);// buf.ReadShort();
+			short userid = buf.ReadWord();
 			char reason[1024];
 			buf.ReadString(reason, sizeof(reason));
 			char name[1024];
 			buf.ReadString(name, sizeof(name));
 			char networkid[1024];
 			buf.ReadString(networkid, sizeof(networkid));
-			DevMsg("player_disconnect %d name %s reason %s networkid %s\n", userid, name, reason, networkid);
+			//DevMsg("player_disconnect %d name %s reason %s networkid %s\n", userid, name, reason, networkid);
 
-			//if (userid < 1)
-			return false;
+			char name_low[1024];
+			V_strcpy_safe(name_low, name);
+			V_strlower(name_low);
+
+			if (userid < 1 || strstr(name_low, "unconnected"))
+				return false;
 		}
 
 		if (name && !strcmp(name, "player_info"))
 		{
 			char databuf[1024];
 			buf.ReadString(databuf, sizeof(databuf));
-			DevMsg("player_info buffer %s\n", databuf);
-			buf.ReadString(databuf, sizeof(databuf));
-			return false;
+
+			if (strstr(databuf, "{}") && strstr(databuf, "?"))
+			{
+				//DevMsg("player_info buffer %s\n", databuf);
+				buf.ReadString(databuf, sizeof(databuf));
+				return false;
+			}
 		}
 
 		buf = fallback;
@@ -102,14 +112,6 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 			DevMsg("svc_Menu Rejected: type %d dataLength %d\n", Type, dataLength);
 			return false;
 		}
-
-		if (cmd == net_StringCmd)
-		{
-			char stringcmd[1024];
-			buf.ReadString(stringcmd, sizeof(stringcmd));
-			DevMsg("Net_StringCmd Rejected: %s\n", stringcmd);
-			return false;
-		}
 	}
 
 	return true;
@@ -118,6 +120,9 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 // Add clientmod cvars to ConVar Update Message
 void CClientModManager::FillConVarUpdateMsg(NET_SetConVar* cvarMsg) 
 {
+	if (!cm_enabled.GetBool())
+		return;
+
 	// Hardcoded clientmod cvars
 	NET_SetConVar::cvar_t cmcvar;
 
@@ -137,6 +142,9 @@ void CClientModManager::FillConVarUpdateMsg(NET_SetConVar* cvarMsg)
 // Fill clc_RespondCvarValue
 void CClientModManager::FillRespondCvarValue(SVC_GetCvarValue* inMsg, CLC_RespondCvarValue& returnMsg) 
 {
+	if (!cm_enabled.GetBool())
+		return;
+
 	if (!strcmp(inMsg->m_szCvarName, "~clientmod"))
 	{
 		returnMsg.m_eStatusCode = eQueryCvarValueStatus_ValueIntact;

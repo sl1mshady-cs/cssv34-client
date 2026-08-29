@@ -108,7 +108,11 @@ void CUserMessages::Register( const char *name, int size )
 	entry->size = size;
 	entry->name = name;
 
-	m_UserMessages.Insert( name, entry );
+	int id = m_UserMessages.Insert( name, entry );
+
+	char buf[1024];
+	sprintf( buf, "CUserMessages::Register:  Registered usermessage %s at %i\n", name, id );
+	Plat_DebugString(buf);
 }
 
 //-----------------------------------------------------------------------------

@@ -1735,7 +1735,12 @@ bool CBaseClientState::ProcessGetCvarValue( SVC_GetCvarValue *msg )
 	const ConVar *pVar = g_pCVar->FindVar( msg->m_szCvarName );
 	if ( pVar )
 	{
-		if ( pVar->IsFlagSet( FCVAR_SERVER_CANNOT_QUERY ) )
+		if ( pVar->IsFlagSet( FCVAR_HIDDEN_FROM_SERVER ) )
+		{
+			// This cvar is hidden from server.
+			returnMsg.m_eStatusCode = eQueryCvarValueStatus_CvarNotFound;
+		}
+		else if ( pVar->IsFlagSet( FCVAR_SERVER_CANNOT_QUERY ) )
 		{
 			// The server isn't allowed to query this.
 			returnMsg.m_eStatusCode = eQueryCvarValueStatus_CvarProtected;
