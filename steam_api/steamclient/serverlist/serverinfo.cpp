@@ -2,10 +2,11 @@
 #include "serverinfo.h"
 
 // threads
-std::vector<ServerRefreshThread> g_vecServerRefreshThreads;
+std::mutex g_ServerRefreshThreadsMutex;
+std::vector<std::shared_ptr<ServerRefreshThread>> g_vecServerRefreshThreads;
 
 /* 
-* Worker function that needs to be runned every frame
+* Worker
 */
 class ServerRefreshThreadsWorker
 {
@@ -29,21 +30,10 @@ public:
 	{
 		while (running.load())
 		{
-			for (auto it = g_vecServerRefreshThreads.begin();
-				it != g_vecServerRefreshThreads.end();)
-			{
-				if (it->is_alive)
-				{
-					if (it->is_alive->load())
-					{
-						++it;
-					}
-					else
-					{
-						it = g_vecServerRefreshThreads.erase(it);
-					}
-				}
-			}
+			ServerRefreshThreads_Cleanup();
+
+			std::this_thread::sleep_for(
+				std::chrono::milliseconds(10));
 		}
 	}
 };
@@ -54,48 +44,77 @@ static ServerRefreshThreadsWorker s_threadsworker;
 /* --------- Public Functions --------- */
 //////////////////////////////////////////
 
-// Find a thread
-ServerRefreshThread* ServerRefreshThreads_Find(std::thread::id threadID)
+// cleanup threads
+void ServerRefreshThreads_Cleanup()
 {
-	for (auto& it : g_vecServerRefreshThreads)
-	{
-		if (it.is_alive->load())
-		{
-			if (it.t.get_id() == threadID)
-				return &it;
-		}
-	}
+	std::lock_guard<std::mutex> lock(
+		g_ServerRefreshThreadsMutex);
 
-	return nullptr;
+	for (auto it = g_vecServerRefreshThreads.begin();
+		it != g_vecServerRefreshThreads.end();)
+	{
+		const auto& thread = *it;
+
+		if (!thread)
+		{
+			it = g_vecServerRefreshThreads.erase(it);
+			continue;
+		}
+
+		if (!thread->is_alive->load())
+		{
+			if (thread->t.joinable())
+				thread->t.join();
+
+			it = g_vecServerRefreshThreads.erase(it);
+			continue;
+		}
+
+		++it;
+	}
 }
 
 // Start the Thread.
 void ServerRefreshThreads_Start(server_refresh_t serverRefresh)
 {
-	ServerRefreshThread thread(serverRefresh);
-	g_vecServerRefreshThreads.emplace_back(std::move(thread));
+	std::lock_guard<std::mutex> lock(
+		g_ServerRefreshThreadsMutex);
+
+	g_vecServerRefreshThreads.emplace_back(
+		std::make_shared<ServerRefreshThread>(
+			std::move(serverRefresh)));
 }
 
 // Terminate the thread (bad!)
 void ServerRefreshThreads_Stop(std::thread::id threadID)
 {
-	ServerRefreshThread* pThread = ServerRefreshThreads_Find(threadID);
-	if (!pThread)
+	std::shared_ptr<ServerRefreshThread> thread;
+
+	{
+		std::lock_guard<std::mutex> lock(
+			g_ServerRefreshThreadsMutex);
+
+		for (auto& candidate :
+			g_vecServerRefreshThreads)
+		{
+			if (candidate &&
+				candidate->t.get_id() == threadID)
+			{
+				thread = candidate;
+				break;
+			}
+		}
+	}
+
+	if (!thread)
 		return;
 
-	// platform specific
-#ifdef _WIN32
-	//TerminateThread(pThread->t.native_handle(), 0);
-#else
-	pthread_cancel(pThread->t.native_handle());
-#endif
+	thread->stopRequested->store(
+		true,
+		std::memory_order_release);
 
-	Warning("[srt] stopping thread under id %u\n", threadID);
-	
-	/// freeing memory now ///
-	if (pThread->is_alive->load()) {
-		pThread->is_alive->store(false);
-	}
+	if (thread->t.joinable())
+		thread->t.join();
 }
 
 //--------------------------------------------------------------------------
@@ -200,7 +219,8 @@ CServerInfo::~CServerInfo(void)
 /*
 * Get server info (now allows broadcasting)
 */
-void CServerInfo::GetServerInfo(netadr_t& adr, ISteamMatchmakingPingResponse* pResponse)
+void CServerInfo::GetServerInfo(netadr_t& adr, ISteamMatchmakingPingResponse* pResponse, 
+	std::shared_ptr<std::atomic<bool>> stopRequested)
 {
 	m_bIsRefreshing = true;
 
@@ -233,22 +253,26 @@ void CServerInfo::GetServerInfo(netadr_t& adr, ISteamMatchmakingPingResponse* pR
 			return;
 		}
 	}
+
+	if (stopRequested->load())
+		return;
+
 	uint32 dwStartTime = Plat_MSTime();
 
 	fd_set stReadFDS; // read fds
 	timeval	stTime{};
 
-	// Timeout
-	FD_ZERO(&stReadFDS);
-	stTime.tv_sec = 3;
-	stTime.tv_usec = 0;
-	FD_SET(m_pQuery->GetSocket(), &stReadFDS);
-
 	if (m_pServerManager)
 		m_pServerManager->m_bIsDownloading = true;
 
-	while (true)
+	while (!stopRequested->load())
 	{
+		// Timeout
+		FD_ZERO(&stReadFDS);
+		stTime.tv_sec = 3;
+		stTime.tv_usec = 0;
+		FD_SET(m_pQuery->GetSocket(), &stReadFDS);
+
 		// Select
 		int iSelectStatus = select(m_pQuery->GetSocket(), &stReadFDS, NULL, NULL, &stTime);
 		if (!(iSelectStatus > 0))
@@ -257,6 +281,9 @@ void CServerInfo::GetServerInfo(netadr_t& adr, ISteamMatchmakingPingResponse* pR
 				pResponse->ServerFailedToRespond();
 			return;
 		}
+
+		if (stopRequested->load())
+			break;
 
 		// read out received message
 		char recvBuffer[MAX_RECEIVEABLE_PACKET];
@@ -376,7 +403,8 @@ void CServerInfo::GetServerInfo(netadr_t& adr, ISteamMatchmakingPingResponse* pR
 /*
 * Get server info
 */
-void CServerInfo::GetPlayers(netadr_t& adr, ISteamMatchmakingPlayersResponse* pResponse)
+void CServerInfo::GetPlayers(netadr_t& adr, ISteamMatchmakingPlayersResponse* pResponse,
+	std::shared_ptr<std::atomic<bool>> stopRequested)
 {
 	m_bIsRefreshing = true;
 
@@ -385,105 +413,134 @@ void CServerInfo::GetPlayers(netadr_t& adr, ISteamMatchmakingPlayersResponse* pR
 	if (!m_pQuery->IsValid())
 		return;
 
-	// first, request challenge
-	static int32 iChallengeNr = -1;
+	// challenge, (-1) is default, we need to request it first
+	int32 challenge = -1;
 
-	char szPacket[25];
-	bf_write packet(szPacket, sizeof(szPacket));
-	packet.WriteLong(0xFFFFFFFF);
-	packet.WriteByte('U');
-	packet.WriteLong(iChallengeNr);
-
-	// Send Request
-	if (m_pQuery->Send(adr, packet) == -1) {
-		Msg("Failed sending player info query to %s\n", adr.ToString());
-		return;
-	}
-
-	uint32 dwStartTime = Plat_MSTime();
-
-	fd_set stReadFDS; // read fds
-	timeval	stTime{};
-
-	// Timeout
-	FD_ZERO(&stReadFDS);
-	stTime.tv_sec = 3;
-	stTime.tv_usec = 0;
-	FD_SET(m_pQuery->GetSocket(), &stReadFDS);
-
-	// Select
-	int iSelectStatus = select(m_pQuery->GetSocket(), &stReadFDS, NULL, NULL, &stTime);
-	if(!(iSelectStatus > 0)) 
+	while (!stopRequested->load())
 	{
-		if(pResponse)
-			pResponse->PlayersFailedToRespond();
+		char szPacket[25];
+		bf_write packet(szPacket, sizeof(szPacket));
+		packet.WriteLong(0xFFFFFFFF);
+		packet.WriteByte('U');
+		packet.WriteLong(challenge);
 
-		return;
-	}
-
-	// read out received message
-	char recvBuffer[MAX_RECEIVEABLE_PACKET];
-	bf_read read;
-	netadr_t from;
-
-	int iBytesReceived = m_pQuery->Receive(recvBuffer, MAX_RECEIVEABLE_PACKET, from);
-	read.StartReading(recvBuffer, iBytesReceived);
-
-	if (!(iBytesReceived > 0))
-	{
-		if (pResponse)
-			pResponse->PlayersFailedToRespond();
-
-		return;
-	}
-
-	// update bytes and bits
-	read.m_nDataBytes = iBytesReceived;
-	read.m_nDataBits = read.m_nDataBytes << 3;
-
-	// Connectionless header
-	int nConnectionless = read.ReadLong();
-
-	if (nConnectionless != -1)
-	{
-		if (pResponse)
-			pResponse->PlayersFailedToRespond();
-
-		return;
-	}
-
-	// Looks like a valid Packet
-	byte packetType = read.ReadByte();
-
-	if (packetType == 'A')
-	{
-		iChallengeNr == read.ReadLong();
-		return GetPlayers(adr, pResponse);
-	}
-	else if (packetType == 'D')
-	{
-		int numPlayers = read.ReadByte();
-		int id, score;
-		float time;
-		char name[64];
-
-		for (int i = 0; i != numPlayers; i++)
-		{
-			memset(name, 0, sizeof(name));
-			id = read.ReadByte();
-			read.ReadString(name, sizeof(name));
-			score = read.ReadLong();
-			time = read.ReadFloat();
-
-			pResponse->AddPlayerToList(name, score, time);
+		// Send Request
+		if (m_pQuery->Send(adr, packet) == -1) {
+			Msg("Failed sending player info query to %s\n", adr.ToString());
+			break;
 		}
 
-		pResponse->PlayersRefreshComplete();
-	}
-	else
-	{ 
-		// unknown packet
-		pResponse->PlayersFailedToRespond();
+		if (stopRequested->load())
+			break;
+
+		uint32 dwStartTime = Plat_MSTime();
+
+		fd_set stReadFDS; // read fds
+		timeval	stTime{};
+
+		// Timeout
+		FD_ZERO(&stReadFDS);
+		stTime.tv_sec = 1;
+		stTime.tv_usec = 0;
+		FD_SET(m_pQuery->GetSocket(), &stReadFDS);
+
+		// Select
+		int iSelectStatus = select(m_pQuery->GetSocket(), &stReadFDS, NULL, NULL, &stTime);
+
+		if (stopRequested->load())
+			break;
+
+		if (!(iSelectStatus > 0))
+		{
+			if (pResponse)
+				pResponse->PlayersFailedToRespond();
+
+			break;
+		}
+
+		// read out received message
+		char recvBuffer[MAX_RECEIVEABLE_PACKET];
+		bf_read read;
+		netadr_t from;
+
+		int iBytesReceived = m_pQuery->Receive(recvBuffer, MAX_RECEIVEABLE_PACKET, from);
+		read.StartReading(recvBuffer, iBytesReceived);
+
+		if (stopRequested->load())
+			break;
+
+		if (!(iBytesReceived > 0))
+		{
+			if (pResponse)
+				pResponse->PlayersFailedToRespond();
+
+			break;
+		}
+
+		// update bytes and bits
+		read.m_nDataBytes = iBytesReceived;
+		read.m_nDataBits = read.m_nDataBytes << 3;
+
+		// Connectionless header
+		int nConnectionless = read.ReadLong();
+
+		if (stopRequested->load())
+			break;
+
+		if (nConnectionless != -1)
+		{
+			if (pResponse)
+				pResponse->PlayersFailedToRespond();
+
+			break;
+		}
+
+		// Looks like a valid Packet
+		byte packetType = read.ReadByte();
+
+		if (packetType == 'A')
+		{
+			if (challenge != -1) // server sent invalid packet
+			{
+				if (pResponse)
+					pResponse->PlayersFailedToRespond();
+
+				break;
+			}
+
+			challenge = read.ReadLong();
+			continue;
+		}
+		
+		if (packetType == 'D')
+		{
+			if (stopRequested->load())
+				break;
+
+			int numPlayers = read.ReadByte();
+			int id, score;
+			float time;
+			char name[64];
+
+			for (int i = 0; i != numPlayers; i++)
+			{
+				memset(name, 0, sizeof(name));
+				id = read.ReadByte();
+				read.ReadString(name, sizeof(name));
+				score = read.ReadLong();
+				time = read.ReadFloat();
+
+				if (pResponse)
+					pResponse->AddPlayerToList(name, score, time);
+			}
+
+			if (pResponse)
+				pResponse->PlayersRefreshComplete();
+
+			break;
+		}
+
+		break;
 	}
 
 	m_bIsRefreshing = false;
@@ -493,7 +550,8 @@ void CServerInfo::GetPlayers(netadr_t& adr, ISteamMatchmakingPlayersResponse* pR
 /*
 * Get server info
 */
-void CServerInfo::GetRules(netadr_t& adr, ISteamMatchmakingRulesResponse* pResponse)
+void CServerInfo::GetRules(netadr_t& adr, ISteamMatchmakingRulesResponse* pResponse,
+	std::shared_ptr<std::atomic<bool>> stopRequested)
 {
 	m_bIsRefreshing = true;
 
@@ -502,105 +560,131 @@ void CServerInfo::GetRules(netadr_t& adr, ISteamMatchmakingRulesResponse* pRespo
 	if (!m_pQuery->IsValid())
 		return;
 
-	// first, request challenge
-	static int32 iChallengeNr = -1;
+	// challenge, (-1) is default, we need to request it first
+	int32 challenge = -1;
 
-	char szPacket[25];
-	bf_write packet(szPacket, sizeof(szPacket));
-	packet.WriteLong(0xFFFFFFFF);
-	packet.WriteByte('V');
-	packet.WriteLong(iChallengeNr);
-
-	// Send Request
-	if (m_pQuery->Send(adr, packet) == -1)
+	while (!stopRequested->load())
 	{
-		Msg("Failed sending server rules query to %s\n", adr.ToString());
-		return;
-	}
+		char szPacket[25];
+		bf_write packet(szPacket, sizeof(szPacket));
+		packet.WriteLong(0xFFFFFFFF);
+		packet.WriteByte('V');
+		packet.WriteLong(challenge);
 
-	uint32 dwStartTime = Plat_MSTime();
-
-	fd_set stReadFDS; // read fds
-	timeval	stTime{};
-
-	// Timeout
-	FD_ZERO(&stReadFDS);
-	stTime.tv_sec = 3;
-	stTime.tv_usec = 0;
-	FD_SET(m_pQuery->GetSocket(), &stReadFDS);
-
-	// Select
-	int iSelectStatus = select(m_pQuery->GetSocket(), &stReadFDS, NULL, NULL, &stTime);
-	if (!(iSelectStatus > 0))
-	{
-		if (pResponse)
-			pResponse->RulesFailedToRespond();
-
-		return;
-	}
-
-	// read out received message
-	char recvBuffer[MAX_RECEIVEABLE_PACKET];
-	bf_read read;
-	netadr_t from;
-
-	int iBytesReceived = m_pQuery->Receive(recvBuffer, MAX_RECEIVEABLE_PACKET, from);
-	read.StartReading(recvBuffer, iBytesReceived);
-
-	if (!(iBytesReceived > 0))
-	{
-		if (pResponse)
-			pResponse->RulesFailedToRespond();
-
-		return;
-	}
-
-	// update bytes and bits
-	read.m_nDataBytes = iBytesReceived;
-	read.m_nDataBits = read.m_nDataBytes << 3;
-
-	// Connectionless header
-	int nConnectionless = read.ReadLong();
-
-	if (nConnectionless != -1)
-	{
-		if (pResponse)
-			pResponse->RulesFailedToRespond();
-
-		return;
-	}
-
-	// Looks like a valid Packet
-	byte packetType = read.ReadByte();
-
-	if (packetType == 'A')
-	{
-		iChallengeNr == read.ReadLong();
-		return GetRules(adr, pResponse);
-	}
-	else if (packetType == 'E')
-	{
-		int numRules = read.ReadShort();
-		char name[64]; // names are not bigger than that (i think)
-		char value[256];
-
-		for (int i = 0; i != numRules; i++)
+		// Send Request
+		if (m_pQuery->Send(adr, packet) == -1)
 		{
-			memset(name, 0, sizeof(name));
-			memset(value, 0, sizeof(value));
-
-			read.ReadString(name, sizeof(name));
-			read.ReadString(value, sizeof(value));
-
-			pResponse->RulesResponded(name, value);
+			Msg("Failed sending server rules query to %s\n", adr.ToString());
+			break;
 		}
 
-		pResponse->RulesRefreshComplete();
-	}
-	else
-	{
-		// unknown packet
-		pResponse->RulesFailedToRespond();
+		if (stopRequested->load())
+			break;
+
+		uint32 dwStartTime = Plat_MSTime();
+
+		fd_set stReadFDS; // read fds
+		timeval	stTime{};
+
+		// Timeout
+		FD_ZERO(&stReadFDS);
+		stTime.tv_sec = 3;
+		stTime.tv_usec = 0;
+		FD_SET(m_pQuery->GetSocket(), &stReadFDS);
+
+		// Select
+		int iSelectStatus = select(m_pQuery->GetSocket(), &stReadFDS, NULL, NULL, &stTime);
+
+		if (stopRequested->load())
+			break;
+
+		if (!(iSelectStatus > 0))
+		{
+			if (pResponse)
+				pResponse->RulesFailedToRespond();
+
+			break;
+		}
+
+		// read out received message
+		char recvBuffer[MAX_RECEIVEABLE_PACKET];
+		bf_read read;
+		netadr_t from;
+
+		int iBytesReceived = m_pQuery->Receive(recvBuffer, MAX_RECEIVEABLE_PACKET, from);
+		read.StartReading(recvBuffer, iBytesReceived);
+
+		if (stopRequested->load())
+			break;
+
+		if (!(iBytesReceived > 0))
+		{
+			if (pResponse)
+				pResponse->RulesFailedToRespond();
+
+			break;
+		}
+
+		// update bytes and bits
+		read.m_nDataBytes = iBytesReceived;
+		read.m_nDataBits = read.m_nDataBytes << 3;
+
+		// Connectionless header
+		int nConnectionless = read.ReadLong();
+
+		if (stopRequested->load())
+			break;
+
+		if (nConnectionless != -1)
+		{
+			if (pResponse)
+				pResponse->RulesFailedToRespond();
+
+			break;
+		}
+
+		// Looks like a valid Packet
+		byte packetType = read.ReadByte();
+
+		if (packetType == 'A')
+		{
+			if (challenge != -1) // server sent invalid packet
+			{
+				if (pResponse)
+					pResponse->RulesFailedToRespond();
+
+				break;
+			}
+
+			challenge = read.ReadLong();
+			continue;
+		}
+		else if (packetType == 'E')
+		{
+			if (stopRequested->load())
+				break;
+
+			int numRules = read.ReadShort();
+			char name[64]; // names are not bigger than that (i think)
+			char value[256];
+
+			for (int i = 0; i != numRules; i++)
+			{
+				memset(name, 0, sizeof(name));
+				memset(value, 0, sizeof(value));
+
+				read.ReadString(name, sizeof(name));
+				read.ReadString(value, sizeof(value));
+
+				if (pResponse)
+					pResponse->RulesResponded(name, value);
+			}
+
+			if (pResponse)
+				pResponse->RulesRefreshComplete();
+		}
+
+		break;
 	}
 
 	m_bIsRefreshing = false;

@@ -244,23 +244,28 @@ int CServerManager::PingServer(uint32 unIP, uint16 usPort, ISteamMatchmakingPing
 {
 	CServerInfo* info = new CServerInfo(this, netadr_t(unIP, usPort), pResponse);
 
-	return info->GetID();
+	return (int)info->GetID();
 }
 
 int CServerManager::PlayerDetails(uint32 unIP, uint16 usPort, ISteamMatchmakingPlayersResponse* pResponse)
 {
 	CServerInfo* info = new CServerInfo(netadr_t(unIP, usPort), pResponse);
 
-	return info->GetID();
+	return (int)info->GetID();
 }
 
 int CServerManager::ServerRules(uint32 unIP, uint16 usPort, ISteamMatchmakingRulesResponse* pResponse)
 {
 	CServerInfo *info = new CServerInfo(netadr_t(unIP, usPort), pResponse);
 
-	return info->GetID();
+	return (int)info->GetID();
 }
 
-void CServerManager::CancelServerQuery(int query) {
-	ServerRefreshThreads_Stop(query);
+void CServerManager::CancelServerQuery(int query) 
+{
+	std::thread::id threadID;
+	uint32* ptr = (uint32*)&threadID; // we are doing ptr casting yaay (ub guaranteed)
+	*ptr = (uint32)query;
+
+	ServerRefreshThreads_Stop(threadID);
 }
