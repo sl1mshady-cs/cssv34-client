@@ -1,9 +1,5 @@
-# CS:S v34 Engine (new)
-[![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/win64_build.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/win64_build.yml)
-[![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/win32.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/win32.yml)
-[![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/linux-amd64_build.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/linux-amd64_build.yml)
-[![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/linux-i386_build.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/linux-i386_build.yml)
-[![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/android-armv7a_build.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/android-armv7a_build.yml)
+# CS:S v34 Client
+[![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/build.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/build.yml)
 
 Information from [wikipedia](https://wikipedia.org/wiki/Source_(game_engine)):
 
