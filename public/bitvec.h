@@ -57,7 +57,7 @@ inline uint Plat_BitScanReverse( uint32 nMask )
 	_BitScanReverse( &nIndex, nMask );
 	return nIndex;
 }
-#elif IsPlatformLinux() || IsPlatformOSX()
+#elif PLATFORM_POSIX
 inline uint Plat_BitScanForward( uint32 nMask )
 {
 	Assert( nMask );

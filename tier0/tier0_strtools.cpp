@@ -7,13 +7,7 @@
 
 #define TOLOWERC( x )  (( ( x >= 'A' ) && ( x <= 'Z' ) )?( x + 32 ) : x )
 
-#if !defined( STATIC_LINK )
-#define FDECL extern "C"
-#else
-#define FDECL
-#endif
-
-FDECL int V_tier0_stricmp(const char *s1, const char *s2 )
+int V_tier0_stricmp(const char *s1, const char *s2 )
 {
 	// A string is always equal to itself. This optimization is
 	// surprisingly valuable.
@@ -65,7 +59,7 @@ FDECL int V_tier0_stricmp(const char *s1, const char *s2 )
 	}
 }
 
-FDECL void V_tier0_strncpy( char *a, const char *b, int n )
+void V_tier0_strncpy( char *a, const char *b, int n )
 {
 	Assert( n >= sizeof( *a ) );
 
@@ -89,7 +83,7 @@ FDECL void V_tier0_strncpy( char *a, const char *b, int n )
 	*a = 0;
 }
 
-FDECL char *V_tier0_strncat( char *pDest, const char *pSrc, int destBufferSize, int max_chars_to_copy )
+char *V_tier0_strncat( char *pDest, const char *pSrc, int destBufferSize, int max_chars_to_copy )
 {
 	int charstocopy = 0;
 
@@ -124,7 +118,7 @@ FDECL char *V_tier0_strncat( char *pDest, const char *pSrc, int destBufferSize, 
 	return pOut;
 }
 
-FDECL int V_tier0_vsnprintf( char *a, int n, const char *f, va_list l )
+int V_tier0_vsnprintf( char *a, int n, const char *f, va_list l )
 {
 	int len = _vsnprintf( a, n, f, l );
 
@@ -138,7 +132,7 @@ FDECL int V_tier0_vsnprintf( char *a, int n, const char *f, va_list l )
 	return len;
 }
 
-FDECL int V_tier0_snprintf( char *a, int n, const char *f, ... )
+int V_tier0_snprintf( char *a, int n, const char *f, ... )
 {
     va_list l;
 

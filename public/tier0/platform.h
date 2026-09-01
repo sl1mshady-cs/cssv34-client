@@ -44,6 +44,7 @@
 
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+#include <stdarg.h>
 
 #include "wchartypes.h"
 #include "basetypes.h"
@@ -89,6 +90,9 @@
 #include <string.h>
 
 #include "tier0/valve_minmax_on.h"	// GCC 4.2.2 headers screw up our min/max defs.
+
+// C++11
+#define VALVE_CPP11 1
 
 #ifdef _RETAIL
 #define IsRetail() true
@@ -503,12 +507,12 @@ typedef void * HINSTANCE;
 // decls for aligning data
 #ifdef _WIN32
         #define DECL_ALIGN(x) __declspec(align(x))
-
 #elif GNUC
 	#define DECL_ALIGN(x) __attribute__((aligned(x)))
 #else
         #define DECL_ALIGN(x) /* */
 #endif
+
 
 // Pull in the /analyze code annotations.
 #include "annotations.h"
@@ -1573,7 +1577,6 @@ inline const char *GetPlatformExt( void )
 //-----------------------------------------------------------------------------
 // C++11 helpers
 //-----------------------------------------------------------------------------
-#define VALVE_CPP11 1
 
 #if VALVE_CPP11
 template <class T> struct C11RemoveReference { typedef T Type; };
@@ -2007,12 +2010,7 @@ DECLARE_ALIGNED_BYTE_ARRAY(64);
 DECLARE_ALIGNED_BYTE_ARRAY(128);
 
 // Tier0 uses this for faster stricmp.
-PLATFORM_INTERFACE int V_tier0_stricmp( const char *a, const char *b );
-
-PLATFORM_INTERFACE void V_tier0_strncpy( char *a, const char *b, int n );
-PLATFORM_INTERFACE char *V_tier0_strncat( char *a, const char *b, int n, int m = -1 );
-PLATFORM_INTERFACE int V_tier0_vsnprintf( char *a, int n, PRINTF_FORMAT_STRING const char *f, va_list l ) FMTFUNCTION( 3, 0 );
-PLATFORM_INTERFACE int V_tier0_snprintf( char *a, int n, PRINTF_FORMAT_STRING const char *f, ... ) FMTFUNCTION( 3, 4 );
+#include "tier0_strtools.h"
 
 //-----------------------------------------------------------------------------
 
