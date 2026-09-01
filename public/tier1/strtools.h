@@ -33,6 +33,23 @@ class CUtlString;
 #define str_size size_t
 #endif
 
+
+#define USE_FAST_CASE_CONVERSION 1
+#if USE_FAST_CASE_CONVERSION
+/// Faster conversion of an ascii char to upper case. This function does not obey locale or any language
+/// setting. It should not be used to convert characters for printing, but it is a better choice
+/// for internal strings such as used for hash table keys, etc. It's meant to be inlined and used
+/// in places like the various dictionary classes. Not obeying locale also protects you from things
+/// like your hash values being different depending on the locale setting.
+#define FastASCIIToUpper( c ) ( ( ( (c) >= 'a' ) && ( (c) <= 'z' ) ) ? ( (c) - 32 ) : (c) )
+/// similar to FastASCIIToLower
+#define FastASCIIToLower( c ) ( ( ( (c) >= 'A' ) && ( (c) <= 'Z' ) ) ? ( (c) + 32 ) : (c) )
+#else
+#define FastASCIIToLower tolower
+#define FastASCIIToUpper toupper
+#endif
+
+
 template< class T, class I > class CUtlMemory;
 template< class T, class A > class CUtlVector;
 
@@ -159,6 +176,7 @@ uint64 		V_atoui64(const char *str);
 int64		V_strtoi64( const char *nptr, char **endptr, int base );
 uint64		V_strtoui64( const char *nptr, char **endptr, int base );
 float		V_atof(const char *str);
+double		V_atod(const char *str);
 char*		V_stristr( char* pStr, const char* pSearch );
 const char*	V_stristr( const char* pStr, const char* pSearch );
 const char*	V_strnistr( const char* pStr, const char* pSearch, int n );
@@ -423,6 +441,12 @@ int Q_UTF16ToUTF8( const uchar16 *pUTF16, OUT_Z_BYTECAP(cubDestSizeInBytes) char
 int Q_UTF16ToUTF32( const uchar16 *pUTF16, OUT_Z_BYTECAP(cubDestSizeInBytes) uchar32 *pUTF32, int cubDestSizeInBytes, EStringConvertErrorPolicy ePolicy = STRINGCONVERT_ASSERT_REPLACE );
 int Q_UTF32ToUTF8( const uchar32 *pUTF32, OUT_Z_BYTECAP(cubDestSizeInBytes) char *pUTF8, int cubDestSizeInBytes, EStringConvertErrorPolicy ePolicy = STRINGCONVERT_ASSERT_REPLACE );
 int Q_UTF32ToUTF16( const uchar32 *pUTF32, OUT_Z_BYTECAP(cubDestSizeInBytes) uchar16 *pUTF16, int cubDestSizeInBytes, EStringConvertErrorPolicy ePolicy = STRINGCONVERT_ASSERT_REPLACE );
+#define V_UTF8ToUTF16 Q_UTF8ToUTF16
+#define V_UTF8ToUTF32 Q_UTF8ToUTF32
+#define V_UTF16ToUTF8 Q_UTF16ToUTF8
+#define V_UTF16ToUTF32 Q_UTF16ToUTF32
+#define V_UTF32ToUTF8 Q_UTF32ToUTF8
+#define V_UTF32ToUTF16 Q_UTF32ToUTF16
 
 // This is disgusting and exist only easily to facilitate having 16-bit and 32-bit wchar_t's on different platforms
 int Q_UTF32ToUTF32( const uchar32 *pUTF32Source, OUT_Z_BYTECAP(cubDestSizeInBytes) uchar32 *pUTF32Dest, int cubDestSizeInBytes, EStringConvertErrorPolicy ePolicy = STRINGCONVERT_ASSERT_REPLACE );
@@ -436,12 +460,20 @@ int Q_UTF16CharsToUTF8( const uchar16 *pUTF16, int nElements, OUT_Z_BYTECAP(cubD
 int Q_UTF16CharsToUTF32( const uchar16 *pUTF16, int nElements, OUT_Z_BYTECAP(cubDestSizeInBytes) uchar32 *pUTF32, int cubDestSizeInBytes, EStringConvertErrorPolicy ePolicy = STRINGCONVERT_ASSERT_REPLACE );
 int Q_UTF32CharsToUTF8( const uchar32 *pUTF32, int nElements, OUT_Z_BYTECAP(cubDestSizeInBytes) char *pUTF8, int cubDestSizeInBytes, EStringConvertErrorPolicy ePolicy = STRINGCONVERT_ASSERT_REPLACE );
 int Q_UTF32CharsToUTF16( const uchar32 *pUTF32, int nElements, OUT_Z_BYTECAP(cubDestSizeInBytes) uchar16 *pUTF16, int cubDestSizeInBytes, EStringConvertErrorPolicy ePolicy = STRINGCONVERT_ASSERT_REPLACE );
+#define V_UTF8CharsToUTF16 Q_UTF8CharsToUTF16
+#define V_UTF8CharsToUTF32 Q_UTF8CharsToUTF32
+#define V_UTF16CharsToUTF8 Q_UTF16CharsToUTF8
+#define V_UTF16CharsToUTF32 Q_UTF16CharsToUTF32
+#define V_UTF32CharsToUTF8 Q_UTF32CharsToUTF8
+#define V_UTF32CharsToUTF16 Q_UTF32CharsToUTF16
 
 // Decode a single UTF-8 character to a uchar32, returns number of UTF-8 bytes parsed
 int Q_UTF8ToUChar32( const char *pUTF8_, uchar32 &uValueOut, bool &bErrorOut );
+#define V_UTF8ToUChar32 Q_UTF8ToUChar32
 
 // Decode a single UTF-16 character to a uchar32, returns number of UTF-16 characters (NOT BYTES) consumed
 int Q_UTF16ToUChar32( const uchar16 *pUTF16, uchar32 &uValueOut, bool &bErrorOut );
+#define V_UTF16ToUChar32 Q_UTF16ToUChar32
 
 
 // NOTE: WString means either UTF32 or UTF16 depending on the platform and compiler settings.

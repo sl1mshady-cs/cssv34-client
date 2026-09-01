@@ -1079,4 +1079,30 @@ void DumpMemorySummary( void )
 // Turn off memdbg macros (turned on up top) since this is included like a header
 #include "tier0/memdbgoff.h"
 
+char const* Plat_GetEnv(char const* pEnvVarName)
+{
+	return getenv(pEnvVarName);
+}
 
+PLATFORM_INTERFACE bool Plat_GetExecutablePath(char* pBuff, size_t nBuff)
+{
+#if defined OSX
+	uint32_t _nBuff = nBuff;
+	bool bSuccess = _NSGetExecutablePath(pBuff, &_nBuff) == 0;
+	pBuff[nBuff - 1] = '\0';
+	return bSuccess;
+#elif defined LINUX
+	ssize_t nRead = readlink("/proc/self/exe", pBuff, nBuff - 1);
+	if (nRead != -1)
+	{
+		pBuff[nRead] = 0;
+		return true;
+	}
+
+	pBuff[0] = 0;
+	return false;
+#else
+	AssertMsg(false, "Implement Plat_GetExecutablePath");
+	return false;
+#endif
+}

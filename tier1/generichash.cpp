@@ -308,7 +308,7 @@ unsigned FASTCALL HashBlock( const void *pKey, unsigned size )
 
 
 //-----------------------------------------------------------------------------
-// Murmur hash
+// MurmurHash2 (bug: null keys collide with each other!)
 //-----------------------------------------------------------------------------
 uint32 MurmurHash2( const void * key, int len, uint32 seed )
 {
@@ -362,26 +362,33 @@ uint32 MurmurHash2( const void * key, int len, uint32 seed )
 }
 
 #define TOLOWERU( c ) ( ( uint32 ) ( ( ( c >= 'A' ) && ( c <= 'Z' ) )? c + 32 : c ) )
-uint32 MurmurHash2LowerCase( char const *pString, uint32 nSeed )
+uint32 MurmurHash2LowerCase( char const *pString, int nLen, uint32 nSeed )
 {
-	int nLen = ( int )strlen( pString );
-	char *p = ( char * ) stackalloc( nLen + 1 );
-	for( int i = 0; i < nLen ; i++ )
+	char *p = ( char * )stackalloc( nLen + 1 );
+	for ( int i = 0; i < nLen; i++ )
 	{
 		p[i] = TOLOWERU( pString[i] );
 	}
+	p[nLen] = 0;
+
 	return MurmurHash2( p, nLen, nSeed );
 }
 
+uint32 MurmurHash2LowerCase( char const *pString, uint32 nSeed )
+{
+	int nLen = strlen( pString );
+	return MurmurHash2LowerCase( pString, nLen, nSeed );
+}
+
+///// RuSHeRR Custom /////
 
 //-----------------------------------------------------------------------------
-// Murmur hash, 64 bit- endian neutral
+// MurmurHash2, 64 bit - endian neutral
 //-----------------------------------------------------------------------------
-uint64 MurmurHash64( const void * key, int len, uint32 seed )
+uint64 MurmurHash2_64( const void * key, int len, uint32 seed )
 {
 	// 'm' and 'r' are mixing constants generated offline.
 	// They're not really 'magic', they just happen to work well.
-
 	const uint32 m = 0x5bd1e995;
 	const int r = 24;
 
@@ -435,3 +442,77 @@ uint64 MurmurHash64( const void * key, int len, uint32 seed )
 	return h;
 }
 
+//-----------------------------------------------------------------------------
+// Backward compat (MurmurHash2_64)
+//-----------------------------------------------------------------------------
+uint64 MurmurHash64( const void* key, int len, uint32 seed ) 
+{
+	return MurmurHash2_64(key, len, seed);
+}
+
+//-----------------------------------------------------------------------------
+// Murmur32_Scramble
+//-----------------------------------------------------------------------------
+static inline uint32 Murmur32_Scramble( uint32 k )
+{
+	k *= 0xcc9e2d51;
+	k = (k << 15) | (k >> 17);
+	k *= 0x1b873593;
+	return k;
+}
+
+//-----------------------------------------------------------------------------
+// MurmurHash3 - 32 bit version
+//-----------------------------------------------------------------------------
+uint32 MurmurHash3( const void* key, int len, uint32 seed )
+{
+	uint32 h = seed;
+	uint32 k;
+	
+	// (void*) -> (byte*)
+	const byte* data = (const unsigned char*)key;
+
+	/* Read in groups of 4. */
+	for (int i = len >> 2; i; i--) {
+		// Here is a source of differing results across endiannesses.
+		// A swap here has no effects on hash properties though.
+		memcpy(&k, data, sizeof(uint32));
+		data += sizeof(uint32);
+		h ^= Murmur32_Scramble(k);
+		h = (h << 13) | (h >> 19);
+		h = h * 5 + 0xe6546b64;
+	}
+	/* Read the rest. */
+	k = 0;
+	for (int i = len & 3; i; i--) {
+		k <<= 8;
+		k |= data[i - 1];
+	}
+	// A swap is *not* necessary here because the preceding loop already
+	// places the low bytes in the low places according to whatever endianness
+	// we use. Swaps only apply when the memory is copied in a chunk.
+	h ^= Murmur32_Scramble(k);
+	/* Finalize. */
+	h ^= len;
+	h ^= h >> 16;
+	h *= 0x85ebca6b;
+	h ^= h >> 13;
+	h *= 0xc2b2ae35;
+	h ^= h >> 16;
+
+	return h;
+}
+
+//-----------------------------------------------------------------------------
+// Return murmurhash3 of a downcased string
+//-----------------------------------------------------------------------------
+uint32 MurmurHash3LowerCase( char const *pString, uint32 nSeed )
+{
+	int nLen = ( int )strlen( pString );
+	char *p = ( char * ) stackalloc( nLen + 1 );
+	for( int i = 0; i < nLen ; i++ )
+	{
+		p[i] = TOLOWERU( pString[i] );
+	}
+	return MurmurHash3( p, nLen, nSeed );
+}

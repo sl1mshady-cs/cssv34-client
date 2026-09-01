@@ -330,6 +330,93 @@ inline size_t MemAlloc_GetSizeAligned( void *pMemBlock )
 	return g_pMemAlloc->GetSize( pAlloc ) - ( (byte *)pMemBlock - (byte *)pAlloc );
 }
 
+
+struct aligned_tmp_t
+{
+	// empty base class
+};
+
+/*
+This class used to be required if you wanted an object to be allocated with a specific
+alignment. ALIGN16 and ALIGN16_POST are not actually sufficient for this because they
+guarantee that the globals, statics, locals, and function parameters are appropriately
+aligned they do not affect memory allocation alignment.
+However this class is usually not needed because as of 2012 our policy is that our
+allocator should take care of this automatically. Any object whose size is a multiple
+of 16 will be 16-byte aligned. Existing uses of this class were not changed because
+the cost/benefit did not justify it.
+*/
+// template here to allow adding alignment at levels of hierarchy that aren't the base
+template< int bytesAlignment = 16, class T = aligned_tmp_t >
+class CAlignedNewDelete : public T
+{
+public:
+	/*
+	Note that this class does not overload operator new[] and delete[] which means that
+	classes that depend on this for alignment may end up misaligned if an array is
+	allocated. This problem is now mostly theoretical because this class is mostly
+	obsolete.
+	*/
+	void *operator new( size_t nSize )
+	{
+		return MemAlloc_AllocAligned( nSize, bytesAlignment );
+	}
+
+	void* operator new( size_t nSize, int nBlockUse, const char *pFileName, int nLine )
+	{
+		return MemAlloc_AllocAlignedFileLine( nSize, bytesAlignment, pFileName, nLine );
+	}
+
+	void operator delete(void *pData)
+	{
+		if ( pData )
+		{
+			MemAlloc_FreeAligned( pData );
+		}
+	}
+
+	void operator delete( void* pData, int nBlockUse, const char *pFileName, int nLine )
+	{
+		if ( pData )
+		{
+			MemAlloc_FreeAligned( pData, pFileName, nLine );
+		}
+	}
+};
+
+// Empty base classes can sometimes take space if the compiler isn't smart
+// so use this class if you don't actually have a base you care about.
+template< int bytesAlignment >
+class CAlignedNewDeleteNoBase
+{
+public:
+	void *operator new( size_t nSize )
+	{
+		return MemAlloc_AllocAligned( nSize, bytesAlignment );
+	}
+
+	void* operator new( size_t nSize, int nBlockUse, const char *pFileName, int nLine )
+	{
+		return MemAlloc_AllocAlignedFileLine( nSize, bytesAlignment, pFileName, nLine );
+	}
+
+	void operator delete( void *pData )
+	{
+		if ( pData )
+		{
+			MemAlloc_FreeAligned( pData );
+		}
+	}
+
+	void operator delete( void* pData, int nBlockUse, const char *pFileName, int nLine )
+	{
+		if ( pData )
+		{
+			MemAlloc_FreeAligned( pData );
+		}
+	}
+};
+
 //-----------------------------------------------------------------------------
 
 #if (defined(_DEBUG) || defined(USE_MEM_DEBUG))
@@ -609,60 +696,5 @@ FORCEINLINE size_t ApproximateProcessMemoryUsage( void )
 }
 
 #endif
-
-struct aligned_tmp_t
-{
-	// empty base class
-};
-
-/*
-This class used to be required if you wanted an object to be allocated with a specific
-alignment. ALIGN16 and ALIGN16_POST are not actually sufficient for this because they
-guarantee that the globals, statics, locals, and function parameters are appropriately
-aligned they do not affect memory allocation alignment.
-However this class is usually not needed because as of 2012 our policy is that our
-allocator should take care of this automatically. Any object whose size is a multiple
-of 16 will be 16-byte aligned. Existing uses of this class were not changed because
-the cost/benefit did not justify it.
-*/
-// template here to allow adding alignment at levels of hierarchy that aren't the base
-template< int bytesAlignment = 16, class T = aligned_tmp_t >
-class CAlignedNewDelete : public T
-{
-
-public:
-	/*
-	Note that this class does not overload operator new[] and delete[] which means that
-	classes that depend on this for alignment may end up misaligned if an array is
-	allocated. This problem is now mostly theoretical because this class is mostly
-	obsolete.
-	*/
-	void *operator new( size_t nSize )
-	{
-		return MemAlloc_AllocAligned( nSize, bytesAlignment );
-	}
-
-	void* operator new( size_t nSize, int nBlockUse, const char *pFileName, int nLine )
-	{
-		return MemAlloc_AllocAlignedFileLine( nSize, bytesAlignment, pFileName, nLine );
-	}
-
-	void operator delete(void *pData)
-	{
-		if ( pData )
-		{
-			MemAlloc_FreeAligned( pData );
-		}
-	}
-
-	void operator delete( void* pData, int nBlockUse, const char *pFileName, int nLine )
-	{
-		if ( pData )
-		{
-			MemAlloc_FreeAligned( pData, pFileName, nLine );
-		}
-	}
-};
-
 
 #endif /* TIER0_MEMALLOC_H */

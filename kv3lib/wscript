@@ -1,0 +1,61 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from waflib import Utils
+import os
+
+top = '.'
+PROJECT_NAME = 'kv3lib'
+
+def options(opt):
+	# stub
+	return
+
+def configure(conf):
+	conf.env.append_unique('DEFINES', ['KV3LIB=1'])
+
+def build(bld):
+	source = [
+		# keyvalues3
+	    "keyvalues3.cpp",
+	    "keyvalues3_oldschematext.cpp",
+	    "keyvalues3_textreader.cpp",
+	    "keyvalues3_textwriter.cpp",
+	    "keyvalues3_binaryreader.cpp",
+	    "keyvalues3_binarywriter.cpp",
+	    "keyvalues3_kv1textreader.cpp",
+	    "keyvalues3_kv1textwriter.cpp",
+	    "kv3transfer.cpp",
+	    "kv3schemahelpers.cpp",
+		"kv3format_manager.cpp",
+		"kv3formats.cpp",
+
+		# Source2 KV3 dependencies [$KV3_CSGO]
+		"blockcompress.cpp",
+		"utltokenizer.cpp"
+	]
+
+	includes = [
+		'.',
+		'../',
+		'../public',
+		'../public/tier1',
+		'../public/tier0',
+		'../common'
+	]
+
+	defines = []
+	libs = []
+
+	bld.stlib(
+		source   = source,
+		target   = PROJECT_NAME,
+		name     = PROJECT_NAME,
+		features = 'c cxx',
+		includes = includes,
+		defines  = defines,
+		use      = libs,
+		subsystem = bld.env.MSVC_SUBSYSTEM,
+		idx      = bld.get_taskgen_count()
+	)
+

@@ -63,6 +63,7 @@ projects={
 		'ivp/havana/havok/hk_math',
 		'ivp/ivp_compact_builder',
 		'ivp/ivp_physics',
+		'kv3lib',
 		'launcher',
 		'launcher_main',
 		'materialsystem',
@@ -97,6 +98,7 @@ projects={
 	],
 	'tests': [
 		'appframework',
+		'kv3lib',
 		'tier0',
 		'tier1',
 		'tier2',
@@ -128,6 +130,7 @@ projects={
 		'ivp/havana/havok/hk_math',
 		'ivp/ivp_compact_builder',
 		'ivp/ivp_physics',
+		'kv3lib',
 		'materialsystem',
 		'mathlib',
 		'particles',

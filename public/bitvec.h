@@ -41,6 +41,53 @@ private:
 #pragma intrinsic(_BitScanForward)
 #endif
 
+
+#if PLATFORM_WINDOWS
+inline uint Plat_BitScanForward( uint32 nMask )
+{
+	Assert( nMask );
+	unsigned long nIndex;
+	_BitScanForward( &nIndex, nMask );
+	return nIndex;
+}
+inline uint Plat_BitScanReverse( uint32 nMask )
+{
+	Assert( nMask );
+	unsigned long nIndex;
+	_BitScanReverse( &nIndex, nMask );
+	return nIndex;
+}
+#elif IsPlatformLinux() || IsPlatformOSX()
+inline uint Plat_BitScanForward( uint32 nMask )
+{
+	Assert( nMask );
+	return __builtin_ctz( nMask );
+}
+inline uint Plat_BitScanReverse( uint32 nMask )
+{
+	Assert( nMask );
+	return __builtin_clz( nMask ) ^ 31;
+}
+#else 
+inline uint Plat_BitScanForward( uint32 nMask )
+{
+	Assert( nMask );
+	for ( uint i = 0; i < 32; ++i )
+		if ( ( 1 << i ) & nMask )
+			return i;
+	return 32; // undefined.. should it be 32 or 16 or 8 or 0?
+}
+inline uint Plat_BitScanReverse( uint32 nMask )
+{
+	Assert( nMask );
+	for ( uint i = 32; i-- > 0; )
+		if ( ( 1 << i ) & nMask )
+			return i;
+	return 32; // undefined.. should it be 32 or 16 or 8 or 0?
+}
+#endif
+
+
 inline int FirstBitInWord( unsigned int elem, int offset )
 {
 #if _WIN32
@@ -201,6 +248,37 @@ inline int GetBitForBitnumByte( int bitNum )
 
 inline int CalcNumIntsForBits( int numBits )	{ return (numBits + (BITS_PER_INT-1)) / BITS_PER_INT; }
 
+// http://bits.stephan-brumme.com/PopulationCount.html
+// http://graphics.stanford.edu/~seander/bithacks.html#PopulationCountSetParallel
+inline uint PopulationCount( uint32 v )
+{
+	uint32 const w = v - ((v >> 1) & 0x55555555);
+	uint32 const x = (w & 0x33333333) + ((w >> 2) & 0x33333333);
+	return ((x + (x >> 4) & 0xF0F0F0F) * 0x1010101) >> 24;
+}
+
+inline uint PopulationCount( uint64 v )
+{
+	uint64 const w = v - ((v >> 1) & 0x5555555555555555ull);
+	uint64 const x = (w & 0x3333333333333333ull) + ((w >> 2) & 0x3333333333333333ull);
+	return ( ( x + ( x >> 4 ) & 0x0F0F0F0F0F0F0F0Full ) * 0x0101010101010101ull ) >> 56; // [Sergiy] I'm not sure if it's faster to multiply here to reduce the bit sum further first, so feel free to optimize, please
+}
+
+inline uint PopulationCount( uint16 v )
+{
+	uint16 const w = v - ((v >> 1) & 0x5555);
+	uint16 const x = (w & 0x3333) + ((w >> 2) & 0x3333);
+	return ( ( x + ( x >> 4 ) & 0x0F0F) * 0x101 ) >> 8;
+}
+
+
+inline uint PopulationCount( uint8 v )
+{
+	uint8 const w = v - ( ( v >> 1 ) & 0x55);
+	uint8 const x = ( w & 0x33 ) +  ( ( w >> 2 ) & 0x33 );
+	return x + ( x >> 4 ) & 0x0F;
+}
+
 #ifdef _X360
 #define BitVec_Bit( bitNum ) GetBitForBitnum( bitNum )
 #define BitVec_BitInByte( bitNum ) GetBitForBitnumByte( bitNum )
@@ -264,6 +342,7 @@ public:
 
 	uint32	GetDWord(int i) const;
 	void	SetDWord(int i, uint32 val);
+	uint    PopulationCount() const;
 
 	CBitVecT<BASE_OPS>&	operator=(const CBitVecT<BASE_OPS> &other)	{ other.CopyTo( this ); return *this; }
 	bool			operator==(const CBitVecT<BASE_OPS> &other)		{ return Compare( other ); }
@@ -919,6 +998,20 @@ inline void CBitVecT<BASE_OPS>::SetDWord(int i, uint32 val)
 }
 
 //-----------------------------------------------------------------------------
+template <class BASE_OPS>
+inline uint32 CBitVecT<BASE_OPS>::PopulationCount() const
+{
+	int nDwordCount = this->GetNumDWords();
+	const uint32 *pBase = this->Base();
+	uint32 nCount = 0;
+	for( int i = 0; i < nDwordCount; ++i )
+	{
+		nCount += ::PopulationCount( pBase[i] );
+	}
+	return nCount;
+}
+
+//-----------------------------------------------------------------------------
 
 inline unsigned GetStartBitMask( int startBit )
 {
@@ -960,6 +1053,24 @@ inline unsigned GetStartBitMask( int startBit )
 
 	return g_StartMask[ startBit & 31 ];
 }
+
+inline int BitVec_CountNewBits( const uint32 *pOld, const uint32 *pNew, int nDWords, uint32 nEndMask )
+{
+	// NOTE - this assumes that any unused bits are unchanged between pOld and pNew
+
+	int nNewBits = 0;
+
+	const uint32 *pEnd = pNew + nDWords - 1;
+	for ( ; pNew < pEnd; ++pOld, ++pNew )
+	{
+		uint32 diff = *pNew & ~*pOld;
+		nNewBits += PopulationCount( diff );
+	}
+	nNewBits += PopulationCount( ( *pNew & ~*pOld ) & nEndMask );
+
+	return nNewBits;
+}
+
 
 template <typename BITCOUNTTYPE>
 inline int CVarBitVecBase<BITCOUNTTYPE>::FindNextSetBit( int startBit ) const

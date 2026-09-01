@@ -113,7 +113,8 @@ public:
 
 	// Finds the symbol for pString
 	CUtlSymbol Find( const char* pString ) const;
-	
+	CUtlSymbol FindElement( const char* pString ) const { return Find( pString ); } // Source2 version
+
 	// Look up the string associated with a particular symbol
 	const char* String( CUtlSymbol id ) const;
 

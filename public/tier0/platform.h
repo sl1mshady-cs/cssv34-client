@@ -510,46 +510,6 @@ typedef void * HINSTANCE;
         #define DECL_ALIGN(x) /* */
 #endif
 
-#ifdef _MSC_VER
-// MSVC has the align at the start of the struct
-#define ALIGN4 DECL_ALIGN(4)
-#define ALIGN8 DECL_ALIGN(8)
-#define ALIGN16 DECL_ALIGN(16)
-#define ALIGN32 DECL_ALIGN(32)
-#define ALIGN128 DECL_ALIGN(128)
-
-#define ALIGN4_POST
-#define ALIGN8_POST
-#define ALIGN16_POST
-#define ALIGN32_POST
-#define ALIGN128_POST
-#elif defined( GNUC )
-// gnuc has the align decoration at the end
-#define ALIGN4
-#define ALIGN8 
-#define ALIGN16
-#define ALIGN32
-#define ALIGN128
-
-#define ALIGN4_POST DECL_ALIGN(4)
-#define ALIGN8_POST DECL_ALIGN(8)
-#define ALIGN16_POST DECL_ALIGN(16)
-#define ALIGN32_POST DECL_ALIGN(32)
-#define ALIGN128_POST DECL_ALIGN(128)
-#else
-#error
-#endif
-
-// !!! NOTE: if you get a compile error here, you are using VALIGNOF on an abstract type :NOTE !!!
-#define VALIGNOF_PORTABLE( type ) ( sizeof( AlignOf_t<type> ) - sizeof( type ) )
-
-#if defined( COMPILER_GCC ) || defined( COMPILER_MSVC )
-#define VALIGNOF( type ) __alignof( type )
-#define VALIGNOF_TEMPLATE_SAFE( type ) VALIGNOF_PORTABLE( type )
-#else
-#error "PORT: Code only tested with MSVC! Must validate with new compiler, and use built-in keyword if available."
-#endif
-
 // Pull in the /analyze code annotations.
 #include "annotations.h"
 
@@ -723,6 +683,7 @@ typedef void * HINSTANCE;
 #undef FORCEINLINE
 #define FORCEINLINE static
 #endif
+
 
 // Remove warnings from warning level 4.
 #pragma warning(disable : 4514) // warning C4514: 'acosl' : unreferenced inline function has been removed
@@ -1343,6 +1304,8 @@ PLATFORM_INTERFACE bool GetMemoryInformation( MemoryInformation *pOutMemoryInfo 
 PLATFORM_INTERFACE float GetCPUUsage();
 
 PLATFORM_INTERFACE void GetCurrentDate( int *pDay, int *pMonth, int *pYear );
+PLATFORM_INTERFACE void GetCurrentDayOfTheWeek( int *pDay );  // 0 = Sunday
+PLATFORM_INTERFACE void GetCurrentDayOfTheYear( int *pDay );  // 0 = Jan 1
 
 // ---------------------------------------------------------------------------------- //
 // Performance Monitoring Events - L2 stats etc...
@@ -1404,6 +1367,126 @@ PLATFORM_INTERFACE void* Plat_SimpleLog( const tchar* file, int line );
 #define Plat_FastMemset memset
 #define Plat_FastMemcpy memcpy
 #endif
+
+//-----------------------------------------------------------------------------
+// UUIDs
+// Note: in accordance with broader convention, use V_uuid_t, not GUID or UUID
+//
+//		 Generates Version 4 UUIDs
+//-----------------------------------------------------------------------------
+#undef V_uuid_t
+
+struct _GUID;
+typedef _GUID GUID;
+
+struct V_uuid_t
+{
+	uint32 Data1;
+	uint16 Data2;
+	uint16 Data3;
+	uint8  Data4[8];
+
+	operator GUID &( ) { return *( ( GUID * )this ); }
+	operator const GUID &( ) const { return *( ( GUID * )this ); }
+};
+
+#define DEFINE_UUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) extern const V_uuid_t SELECTANY name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+#define DEFINE_UUID_LOCAL(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) static const V_uuid_t name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+
+DEFINE_UUID( NULL_UUID, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
+
+// Somewhat funky workaround to avoid circular dependency between tier0 and vstdlib
+#define Plat_CreateUUID( uuid ) Plat_CreateUUIDImpl(uuid, &RandomInt )
+PLATFORM_INTERFACE void Plat_CreateUUIDImpl( V_uuid_t *uuid, int( *pfnRand )( int, int ) );
+
+const int UUID_STRING_SIZE = 36 + 1; // See RFC 4122
+PLATFORM_INTERFACE void Plat_UUIDToString( const V_uuid_t *, char *pBuf, size_t nBufSize );
+PLATFORM_INTERFACE bool Plat_UUIDFromString( V_uuid_t *, const char *pBuf );
+
+// Compare for containers/sort (<0,0,>0)
+inline int Plat_CompareUUIDs( const V_uuid_t *pLhs, const V_uuid_t *pRhs )
+{
+	return memcmp( pLhs, pRhs, sizeof( V_uuid_t ) );
+}
+
+inline bool Plat_UUIDLessThan( const V_uuid_t &lhs, const V_uuid_t &rhs )
+{
+	return ( Plat_CompareUUIDs( &lhs, &rhs ) < 0 );
+}
+
+inline int Plat_UUIDsEqual( const V_uuid_t &lhs, const V_uuid_t &rhs )
+{
+	return ( Plat_CompareUUIDs( &lhs, &rhs ) == 0 );
+}
+
+inline bool operator<( const V_uuid_t &lhs, const V_uuid_t &rhs )
+{
+	return ( Plat_CompareUUIDs( &lhs, &rhs ) < 0 );
+}
+
+inline bool operator>( const V_uuid_t &lhs, const V_uuid_t &rhs )
+{
+	return ( Plat_CompareUUIDs( &lhs, &rhs ) > 0 );
+}
+
+inline bool operator==( const V_uuid_t &lhs, const V_uuid_t &rhs )
+{
+	return ( Plat_CompareUUIDs( &lhs, &rhs ) == 0 );
+}
+
+inline bool operator!=( const V_uuid_t &lhs, const V_uuid_t &rhs )
+{
+	return ( Plat_CompareUUIDs( &lhs, &rhs ) != 0 );
+}
+
+// Helpers
+class CUUIDString
+{
+public:
+	CUUIDString() { szString[0] = 0; }
+	CUUIDString( const V_uuid_t &id ) { Plat_UUIDToString( &id, szString, sizeof( szString ) ); }
+	CUUIDString( const V_uuid_t *id ) { Plat_UUIDToString( id, szString, sizeof( szString ) ); }
+	CUUIDString( const CUUIDString &from ) { memcpy( this, &from, sizeof( *this ) ); }
+
+	CUUIDString( const char *pszFrom, bool bValidate = true ) { FromString( pszFrom, bValidate ); }
+
+	CUUIDString &operator=( const CUUIDString &from ) { memcpy( this, &from, sizeof( *this ) ); return *this; }
+	CUUIDString &operator=( const V_uuid_t &id ) { Plat_UUIDToString( &id, szString, sizeof( szString ) ); return *this; }
+
+	const char *Get() const { return ( *szString ) ? szString : "00000000-0000-0000-0000-000000000000"; }
+	operator const char *( ) const { return Get(); }
+
+	void FromUuid( const V_uuid_t &id ) { Plat_UUIDToString( &id, szString, sizeof( szString ) ); }
+	bool ToUuid( V_uuid_t *id ) const { return Plat_UUIDFromString( id, operator const char *( ) ); }
+
+	bool FromString( const char *pszFrom, bool bValidate = true )
+	{
+		if ( bValidate )
+		{
+			V_uuid_t temp;
+			if ( Plat_UUIDFromString( &temp, pszFrom ) )
+			{
+				Plat_UUIDToString( &temp, szString, sizeof( szString ) );
+				return true;
+			}
+			return false;
+		}
+		else
+		{
+			// Copy manually to avoid problems with protected_things.h and tier position
+			char *p = szString, *pLimit = szString + sizeof( szString );
+			while ( p < pLimit  && *pszFrom )
+			{
+				*p++ = *pszFrom++;
+			}
+			szString[sizeof( szString ) - 1] = 0;
+			return ( p == pLimit );
+		}
+	}
+
+private:
+	char szString[UUID_STRING_SIZE];
+};
 
 //-----------------------------------------------------------------------------
 // Returns true if debugger attached, false otherwise
@@ -1485,6 +1568,48 @@ inline const char *GetPlatformExt( void )
 
 #if defined( _X360 )
 #include "xbox/xbox_core.h"
+#endif
+
+//-----------------------------------------------------------------------------
+// C++11 helpers
+//-----------------------------------------------------------------------------
+#define VALVE_CPP11 1
+
+#if VALVE_CPP11
+template <class T> struct C11RemoveReference { typedef T Type; };
+template <class T> struct C11RemoveReference<T&> { typedef T Type;  };
+template <class T> struct C11RemoveReference<T&&> { typedef T Type;  };
+
+template <class T>
+FORCEINLINE typename C11RemoveReference<T>::Type&& Move( T&& obj )
+{
+	return static_cast< typename C11RemoveReference<T>::Type&& >( obj );
+}
+
+template <class T>
+FORCEINLINE T&& Forward( typename C11RemoveReference<T>::Type& obj )
+{
+	return static_cast< T&& >( obj );
+}
+
+template <class T>
+FORCEINLINE T&& Forward( typename C11RemoveReference<T>::Type&& obj )
+{
+	return static_cast< T&& >( obj );
+}
+
+// no implementation, useful inside of decltype()
+template <class T> T&& DeclValue();
+
+
+// If you want to derive a class and declare all constructors forwarding args then you can use
+// this neat macro.
+// e.g.:
+// class ABaseClass { public: ABaseClass( int x, float y ) { ... } };
+// class DerivedClass : public ABaseClass { DECLARE_FORWARD_CONSTRUCTOR( DerivedClass, ABaseClass ) {} };
+#define DECLARE_FORWARD_CONSTRUCTOR( typenamederived, typenamebase ) \
+	template< typename... Args > typenamederived( Args&&... args ) : typenamebase( Forward< Args >( args )... )
+
 #endif
 
 //-----------------------------------------------------------------------------
@@ -1760,12 +1885,139 @@ PLATFORM_INTERFACE void Plat_SetWatchdogHandlerFunction( Plat_WatchDogHandlerFun
 #include "tier0/valve_on.h"
 
 #if defined(TIER0_DLL_EXPORT)
-extern "C" int V_tier0_stricmp(const char *s1, const char *s2 );
 #undef stricmp
 #undef strcmpi
 #define stricmp(s1,s2) V_tier0_stricmp( s1, s2 )
 #define strcmpi(s1,s2) V_tier0_stricmp( s1, s2 )
+#else
+int	_V_stricmp	  (const char *s1, const char *s2 );
+int	V_strncasecmp (const char *s1, const char *s2, int n);
+
+// A special high-performance case-insensitive compare function that in
+// a single call distinguishes between exactly matching strings,
+// strings equal in case-insensitive way, and not equal strings:
+//   returns 0 if strings match exactly
+//   returns >0 if strings match in a case-insensitive way, but do not match exactly
+//   returns <0 if strings do not match even in a case-insensitive way
+int	_V_stricmp_NegativeForUnequal	  ( const char *s1, const char *s2 );
+
+#undef stricmp
+#undef strcmpi
+#define stricmp(s1,s2) _V_stricmp(s1, s2)
+#define strcmpi(s1,s2) _V_stricmp(s1, s2)
+#undef strnicmp
+#define strnicmp V_strncasecmp 
 #endif
 
+// Use AlignedByteArray_t if you need an appropriately aligned array of T with no constructor (e.g CUtlMemoryFixed):
+//  - usage:		AlignedByteArray_t< NUM, T >
+//  - same as:		byte[ NUM*sizeof(T) ]
+//  - BUT:			avoids calling T's constructor
+//  - AND:			has same alignment as T
+// [ Thanks to CygnusX1: http://stackoverflow.com/questions/5134217/aligning-data-on-the-stack-c ]
+
+#if defined( GNUC )
+// gnuc has the align decoration at the end
+#define ALIGN4
+#define ALIGN8 
+#define ALIGN16
+#define ALIGN32
+#define ALIGN128
+#define ALIGN_N( _align_ )
+
+#undef ALIGN16_POST
+#define ALIGN4_POST DECL_ALIGN(4)
+#define ALIGN8_POST DECL_ALIGN(8)
+#define ALIGN16_POST DECL_ALIGN(16)
+#define ALIGN32_POST DECL_ALIGN(32)
+#define ALIGN128_POST DECL_ALIGN(128)
+#define ALIGN_N_POST( _align_ ) DECL_ALIGN( _align_ )
+#else
+// MSVC has the align at the start of the struct
+// PS3 SNC supports both
+#define ALIGN4 DECL_ALIGN(4)
+#define ALIGN8 DECL_ALIGN(8)
+#define ALIGN16 DECL_ALIGN(16)
+#define ALIGN32 DECL_ALIGN(32)
+#define ALIGN128 DECL_ALIGN(128)
+#define ALIGN_N( _align_ ) DECL_ALIGN( _align_ )
+
+#define ALIGN4_POST
+#define ALIGN8_POST
+#define ALIGN16_POST
+#define ALIGN32_POST
+#define ALIGN128_POST
+#define ALIGN_N_POST( _align_ )
+#endif
+
+// !!! NOTE: if you get a compile error here, you are using VALIGNOF on an abstract type :NOTE !!!
+#define VALIGNOF_PORTABLE( type ) ( sizeof( AlignOf_t<type> ) - sizeof( type ) )
+
+#if defined( COMPILER_GCC ) || defined( COMPILER_MSVC )
+#define VALIGNOF( type ) __alignof( type )
+#define VALIGNOF_TEMPLATE_SAFE( type ) VALIGNOF_PORTABLE( type )
+#else
+#error "PORT: Code only tested with MSVC! Must validate with new compiler, and use built-in keyword if available."
+#endif
+
+// Use ValidateAlignment to sanity-check alignment usage when allocating arrays of an aligned type
+#define ALIGN_ASSERT( pred ) { COMPILE_TIME_ASSERT( pred ); }
+template< class T, int ALIGN >
+inline void ValidateAlignmentExplicit(void)
+{
+	// Alignment must be a power of two
+	ALIGN_ASSERT((ALIGN & (ALIGN - 1)) == 0);
+	// Alignment must not imply gaps in the array (which the CUtlMemory pattern does not allow for)
+	ALIGN_ASSERT(ALIGN <= sizeof(T));
+	// Alignment must be a multiple of the size of the object type, or elements will *NOT* be aligned!
+	ALIGN_ASSERT((sizeof(T) % ALIGN) == 0);
+	// Alignment should be a multiple of the base alignment of T
+//	ALIGN_ASSERT((ALIGN % VALIGNOF(T)) == 0);
+	// Alignment must not be bigger than the maximum declared alignment used by DECLARE_ALIGNED_BYTE_ARRAY
+	// (if you hit this, just add more powers of 2 below and increase this limit)
+	ALIGN_ASSERT( ALIGN <= 128 );
+}
+template< class T > inline void ValidateAlignment(void) { ValidateAlignmentExplicit<T, VALIGNOF(T)>(); }
+
+// Portable alternative to __alignof
+template<class T> struct AlignOf_t { AlignOf_t(){} AlignOf_t & operator=(const AlignOf_t &) { return *this; } byte b; T t; };
+
+template < size_t NUM, class T, int ALIGN > struct AlignedByteArrayExplicit_t{};
+template < size_t NUM, class T > struct AlignedByteArray_t : public AlignedByteArrayExplicit_t< NUM, T, VALIGNOF_TEMPLATE_SAFE(T) > {};
+
+#define DECLARE_ALIGNED_BYTE_ARRAY( ALIGN ) \
+	template < size_t NUM, class T > \
+	struct ALIGN_N( ALIGN ) AlignedByteArrayExplicit_t< NUM, T, ALIGN > \
+	{ \
+		/* NOTE: verify alignment in the constructor (which may be wrong if this is heap-allocated, for ALIGN > MEMALLOC_MAX_AUTO_ALIGN) */ \
+		AlignedByteArrayExplicit_t()	{ if ( (ALIGN-1) & (size_t)this ) DebuggerBreakIfDebugging(); } \
+		T *			Base( void )		{ ValidateAlignmentExplicit<T,ALIGN>(); return (T *)&m_Data; } \
+		const T *	Base( void ) const	{ ValidateAlignmentExplicit<T,ALIGN>(); return (const T *)&m_Data; } \
+	private: \
+		byte m_Data[ NUM*sizeof( T ) ]; \
+	} ALIGN_N_POST( ALIGN );
+
+DECLARE_ALIGNED_BYTE_ARRAY(1);
+DECLARE_ALIGNED_BYTE_ARRAY(2);
+DECLARE_ALIGNED_BYTE_ARRAY(4);
+DECLARE_ALIGNED_BYTE_ARRAY(8);
+DECLARE_ALIGNED_BYTE_ARRAY(16);
+DECLARE_ALIGNED_BYTE_ARRAY(32);
+DECLARE_ALIGNED_BYTE_ARRAY(64);
+DECLARE_ALIGNED_BYTE_ARRAY(128);
+
+// Tier0 uses this for faster stricmp.
+PLATFORM_INTERFACE int V_tier0_stricmp( const char *a, const char *b );
+
+PLATFORM_INTERFACE void V_tier0_strncpy( char *a, const char *b, int n );
+PLATFORM_INTERFACE char *V_tier0_strncat( char *a, const char *b, int n, int m = -1 );
+PLATFORM_INTERFACE int V_tier0_vsnprintf( char *a, int n, PRINTF_FORMAT_STRING const char *f, va_list l ) FMTFUNCTION( 3, 0 );
+PLATFORM_INTERFACE int V_tier0_snprintf( char *a, int n, PRINTF_FORMAT_STRING const char *f, ... ) FMTFUNCTION( 3, 4 );
+
+//-----------------------------------------------------------------------------
+
+PLATFORM_INTERFACE char const * Plat_GetEnv(char const *pEnvVarName);
+
+PLATFORM_INTERFACE bool Plat_GetExecutablePath(char* pBuff, size_t nBuff);
 
 #endif /* PLATFORM_H */

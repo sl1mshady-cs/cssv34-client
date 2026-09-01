@@ -584,12 +584,54 @@ public:
 
 
 //-----------------------------------------------------------------------------
-// This macro predates universal static_assert support in our toolchains
-#define COMPILE_TIME_ASSERT( pred ) static_assert( pred, "Compile time assert constraint is not true: " #pred )
+// Macro to assist in asserting constant invariants during compilation
 
+// This implementation of compile time assert has zero cost (so it can safely be
+// included in release builds) and can be used at file scope or function scope.
+#ifdef __GNUC__
+       #define COMPILE_TIME_ASSERT( pred ) typedef int UNIQUE_ID[ (pred) ? 1 : -1 ]
+#else
+       #if _MSC_VER >= 1600
+       // If available use static_assert instead of weird language tricks. This
+       // leads to much more readable messages when compile time assert constraints
+       // are violated.
+       #define COMPILE_TIME_ASSERT( pred ) static_assert( pred, "Compile time assert constraint is not true: " #pred )
+       #else
+       // Due to gcc bugs this can in rare cases (some template functions) cause redeclaration
+       // errors when used multiple times in one scope. Fix by adding extra scoping.
+       #define COMPILE_TIME_ASSERT( pred ) typedef char compile_time_assert_type[(pred) ? 1 : -1];
+       #endif
+#endif
 // ASSERT_INVARIANT used to be needed in order to allow COMPILE_TIME_ASSERTs at global
 // scope. However the new COMPILE_TIME_ASSERT macro supports that by default.
 #define ASSERT_INVARIANT( pred )	COMPILE_TIME_ASSERT( pred )
+
+
+//-----------------------------------------------------------------------------
+// If you want to make sure that a template specialization is never used
+// you can't just throw a COMPILE_TIME_ASSERT( false ) in there because
+// gcc always partially evaluates templates and will error regardless of
+// whether the specialization is actually used or not.  Instead you
+// have to assert based on something which requires template types to
+// be resolved and this defers the compile-time assert to the appropriate
+// template expansion step.
+template< typename... >
+class TemplateAlwaysFalse
+{
+public:
+	enum { Value = 0 };
+};
+
+// This is identical to TemplateAlwaysFalse but with a more
+// meaningful name for the compile-time assert.
+template< typename... >
+class TemplateUsageInvalid
+{
+public:
+	enum { Value = 0 };
+};
+#define TEMPLATE_USAGE_INVALID(T) COMPILE_TIME_ASSERT( TemplateUsageInvalid< T >::Value );
+
 
 // NOTE: On GCC / Clang, assert_cast can sometimes fire even if the type is correct. We should just workaround these.
 // The situation where this would occur is 

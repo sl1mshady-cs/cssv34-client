@@ -304,6 +304,7 @@ public:
 
 	// Finds the symbol for pString
 	CUtlSymbolLarge Find( const char* pString ) const;
+	CUtlSymbolLarge FindElement( const char* pString ) const { return Find( pString ); } // Source2 version
 	
 	// Remove all symbols in the table.
 	void  RemoveAll();
@@ -322,6 +323,11 @@ public:
 	int GetElements( int nFirstElement, int nCount, CUtlSymbolLarge *pElements ) const
 	{
 		return m_Lookup.GetElements( nFirstElement, nCount, pElements );
+	}
+
+	const char *GetElementString(int nElement) const
+	{
+		return m_Lookup.Element(nElement)->String();
 	}
 
 	uint64 GetMemoryUsage() const

@@ -27,6 +27,7 @@ def build(bld):
 		'convar.cpp',
 		'datamanager.cpp',
 		'diff.cpp',
+		'floatprint.cpp',
 		'generichash.cpp',
 		'ilocalize.cpp',
 		'interface.cpp',

@@ -105,7 +105,15 @@ public:
 	const char *sprintf(PRINTF_FORMAT_STRING const char *pszFormat, ...) FMTFUNCTION( 2, 3 )
 	{
 		InitQuietTruncation();
-		FmtStrVSNPrintf(m_szBuf, SIZE_BUF, m_bQuietTruncation, &pszFormat, 0, pszFormat ); 
+		FmtStrVSNPrintf( m_szBuf, SIZE_BUF, m_bQuietTruncation, &pszFormat, 0, pszFormat ); 
+		return m_szBuf;
+	}
+
+	// Same as sprintf above, but for compatibility with Steam interface
+	const char *Format( PRINTF_FORMAT_STRING const char *pszFormat, ... )	FMTFUNCTION( 2, 3 )
+	{
+		InitQuietTruncation();
+		FmtStrVSNPrintf( m_szBuf, SIZE_BUF, m_bQuietTruncation, &pszFormat, 0, pszFormat );
 		return m_szBuf;
 	}
 

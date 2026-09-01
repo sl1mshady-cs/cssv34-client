@@ -10,6 +10,11 @@
 
 #if defined(_WIN32) && !defined(_X360)
 #include <errno.h>
+#include <direct.h>
+#include <io.h>
+#elif defined(POSIX)
+#include <sys/types.h>
+#include <sys/stat.h>
 #endif
 #include <assert.h>
 #include "tier0/platform.h"
@@ -476,3 +481,128 @@ PLATFORM_INTERFACE void Plat_SetAllocErrorFn( Plat_AllocErrorFn fn )
 #endif
 
 #endif
+
+
+void Plat_getwd( char *pWorkingDirectory, size_t nBufLen )
+{
+#if defined( PLATFORM_X360 )
+	V_tier0_strncpy( pWorkingDirectory, s_pWorkingDir, nBufLen );
+#elif defined( PLATFORM_WINDOWS )
+	_getcwd( pWorkingDirectory, ( int )nBufLen );
+	V_tier0_strncat( pWorkingDirectory, "\\", ( int )nBufLen );
+#else  // PLATFORM_X360/PLATFORM_WINDOWS
+	if ( getcwd( pWorkingDirectory, nBufLen ) )
+	{
+		V_tier0_strncat( pWorkingDirectory, "/", ( int )nBufLen );
+	}
+	else
+	{
+		V_tier0_strncpy( pWorkingDirectory, "./", ( int )nBufLen );
+	}
+#endif // PLATFORM_X360/PLATFORM_WINDOWS
+}
+
+void Plat_chdir( const char *pDir )
+{
+#if !defined( PLATFORM_X360 )
+	int nErr = _chdir( pDir );
+	NOTE_UNUSED( nErr );
+#else  // PLATFORM_X360
+	V_tier0_strncpy( s_pWorkingDir, pDir, sizeof( s_pWorkingDir ) );
+#endif // PLATFORM_X360
+}
+
+char const * Plat_GetEnv(char const *pEnvVarName)
+{
+	return getenv(pEnvVarName);
+}
+
+bool Plat_GetExecutablePath(char *pBuff, size_t nBuff)
+{
+	return ::GetModuleFileNameA(NULL, pBuff, (DWORD)nBuff) > 0;
+}
+
+int Plat_chmod(const char *filename, int pmode)
+{
+#if defined( PLATFORM_WINDOWS )
+	return _chmod(filename, pmode);
+#else
+	return chmod(filename, pmode);
+#endif
+}
+
+bool Plat_FileExists(const char *pFileName)
+{
+#if defined( PLATFORM_WINDOWS )
+	// VS2015 CRT _stat on Windows XP always returns -1 (lol)
+	// https://connect.microsoft.com/VisualStudio/feedback/details/1557168/wstat64-returns-1-on-xp-always
+	DWORD dwResult = GetFileAttributes(pFileName);
+	return (dwResult != INVALID_FILE_ATTRIBUTES);
+#else
+	struct _stat fileInfo;
+	return (_stat(pFileName, &fileInfo) != -1);
+#endif
+}
+
+size_t Plat_FileSize(const char *pFileName)
+{
+#if defined( PLATFORM_WINDOWS )
+	// VS2015 CRT _stat on Windows XP always returns -1 (lol)
+	// https://connect.microsoft.com/VisualStudio/feedback/details/1557168/wstat64-returns-1-on-xp-always
+	WIN32_FILE_ATTRIBUTE_DATA fileAttributes;
+	BOOL bSuccess = GetFileAttributesEx(pFileName, GetFileExInfoStandard, &fileAttributes);
+	if (!bSuccess)
+		return 0;
+
+	uint64 ulFileSize;
+	ulFileSize = fileAttributes.nFileSizeHigh;
+	ulFileSize <<= 32;
+	ulFileSize |= fileAttributes.nFileSizeLow;
+	return (size_t)ulFileSize;
+#else
+	struct _stat fileInfo;
+	if (_stat(pFileName, &fileInfo) == -1)
+		return 0;
+
+	return fileInfo.st_size;
+#endif
+}
+
+bool Plat_IsDirectory(const char *pFilepath)
+{
+#if defined( PLATFORM_WINDOWS )
+	// VS2015 CRT _stat on Windows XP always returns -1 (lol)
+	// https://connect.microsoft.com/VisualStudio/feedback/details/1557168/wstat64-returns-1-on-xp-always
+	DWORD dwResult = GetFileAttributes(pFilepath);
+	if (dwResult == INVALID_FILE_ATTRIBUTES)
+		return false;
+
+	return (dwResult & FILE_ATTRIBUTE_DIRECTORY) != 0;
+#else
+	struct _stat fileInfo;
+	if (_stat(pFilepath, &fileInfo) == -1)
+		return false;
+
+	return ((fileInfo.st_mode & _S_IFDIR) != 0);
+#endif
+}
+
+bool Plat_FileIsReadOnly(const char *pFileName)
+{
+#if defined( PLATFORM_WINDOWS )
+	// VS2015 CRT _stat on Windows XP always returns -1 (lol)
+	// https://connect.microsoft.com/VisualStudio/feedback/details/1557168/wstat64-returns-1-on-xp-always
+	DWORD dwResult = GetFileAttributes(pFileName);
+	if (dwResult == INVALID_FILE_ATTRIBUTES)
+		return false; // See below.
+
+	return (dwResult & FILE_ATTRIBUTE_READONLY) != 0;
+#else
+	struct _stat fileInfo;
+	if (_stat(pFileName, &fileInfo) == -1)
+		return false; //for the purposes of this test, a nonexistent file is more writable than it is readable.
+
+	return ((fileInfo.st_mode & _S_IWRITE) == 0);
+#endif
+}
+

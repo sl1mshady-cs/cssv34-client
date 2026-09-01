@@ -154,6 +154,138 @@ int	_V_wcslen(const char* file, int line, const wchar_t *pwch)
 	return wcslen( pwch );
 }
 
+int	_V_stricmp( const char *s1, const char *s2 )
+{
+	// It is not uncommon to compare a string to itself. Since stricmp
+	// is expensive and pointer comparison is cheap, this simple test
+	// can save a lot of cycles, and cache pollution.
+	// This also implicitly does the s1 and s2 both equal to NULL check
+	// that the POSIX code used to have.
+	if ( s1 == s2 )
+		return 0;
+
+#ifdef POSIX
+	if ( s1 == NULL )
+		return -1;
+	if ( s2 == NULL )
+		return 1;
+	
+	return stricmp( s1, s2 );
+#else	
+	uint8 const *pS1 = ( uint8 const * ) s1;
+	uint8 const *pS2 = ( uint8 const * ) s2;
+	for(;;)
+	{
+		int c1 = *( pS1++ );
+		int c2 = *( pS2++ );
+		if ( c1 == c2 )
+		{
+			if ( !c1 ) return 0;
+		}
+		else
+		{
+			if ( ! c2 )
+			{
+				return c1 - c2;
+			}
+			c1 = FastASCIIToLower( c1 );
+			c2 = FastASCIIToLower( c2 );
+			if ( c1 != c2 )
+			{
+				return c1 - c2;
+			}
+		}
+		c1 = *( pS1++ );
+		c2 = *( pS2++ );
+		if ( c1 == c2 )
+		{
+			if ( !c1 ) return 0;
+		}
+		else
+		{
+			if ( ! c2 )
+			{
+				return c1 - c2;
+			}
+			c1 = FastASCIIToLower( c1 );
+			c2 = FastASCIIToLower( c2 );
+			if ( c1 != c2 )
+			{
+				return c1 - c2;
+			}
+		}
+	}
+#endif
+}
+
+// A special high-performance case-insensitive compare function
+// returns 0 if strings match exactly
+// returns >0 if strings match in a case-insensitive way, but do not match exactly
+// returns <0 if strings do not match even in a case-insensitive way
+int	_V_stricmp_NegativeForUnequal( const char *s1, const char *s2 )
+{
+	// It is not uncommon to compare a string to itself. Since stricmp
+	// is expensive and pointer comparison is cheap, this simple test
+	// can save a lot of cycles, and cache pollution.
+	if ( s1 == s2 )
+		return 0;
+
+	uint8 const *pS1 = ( uint8 const * ) s1;
+	uint8 const *pS2 = ( uint8 const * ) s2;
+	int iExactMatchResult = 1;
+	for(;;)
+	{
+		int c1 = *( pS1++ );
+		int c2 = *( pS2++ );
+		if ( c1 == c2 )
+		{
+			// strings are case-insensitive equal, coerce accumulated
+			// case-difference to 0/1 and return it
+			if ( !c1 ) return !iExactMatchResult;
+		}
+		else
+		{
+			if ( ! c2 )
+			{
+				// c2=0 and != c1  =>  not equal
+				return -1;
+			}
+			iExactMatchResult = 0;
+			c1 = FastASCIIToLower( c1 );
+			c2 = FastASCIIToLower( c2 );
+			if ( c1 != c2 )
+			{
+				// strings are not equal
+				return -1;
+			}
+		}
+		c1 = *( pS1++ );
+		c2 = *( pS2++ );
+		if ( c1 == c2 )
+		{
+			// strings are case-insensitive equal, coerce accumulated
+			// case-difference to 0/1 and return it
+			if ( !c1 ) return !iExactMatchResult;
+		}
+		else
+		{
+			if ( ! c2 )
+			{
+				// c2=0 and != c1  =>  not equal
+				return -1;
+			}
+			iExactMatchResult = 0;
+			c1 = FastASCIIToLower( c1 );
+			c2 = FastASCIIToLower( c2 );
+			if ( c1 != c2 )
+			{
+				// strings are not equal
+				return -1;
+			}
+		}
+	}
+}
+
 char *_V_strrchr(const char* file, int line, const char *s, char c)
 {
 	AssertValidStringPtr( s );
@@ -499,12 +631,16 @@ int V_atoi( const char *str )
 
 float V_atof (const char *str)
 {
-	AssertValidStringPtr( str );
+	return (float)V_atod( str );
+}
+
+double V_atod(const char *str)
+{
 	double			val;
 	int             sign;
 	int             c;
 	int             decimal, total;
-
+	
 	if (*str == '-')
 	{
 		sign = -1;
@@ -519,12 +655,12 @@ float V_atof (const char *str)
 	{
 		sign = 1;
 	}
-
+		
 	val = 0;
 
-	//
-	// check for hex
-	//
+//
+// check for hex
+//
 	if (str[0] == '0' && (str[1] == 'x' || str[1] == 'X') )
 	{
 		str += 2;
@@ -541,18 +677,18 @@ float V_atof (const char *str)
 				return val*sign;
 		}
 	}
-
-	//
-	// check for character
-	//
+	
+//
+// check for character
+//
 	if (str[0] == '\'')
 	{
 		return sign * str[1];
 	}
-
-	//
-	// assume decimal
-	//
+	
+//
+// assume decimal
+//
 	decimal = -1;
 	total = 0;
 	int exponent = 0;
@@ -592,7 +728,7 @@ float V_atof (const char *str)
 		val /= 10;
 		total--;
 	}
-
+	
 	return val*sign;
 }
 
