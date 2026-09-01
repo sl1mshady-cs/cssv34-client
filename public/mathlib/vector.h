@@ -1,4 +1,4 @@
-//====== Copyright 1996-2005, Valve Corporation, All rights reserved. =======//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
 // Purpose: 
 //
@@ -19,14 +19,11 @@
 // For vec_t, put this somewhere else?
 #include "tier0/basetypes.h"
 
-#if defined( _PS3 )
-//#include <ssemath.h>
-#include <vectormath/c/vectormath_aos.h>
-#include "tier0/platform.h"
-#include "mathlib/math_pfns.h"
-#endif
+// For rand(). We really need a library!
+#include <stdlib.h>
 
-#ifndef PLATFORM_PPC // we want our linux with xmm support
+#if defined(__SSE__) || defined(_M_IX86_FP)
+#define USE_SSE
 // For MMX intrinsics
 #include <xmmintrin.h>
 #endif
@@ -262,8 +259,9 @@ private:
 // Zero the object -- necessary for CNetworkVar and possibly other cases.
 FORCEINLINE void NetworkVarConstruct( Vector &x ) { x.Zero(); }
 
-#define USE_M64S defined( PLATFORM_WINDOWS_PC )
-
+#ifdef USE_SSE
+#define USE_M64S
+#endif
 
 
 //=========================================================
@@ -279,7 +277,7 @@ public:
 	void Init(short ix = 0, short iy = 0, short iz = 0, short iw = 0 );
 
 
-#if USE_M64S
+#ifdef USE_M64S
 	__m64 &AsM64() { return *(__m64*)&x; }
 	const __m64 &AsM64() const { return *(const __m64*)&x; } 
 #endif
@@ -336,7 +334,7 @@ public:
 	// Initialization
 	void Init(int ix = 0, int iy = 0, int iz = 0, int iw = 0 );
 
-#if USE_M64S
+#ifdef USE_M64S
 	__m64 &AsM64() { return *(__m64*)&x; }
 	const __m64 &AsM64() const { return *(const __m64*)&x; } 
 #endif
@@ -2868,72 +2866,33 @@ FORCEINLINE float VectorNormalize( float * v )
 	return VectorNormalize(*(reinterpret_cast<Vector *>(v)));
 }
 
-#else
-#if !defined( _PS3 )
-// modified version of Microsoft's XMVector3Length
-// microsoft's version will return INF for very small vectors
-// e.g. 	Vector vTest(7.98555446e-20,-6.85012984e-21,0); VectorNormalize( vTest );
-// so we clamp to epsilon instead of checking for zero
-XMFINLINE XMVECTOR XMVector3Length_Fixed
-(
- FXMVECTOR V
- )
+FORCEINLINE void VectorNormalizeFast( Vector &vec )
 {
-	// Returns a QNaN on infinite vectors.
-	static CONST XMVECTOR g_fl4SmallVectorEpsilon = {1e-24f,1e-24f,1e-24f,1e-24f};
-
-	XMVECTOR D;
-	XMVECTOR Rsq;
-	XMVECTOR Rcp;
-	XMVECTOR Zero;
-	XMVECTOR RT;
-	XMVECTOR Result;
-	XMVECTOR Length;
-	XMVECTOR H;
-
-	H = __vspltisw(1);
-	D = __vmsum3fp(V, V);
-	H = __vcfsx(H, 1);
-	Rsq = __vrsqrtefp(D);
-	RT = __vmulfp(D, H);
-	Rcp = __vmulfp(Rsq, Rsq);
-	H = __vnmsubfp(RT, Rcp, H);
-	Rsq = __vmaddfp(Rsq, H, Rsq);
-	Zero = __vspltisw(0);
-	Result = __vcmpgefp( g_fl4SmallVectorEpsilon, D );
-	Length = __vmulfp(D, Rsq);
-	Result = __vsel(Length, Zero, Result);
-
-	return Result;
+	VectorNormalize(vec);
 }
-#endif
+
+#else
+
+FORCEINLINE float _VMX_InvRSquared( const Vector &v )
+{
+	XMVECTOR xmV = XMVector3ReciprocalLength( XMLoadVector3( v.Base() ) );
+	xmV = XMVector3Dot( xmV, xmV );
+	return xmV.x;
+}
 
 // call directly
 FORCEINLINE float _VMX_VectorNormalize( Vector &vec )
 {
-#if !defined _PS3
-	float mag = XMVector3Length_Fixed( XMLoadVector3( vec.Base() ) ).x;
+	float mag = XMVector3Length( XMLoadVector3( vec.Base() ) ).x;
 	float den = 1.f / (mag + FLT_EPSILON );
 	vec.x *= den;
 	vec.y *= den;
 	vec.z *= den;
 	return mag;
-#else	// !_PS3
-	vec_float4 vIn;
-	vec_float4 v0, v1;
-	vector unsigned char permMask;
-	v0	 = vec_ld( 0, vec.Base() );			
-	permMask = vec_lvsl( 0, vec.Base() );	
-	v1	 = vec_ld( 11, vec.Base() );			
-	vIn  = vec_perm(v0, v1, permMask);
-	float mag = vmathV3Length((VmathVector3 *)&vIn);
-	float den = 1.f / (mag + FLT_EPSILON );
-	vec.x *= den;
-	vec.y *= den;
-	vec.z *= den;
-	return mag;
-#endif	// !_PS3
 }
+
+#define InvRSquared(x) _VMX_InvRSquared(x)
+
 // FIXME: Change this back to a #define once we get rid of the vec_t version
 FORCEINLINE float VectorNormalize( Vector& v )
 {
@@ -2945,65 +2904,14 @@ FORCEINLINE float VectorNormalize( float *pV )
 	return _VMX_VectorNormalize(*(reinterpret_cast<Vector*>(pV)));
 }
 
-#endif // _X360
-
-#if !defined( _X360 ) && !defined( _PS3 )
-FORCEINLINE void VectorNormalizeFast (Vector& vec)
-{
-	float ool = FastRSqrt( FLT_EPSILON + vec.x * vec.x + vec.y * vec.y + vec.z * vec.z );
-
-	vec.x *= ool;
-	vec.y *= ool;
-	vec.z *= ool;
-}
-#else
-
 // call directly
 FORCEINLINE void VectorNormalizeFast( Vector &vec )
 {
-#if !defined (_PS3)
 	XMVECTOR xmV = XMVector3LengthEst( XMLoadVector3( vec.Base() ) );
 	float den = 1.f / (xmV.x + FLT_EPSILON);
 	vec.x *= den;
 	vec.y *= den;
 	vec.z *= den;
-#else	// !_PS3
-	vector_float_union vVec;
-
-	vec_float4 vIn, vOut, vOOLen, vDot;
-
-	// load
-	vec_float4 v0, v1;
-	vector unsigned char permMask;
-	v0	 = vec_ld( 0, vec.Base() );			
-	permMask = vec_lvsl( 0, vec.Base() );	
-	v1	 = vec_ld( 11, vec.Base() );			
-	vIn  = vec_perm(v0, v1, permMask);  
-
-	// vec.vec
-	vOut = vec_madd( vIn, vIn, _VEC_ZEROF );
-	vec_float4 vTmp  = vec_sld( vIn, vIn, 4 );
-	vec_float4 vTmp2 = vec_sld( vIn, vIn, 8 );
-	vOut = vec_madd( vTmp, vTmp, vOut );
-	vOut = vec_madd( vTmp2, vTmp2, vOut );
-
-	// splat dot to all 
-	vDot = vec_splat( vOut, 0 );
-
-	vOOLen = vec_rsqrte( vec_add( vDot, _VEC_EPSILONF ) );
-
-	// vec * 1.0/sqrt(vec.vec)
-	vOut = vec_madd( vIn, vOOLen, _VEC_ZEROF );
-
-	// store
-	vec_st(vOut,0,&vVec.vf);
-
-	// store vec
-	vec.x = vVec.f[0];
-	vec.y = vVec.f[1];
-	vec.z = vVec.f[2];
-
-#endif	// !_PS3
 }
 
 #endif // _X360

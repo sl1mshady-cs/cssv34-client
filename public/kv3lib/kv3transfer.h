@@ -21,12 +21,6 @@
 //#define KV3TRANSFER_NOINLINE __declspec(noinline)
 #define KV3TRANSFER_NOINLINE
 
-#ifdef CSTRIKE15
-// $$$REI Hack: We don't have utltypetraits.h in S1 and I'm not sure it works with the ancient version of GCC we are using.
-// $$$REI However, it's safe to Construct/Destruct elements of pod types, which is what we use this for here.
-template<typename T> inline bool IsComplexType() { return true; }
-#endif
-
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 #define KV3TRANSFERID_IKV3TransferInterface_UtlSymbolLarge MAKE_KV3TRANSFER_INTERFACE_ID( 'S', 'Y', 'M', 'L' )
@@ -98,13 +92,12 @@ private:
 template< class T > T *CKV3TransferBlockAllocator::Alloc( int nCount )
 {
 	T *pResult = (T*)AllocBlockBytes( sizeof(T) * nCount, VALIGNOF_PORTABLE(T) );
-	if ( IsComplexType<T>() )
+
+	for ( int i = 0; i < nCount; ++i )
 	{
-		for ( int i = 0; i < nCount; ++i )
-		{
-			Construct( pResult + i );
-		}
+		Construct( pResult + i );
 	}
+
 	return pResult;
 }
 
