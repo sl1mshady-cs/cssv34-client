@@ -74,7 +74,7 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 		//	buf.ReadString(databuf, sizeof(databuf));
 //
 		//	if (strstr(databuf, "{}") && strstr(databuf, "?"))
-			{
+			//{
 		//		//DevMsg("player_info buffer %s\n", databuf);
 		//		buf.ReadString(databuf, sizeof(databuf));
 		//		return false;
