@@ -68,18 +68,18 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 				return false;
 		}
 
-		//if (name && !strcmp(name, "player_info"))
-		//{
-		//	char databuf[1024];
-		//	buf.ReadString(databuf, sizeof(databuf));
-//
-		//	if (strstr(databuf, "{}") && strstr(databuf, "?"))
-			//{
-		//		//DevMsg("player_info buffer %s\n", databuf);
-		//		buf.ReadString(databuf, sizeof(databuf));
-		//		return false;
-		//	}
-		//}
+		if (name && !strcmp(name, "player_info"))
+		{
+			char databuf[1024];
+			buf.ReadString(databuf, sizeof(databuf));
+
+			if (strstr(databuf, "{}") && strstr(databuf, "?"))
+			{
+				//DevMsg("player_info buffer %s\n", databuf);
+				buf.ReadString(databuf, sizeof(databuf));
+				return false;
+			}
+		}
 
 		buf = fallback;
 	}
