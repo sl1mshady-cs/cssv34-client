@@ -65,7 +65,7 @@ void CClientSteamContext::Activate()
 	Init(); // Steam API context init
 	
 	UpdateLoggedOnState();
-	Msg( "CClientSteamContext logged on = %d\n", m_bLoggedOn );
+	//Msg( "CClientSteamContext logged on = %d\n", m_bLoggedOn );
 #endif
 }
 

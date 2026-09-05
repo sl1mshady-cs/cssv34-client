@@ -36,6 +36,7 @@ ConVar hud_saytext_time( "hud_saytext_time", "12", 0 );
 ConVar cl_showtextmsg( "cl_showtextmsg", "1", 0, "Enable/disable text messages printing on the screen." );
 ConVar cl_chatfilters( "cl_chatfilters", "63", FCVAR_CLIENTDLL | FCVAR_ARCHIVE, "Stores the chat filter settings " );
 ConVar cl_chatfilter_version( "cl_chatfilter_version", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_HIDDEN, "Stores the chat filter version" );
+ConVar cl_chat_print_to_console("cl_chat_print_to_console", "0", FCVAR_ARCHIVE, "Print chat messages to console");
 
 const int kChatFilterVersion = 1;
 
@@ -810,7 +811,10 @@ void CBaseHudChat::MsgFunc_SayText( bf_read &msg )
 	CLocalPlayerFilter filter;
 	C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "HudChat.Message" );
 
-	Msg( "%s", szString );
+	if (cl_chat_print_to_console.GetBool())
+	{
+		Msg( "%s", szString );
+	}
 }
 
 int CBaseHudChat::GetFilterForString( const char *pString )
@@ -862,8 +866,11 @@ void CBaseHudChat::MsgFunc_SayText2( bf_read &msg )
 
 		// print raw chat text
 		ChatPrintf( client, iFilter, "%s", ansiString );
-
-		Msg( "%s\n", RemoveColorMarkup(ansiString) );
+		
+		if (cl_chat_print_to_console.GetBool())
+		{
+			Msg("%s\n", RemoveColorMarkup(ansiString));
+		}
 
 		CLocalPlayerFilter filter;
 		C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "HudChat.Message" );
@@ -938,7 +945,11 @@ void CBaseHudChat::MsgFunc_TextMsg( bf_read &msg )
 		{
 			Q_strncat( szString, "\n", sizeof(szString), 1 );
 		}
-		Msg( "%s", ConvertCRtoNL( szString ) );
+
+		if (cl_chat_print_to_console.GetBool())
+		{
+			Msg( "%s", ConvertCRtoNL( szString ) );
+		}
 		break;
 
 	case HUD_PRINTTALK:
@@ -950,7 +961,12 @@ void CBaseHudChat::MsgFunc_TextMsg( bf_read &msg )
 			Q_strncat( szString, "\n", sizeof(szString), 1 );
 		}
 		Printf( CHAT_FILTER_NONE, "%s", ConvertCRtoNL( szString ) );
-		Msg( "%s", ConvertCRtoNL( szString ) );
+
+
+		if (cl_chat_print_to_console.GetBool())
+		{
+			Msg("%s", ConvertCRtoNL(szString));
+		}
 		break;
 
 	case HUD_PRINTCONSOLE:

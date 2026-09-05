@@ -859,9 +859,9 @@ void CHudVote::ApplySchemeSettings( vgui::IScheme *pScheme )
 //-----------------------------------------------------------------------------
 void CHudVote::Init( void )
 {
-	ListenForGameEvent( "vote_changed" );
-	ListenForGameEvent( "vote_options" );
-	ListenForGameEvent( "vote_cast" );
+	//ListenForGameEvent( "vote_changed" );
+	//ListenForGameEvent( "vote_options" );
+	//ListenForGameEvent( "vote_cast" );
 
 	SetVoteActive( false );
 	m_flVoteResultCycleTime = -1;
