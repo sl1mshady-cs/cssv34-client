@@ -368,24 +368,24 @@ void CBaseClientState::Clear( void )
 
 void CBaseClientState::FileReceived( const char * fileName, unsigned int transferID )
 {
-	ConMsg( "CBaseClientState::FileReceived: %s.\n", fileName );
+	Log_Msg( LOG_CLIENT, "CBaseClientState::FileReceived: %s.\n", fileName );
 }
 
 void CBaseClientState::FileDenied(const char *fileName, unsigned int transferID )
 {
-	ConMsg( "CBaseClientState::FileDenied: %s.\n", fileName );
+	Log_Msg( LOG_CLIENT, "CBaseClientState::FileDenied: %s.\n", fileName );
 }
 
 void CBaseClientState::FileRequested(const char *fileName, unsigned int transferID )
 {
-	ConMsg( "File '%s' requested from %s.\n", fileName, m_NetChannel->GetAddress() );
+	Log_Msg( LOG_CLIENT, "File '%s' requested from %s.\n", fileName, m_NetChannel->GetAddress() );
 
 	m_NetChannel->SendFile( fileName, transferID ); // CBaseCLisntState always sends file
 }
 
 void CBaseClientState::FileSent(const char *fileName, unsigned int transferID )
 {
-	ConMsg( "File '%s' sent.\n", fileName );
+	Log_Msg( LOG_CLIENT, "File '%s' sent.\n", fileName );
 }
 
 #define REGISTER_NET_MSG( name )				\
@@ -434,7 +434,7 @@ void CBaseClientState::ConnectionStart(INetChannel *chan)
 
 void CBaseClientState::ConnectionClosing( const char *reason )
 {
-	ConMsg( "Disconnect: %s.\n", reason?reason:"unknown reason" );
+	Log_Msg( LOG_CLIENT, "Disconnect: %s.\n", reason?reason:"unknown reason" );
 	Disconnect( reason ? reason : "Connection closing", true );
 }
 
@@ -448,21 +448,21 @@ bool CBaseClientState::SetSignonState ( int state, int count )
 
 	if ( state < SIGNONSTATE_NONE || state > SIGNONSTATE_CHANGELEVEL )
 	{
-		ConMsg ("Received signon %i when at %i\n", state, m_nSignonState );
+		Log_Warning( LOG_CLIENT, "Received signon %i when at %i\n", state, m_nSignonState );
 		Assert( 0 );
 		return false;
 	}
 
 	if ( (state > SIGNONSTATE_CONNECTED) &&	(state <= m_nSignonState) && !m_NetChannel->IsPlayback() )
 	{
-		ConMsg ("Received signon %i when at %i\n", state, m_nSignonState);
+		Log_Warning( LOG_CLIENT, "Received signon %i when at %i\n", state, m_nSignonState);
 		Assert( 0 );
 		return false;
 	}
 
 	if ( (count != m_nServerCount) && (count != -1) && (m_nServerCount != -1) && !m_NetChannel->IsPlayback() )
 	{
-		ConMsg ("Received wrong spawn count %i when at %i\n", count, m_nServerCount );
+		Log_Warning( LOG_CLIENT, "Received wrong spawn count %i when at %i\n", count, m_nServerCount );
 		Assert( 0 );
 		return false;
 	}
@@ -543,7 +543,7 @@ void CBaseClientState::SendConnectPacket (int challengeNr, int authProtocol, uin
 									}
 									break;
 
-		default: 					Host_Error( "Unexepected authentication protocol %i!\n", authProtocol );
+		default: 					Host_Error( "Unexpected authentication protocol %i!\n", authProtocol );
 									return;
 	}
 
@@ -650,7 +650,7 @@ void CBaseClientState::ForceFullUpdate( void )
 
 	FreeEntityBaselines();
 	m_nDeltaTick = -1;
-	DevMsg( "Requesting full game update...\n");
+	Log_Msg(LOG_CLIENT, "Requesting full game update...\n");
 }
 
 void CBaseClientState::FullConnect( netadr_t &adr )
@@ -696,7 +696,7 @@ void CBaseClientState::FullConnect( netadr_t &adr )
 void CBaseClientState::ConnectionCrashed(const char *reason)
 {
 	DebuggerBreakIfDebugging_StagingOnly();
-	ConMsg( "Connection lost: %s.\n", reason?reason:"unknown reason" );
+	Log_Msg( LOG_CLIENT, "Connection lost: %s.\n", reason?reason:"unknown reason" );
 	Disconnect( reason ? reason : "Connection crashed", true );
 }
 
@@ -783,7 +783,7 @@ void CBaseClientState::CheckForResend (void)
 
 	if (!NET_StringToAdr (m_szRetryAddress, &adr))
 	{
-		ConMsg ("Bad server address (%s)\n", m_szRetryAddress);
+		Log_Msg( LOG_CLIENT, "Bad server address (%s)\n", m_szRetryAddress);
 		//Host_Disconnect();
 		Disconnect( "Bad server address", true );
 		return;
@@ -809,9 +809,9 @@ void CBaseClientState::CheckForResend (void)
 	if ( Q_strncmp(m_szRetryAddress, "localhost", 9) )
 	{
 		if ( m_nRetryNumber == 0 )
-			ConMsg ("Connecting to %s...\n", m_szRetryAddress);
+			Log_Msg( LOG_CLIENT, "Connecting to %s...\n", m_szRetryAddress);
 		else
-			ConMsg ("Retrying %s...\n", m_szRetryAddress);
+			Log_Msg( LOG_CLIENT, "Retrying %s...\n", m_szRetryAddress);
 	}
 
 	// Fire an event when we attempt connection
@@ -865,7 +865,7 @@ bool CBaseClientState::ProcessConnectionlessPacket( netpacket_t *packet )
 	{
 		if ( cl_show_connectionless_packet_warnings.GetBool() )
 		{
-			ConDMsg ( "Discarding connectionless packet ( CL '%c' ) from %s.\n", c, packet->from.ToString() );
+			Log_Msg( LOG_CLIENT, "Discarding connectionless packet ( CL '%c' ) from %s.\n", c, packet->from.ToString() );
 		}
 		return false;
 	}
@@ -1015,7 +1015,7 @@ bool CBaseClientState::ProcessSetConVar( NET_SetConVar *msg )
 
 		if ( !var.IsValid() )
 		{
-			ConMsg( "SetConVar: No such cvar ( %s set to %s), skipping\n",
+			Log_Msg( LOG_CLIENT, "SetConVar: No such cvar ( %s set to %s), skipping\n",
 				name, value );
 			continue; 
 		}
@@ -1023,7 +1023,7 @@ bool CBaseClientState::ProcessSetConVar( NET_SetConVar *msg )
 		// Make sure server is only setting replicated game ConVars
 		if ( !var.IsFlagSet( FCVAR_REPLICATED ) )
 		{
-			ConMsg( "SetConVar: Can't set server cvar %s to %s, not marked as FCVAR_REPLICATED on client\n",
+			Log_Msg( LOG_CLIENT, "SetConVar: Can't set server cvar %s to %s, not marked as FCVAR_REPLICATED on client\n",
 				name, value );
 			continue;
 		}
@@ -1032,7 +1032,7 @@ bool CBaseClientState::ProcessSetConVar( NET_SetConVar *msg )
 		if ( !sv.IsActive() )
 		{
 			var.SetValue( value );
-			DevMsg( "SetConVar: %s = \"%s\"\n", name, value );
+			Log_Msg( LOG_CLIENT, "SetConVar: %s = \"%s\"\n", name, value );
 		}
 	}
 
@@ -1080,7 +1080,7 @@ bool CBaseClientState::ProcessServerInfo( SVC_ServerInfo *msg )
 #endif
 		)
 	{
-		ConMsg ( "Server returned version %i, expected %i.\n", msg->m_nProtocol, PROTOCOL_VERSION );
+		Log_Msg( LOG_CLIENT, "Server returned version %i, expected %i.\n", msg->m_nProtocol, PROTOCOL_VERSION );
 		return false; 
 	}
 
@@ -1095,13 +1095,13 @@ bool CBaseClientState::ProcessServerInfo( SVC_ServerInfo *msg )
 	
 	if ( m_nMaxClients < 1 || m_nMaxClients > ABSOLUTE_PLAYER_LIMIT )
 	{
-		ConMsg ("Bad maxclients (%u) from server.\n", m_nMaxClients);
+		Log_Msg( LOG_CLIENT, "Bad maxclients (%u) from server.\n", m_nMaxClients);
 		return false;
 	}
 
 	if ( m_nServerClasses < 1 || m_nServerClasses > MAX_SERVER_CLASSES )
 	{
-		ConMsg ("Bad maxclasses (%u) from server.\n", m_nServerClasses);
+		Log_Msg( LOG_CLIENT, "Bad maxclasses (%u) from server.\n", m_nServerClasses);
 		return false;
 	}
 
@@ -1114,7 +1114,7 @@ bool CBaseClientState::ProcessServerInfo( SVC_ServerInfo *msg )
 		// and turning off a bunch of security checks
 		if ( m_nMaxClients <= 1 )
 		{
-			ConMsg ("Bad maxclients (%u) from server.\n", m_nMaxClients);
+			Log_Msg( LOG_CLIENT, "Bad maxclients (%u) from server.\n", m_nMaxClients);
 			return false;
 		}
 
@@ -1343,7 +1343,7 @@ bool CBaseClientState::ProcessCreateStringTable( SVC_CreateStringTable *msg )
 		if ( !bSuccess )
 		{
 			Assert( false );
-			Warning("Malformed message in CBaseClientState::ProcessCreateStringTable\n");
+			Log_Warning(LOG_CLIENT, "Malformed message in CBaseClientState::ProcessCreateStringTable\n");
 		}
 	}
 	else
@@ -1381,7 +1381,7 @@ bool CBaseClientState::ProcessUpdateStringTable( SVC_UpdateStringTable *msg )
 	}
 	else
 	{
-		Warning("m_StringTableContainer is NULL in CBaseClientState::ProcessUpdateStringTable\n");
+		Log_Warning(LOG_CLIENT, "m_StringTableContainer is NULL in CBaseClientState::ProcessUpdateStringTable\n");
 	}
 
 #endif
@@ -1409,7 +1409,7 @@ bool CBaseClientState::ProcessPacketEntities( SVC_PacketEntities *msg )
 
 	if ( m_nSignonState < SIGNONSTATE_SPAWN )
 	{
-		ConMsg("Received packet entities while connecting!\n");
+		Log_Warning(LOG_CLIENT, "Received packet entities while connecting!\n");
 		return false;
 	}
 	
@@ -1422,7 +1422,7 @@ bool CBaseClientState::ProcessPacketEntities( SVC_PacketEntities *msg )
 		}
 		else
 		{
-			ConMsg("Received delta packet entities while spawing!\n");
+			Log_Warning(LOG_CLIENT, "Received delta packet entities while spawing!\n");
 			return false;
 		}
 	}
@@ -1570,7 +1570,7 @@ bool CBaseClientState::LinkClasses()
 		}
 		else
 		{
-			Msg( "Client missing DT class %s\n", pServerClass->m_ClassName );
+			Log_Warning( LOG_CLIENT, "Client missing DT class %s\n", pServerClass->m_ClassName );
 		}
 	}
 

@@ -1302,6 +1302,15 @@ struct MemoryInformation
 	}
 };
 
+//-----------------------------------------------------------------------------
+// Message Box
+//-----------------------------------------------------------------------------
+#if defined( PLATFORM_WINDOWS_PC )
+PLATFORM_INTERFACE void Plat_MessageBox( const char *pTitle, const tchar *pMessage );
+#else
+#define Plat_MessageBox( t, m ) ((void)0)
+#endif
+
 // Returns true if the passed in MemoryInformation structure was filled out, otherwise false.
 PLATFORM_INTERFACE bool GetMemoryInformation( MemoryInformation *pOutMemoryInfo );
 

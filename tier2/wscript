@@ -30,6 +30,7 @@ def build(bld):
 		'riff.cpp',
 		'soundutils.cpp',
 		'tier2.cpp',
+		'tier2_logging.cpp',
 		'util_init.cpp',
 		'utlstreambuffer.cpp',
 		'vconfig.cpp',

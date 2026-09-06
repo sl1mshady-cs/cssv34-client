@@ -216,127 +216,138 @@ void Error( char const *pMsg, ... )
 
 #else
 
-CRITICAL_SECTION g_SpewCS;
-bool g_bSpewCSInitted = false;
 bool g_bSuppressPrintfOutput = false;
 
-SpewRetval_t CmdLib_SpewOutputFunc( SpewType_t type, char const *pMsg )
+void CCmdLibStandardLoggingListener::Log( const LoggingContext_t *pContext, const tchar *pMessage )
 {
-	// Hopefully two threads won't call this simultaneously right at the start!
-	if ( !g_bSpewCSInitted )
+	if ( ( pContext->m_Flags & LCF_DO_NOT_ECHO ) != 0 )
 	{
-		InitializeCriticalSection( &g_SpewCS );
-		g_bSpewCSInitted = true;
+		return;
 	}
 
-	WORD old;
-	SpewRetval_t retVal;
-	
-	EnterCriticalSection( &g_SpewCS );
+	WORD oldColor;
+	Color spewColor = pContext->m_Color;
+	if ( spewColor == UNSPECIFIED_LOGGING_COLOR )
 	{
-		if (( type == SPEW_MESSAGE ) || (type == SPEW_LOG ))
+		switch ( pContext->m_Severity )
 		{
-			Color c = *GetSpewOutputColor();
-			if ( c.r() != 255 || c.g() != 255 || c.b() != 255 )
-			{
-				// custom color
-				old = SetConsoleTextColor( c.r(), c.g(), c.b(), c.a() );
-			}
-			else
-			{
-				old = SetConsoleTextColor( 1, 1, 1, 0 );
-			}
-			retVal = SPEW_CONTINUE;
-		}
-		else if( type == SPEW_WARNING )
-		{
-			old = SetConsoleTextColor( 1, 1, 0, 1 );
-			retVal = SPEW_CONTINUE;
-		}
-		else if( type == SPEW_ASSERT )
-		{
-			old = SetConsoleTextColor( 1, 0, 0, 1 );
-			retVal = SPEW_DEBUGGER;
+		case LS_MESSAGE:
+			spewColor = Color( 255, 255, 255, 0 );
+			break;
 
+		case LS_WARNING:
+			spewColor = Color( 255, 255, 0, 255	);
+			break;
+
+		case LS_ERROR:
+		case LS_ASSERT:
+			spewColor = Color( 255, 0, 0, 255	);
+			break;
+		}
+	}
+	oldColor = SetConsoleTextColor( spewColor.r(), spewColor.g(), spewColor.b(), spewColor.a() );
+	
 #ifdef MPI
-			// VMPI workers don't want to bring up dialogs and suchlike.
-			// They need to have a special function installed to handle
-			// the exceptions and write the minidumps.
-			// Install the function after VMPI_Init with a call:
-			// SetupToolsMinidumpHandler( VMPI_ExceptionFilter );
-			if ( g_bUseMPI && !g_bMPIMaster && !Plat_IsInDebugSession() )
-			{
-				// Generating an exception and letting the
-				// installed handler handle it
-				::RaiseException
-					(
-					0,							// dwExceptionCode
-					EXCEPTION_NONCONTINUABLE,	// dwExceptionFlags
-					0,							// nNumberOfArguments,
-					NULL						// const ULONG_PTR* lpArguments
-					);
+	if ( pContext->m_Severity == LS_ASSERT )
+	{
+		// VMPI workers don't want to bring up dialogs and suchlike.
+		// They need to have a special function installed to handle
+		// the exceptions and write the minidumps.
+		// Install the function after VMPI_Init with a call:
+		// SetupToolsMinidumpHandler( VMPI_ExceptionFilter );
+		if ( g_bUseMPI && !g_bMPIMaster && !Plat_IsInDebugSession() )
+		{
+			// Generating an exception and letting the
+			// installed handler handle it
+			::RaiseException
+				(
+				0,							// dwExceptionCode
+				EXCEPTION_NONCONTINUABLE,	// dwExceptionFlags
+				0,							// nNumberOfArguments,
+				NULL						// const ULONG_PTR* lpArguments
+				);
 
-					// Never get here (non-continuable exception)
-				
-				VMPI_HandleCrash( pMsg, NULL, true );
-				exit( 0 );
-			}
+			// Never get here (non-continuable exception)
+
+			VMPI_HandleCrash( pMessage, 0, NULL, true );
+			exit( 0 );
+		}
+	}
 #endif
-		}
-		else if( type == SPEW_ERROR )
-		{
-			old = SetConsoleTextColor( 1, 0, 0, 1 );
-			retVal = SPEW_ABORT; // doesn't matter.. we exit below so we can return an errorlevel (which dbg.dll doesn't do).
-		}
-		else
-		{
-			old = SetConsoleTextColor( 1, 1, 1, 1 );
-			retVal = SPEW_CONTINUE;
-		}
 
-		if ( !g_bSuppressPrintfOutput || type == SPEW_ERROR )
-			printf( "%s", pMsg );
+	if ( !g_bSuppressPrintfOutput || pContext->m_Severity == LS_ERROR )
+	{
+		printf( "%s", pMessage );
+	}
 
-		OutputDebugString( pMsg );
-		
-		if ( type == SPEW_ERROR )
+	OutputDebugString( pMessage );
+
+	if ( pContext->m_Severity == LS_ERROR )
+	{
+		if ( !g_bSuppressPrintfOutput )
 		{
 			printf( "\n" );
-			OutputDebugString( "\n" );
 		}
-
-		if( g_pLogFile )
-		{
-			CmdLib_FPrintf( g_pLogFile, "%s", pMsg );
-			g_pFileSystem->Flush( g_pLogFile );
-		}
-
-		// Dispatch to other spew hooks.
-		FOR_EACH_LL( g_ExtraSpewHooks, i )
-			g_ExtraSpewHooks[i]( pMsg );
-
-		RestoreConsoleTextColor( old );
-	}
-	LeaveCriticalSection( &g_SpewCS );
-
-	if ( type == SPEW_ERROR )
-	{
-		CmdLib_Exit( 1 );
+		OutputDebugString( "\n" );
 	}
 
-	return retVal;
+	RestoreConsoleTextColor( oldColor );
 }
 
+CCmdLibFileLoggingListener::CCmdLibFileLoggingListener() : m_pLogFile( FILESYSTEM_INVALID_HANDLE ) { }
+
+void CCmdLibFileLoggingListener::Log( const LoggingContext_t *pContext, const tchar *pMessage )
+{
+	if( m_pLogFile != FILESYSTEM_INVALID_HANDLE && ( pContext->m_Flags & LCF_CONSOLE_ONLY ) == 0 )
+	{
+		CmdLib_FPrintf( m_pLogFile, "%s", pMessage );
+		g_pFileSystem->Flush( m_pLogFile );
+	}
+}
+
+void CCmdLibFileLoggingListener::Open( char const *pFilename )
+{
+	Assert( m_pLogFile == FILESYSTEM_INVALID_HANDLE );
+	m_pLogFile = g_pFileSystem->Open( pFilename, "a" );
+
+	Assert( m_pLogFile != FILESYSTEM_INVALID_HANDLE );
+	if ( !m_pLogFile )
+	{
+		Error( "Can't create LogFile:\"%s\"\n", pFilename );
+	}
+
+	CmdLib_FPrintf( m_pLogFile, "\n\n\n" );
+}
+
+
+void CCmdLibFileLoggingListener::Close()
+{
+	if ( g_pFileSystem && m_pLogFile != FILESYSTEM_INVALID_HANDLE )
+	{
+		g_pFileSystem->Close( m_pLogFile );
+		m_pLogFile = FILESYSTEM_INVALID_HANDLE;
+	}
+}
+
+CCmdLibStandardLoggingListener g_CmdLibOutputLoggingListener;
+CCmdLibFileLoggingListener g_CmdLibFileLoggingListener;
+bool g_bInstalledSpewFunction = false;
 
 void InstallSpewFunction()
 {
-	setvbuf( stdout, NULL, _IONBF, 0 );
-	setvbuf( stderr, NULL, _IONBF, 0 );
+	Assert( !g_bInstalledSpewFunction );
+	if ( !g_bInstalledSpewFunction )
+	{
+		g_bInstalledSpewFunction = true;
+		setvbuf( stdout, NULL, _IONBF, 0 );
+		setvbuf( stderr, NULL, _IONBF, 0 );
 
-	SpewOutputFunc( CmdLib_SpewOutputFunc );
-	GetInitialColors();
+		LoggingSystem_PushLoggingState();
+		LoggingSystem_RegisterLoggingListener( &g_CmdLibOutputLoggingListener );
+		LoggingSystem_RegisterLoggingListener( &g_CmdLibFileLoggingListener );
+		GetInitialColors();
+	}
 }
-
 
 void InstallExtraSpewHook( SpewHookFn pFn )
 {

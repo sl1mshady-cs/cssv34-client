@@ -392,7 +392,7 @@ bool CBaseServer::CheckIPConnectionReuse( netadr_t &adr )
 	
 	if ( nSimultaneouslyConnections > MAX_REUSE_PER_IP ) 
 	{
-		Msg ("Too many connect packets from %s\n", adr.ToString( true ) );	
+		Log_Warning( LOG_SERVER, "Too many connect packets from %s\n", adr.ToString( true ) );	
 		return false; // too many connect packets!!!!
 	}
 	return true; // this IP is okay
@@ -2018,7 +2018,7 @@ void CBaseServer::SendClientMessages ( bool bSendSnapshots )
 		}
 		else
 		{
-			Msg("Client has no netchannel.\n");
+			Log_Warning( LOG_SERVER, "Client has no netchannel.\n");
 		}
 	}
 }
@@ -2185,7 +2185,7 @@ void CBaseServer::BroadcastMessage( INetMessage &msg, IRecipientFilter &filter )
 
 			if ( index < 1 || index > m_Clients.Count() )
 			{
-				Msg( "SV_BroadcastMessage:  Recipient Filter for message type %i (reliable: %s, init: %s) with bogus client index (%i) in list of %i clients\n", 
+				Log_Warning( LOG_SERVER, "SV_BroadcastMessage:  Recipient Filter for message type %i (reliable: %s, init: %s) with bogus client index (%i) in list of %i clients\n", 
 						msg.GetType(), 
 						filter.IsReliable() ? "yes" : "no",
 						filter.IsInitMessage() ? "yes" : "no",

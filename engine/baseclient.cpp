@@ -310,7 +310,7 @@ bool CBaseClient::SetSignonState(int state, int spawncount)
 
 void CBaseClient::Reconnect( void )
 {
-	ConMsg("Forcing client reconnect (%i)\n", m_nSignonState );
+	Log_Msg( LOG_SERVER, "Forcing client reconnect (%i)\n", m_nSignonState );
 	
 	m_NetChannel->Clear();
 
@@ -625,7 +625,7 @@ void CBaseClient::Disconnect( const char *fmt, ... )
 	Q_vsnprintf (string, sizeof( string ), fmt,argptr);
 	va_end (argptr);
 
-	ConMsg("Dropped %s from server (%s)\n", GetClientName(), string );
+	Log_Msg( LOG_SERVER, "Dropped %s from server (%s)\n", GetClientName(), string );
 
 	// remove the client as listener
 	g_GameEventManager.RemoveListener( this );
@@ -821,7 +821,7 @@ bool CBaseClient::ProcessSetConVar( NET_SetConVar *msg )
 		}
 		if ( bFunky )
 		{
-			Msg( "Ignoring convar change request for variable '%s' from client %s; invalid characters in the variable name\n", name, GetClientName() );
+			Log_Msg( LOG_SERVER, "Ignoring convar change request for variable '%s' from client %s; invalid characters in the variable name\n", name, GetClientName() );
 			continue;
 		}
 
@@ -845,7 +845,7 @@ bool CBaseClient::ProcessSetConVar( NET_SetConVar *msg )
 #ifndef _DEBUG
 				s_dblLastWarned = dblTimeNow;
 #endif
-				Warning( "Client \"%s\" userinfo ignored: \"%s\" = \"%s\"\n",
+				Log_Warning( LOG_SERVER, "Client \"%s\" userinfo ignored: \"%s\" = \"%s\"\n",
 				         this->GetClientName(), name, value );
 			}
 			continue;
@@ -892,7 +892,7 @@ bool CBaseClient::ProcessClientInfo( CLC_ClientInfo *msg )
 {
 	if ( m_nSignonState != SIGNONSTATE_NEW )
 	{
-		Warning( "Dropping ClientInfo packet from client not in appropriate state\n" );
+		Log_Warning( LOG_SERVER, "Dropping ClientInfo packet from client not in appropriate state\n" );
 		return false;
 	}
 

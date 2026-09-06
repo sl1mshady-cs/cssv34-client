@@ -299,6 +299,12 @@ void Plat_DebugString( const char * psz )
 #endif
 }
 
+#if defined( PLATFORM_WINDOWS_PC )
+void Plat_MessageBox( const char *pTitle, const char *pMessage )
+{
+	MessageBox( NULL, pMessage, pTitle, MB_OK );
+}
+#endif
 
 const tchar *Plat_GetCommandLine()
 {

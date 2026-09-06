@@ -42,9 +42,4 @@ void InitCommandLineProgram( int argc, char **argv )
 	CommandLine()->CreateCmdLine( argc, argv );
 	InitDefaultFileSystem();
 	InstallProgressReportHandler( PrintFReportHandler );
-
-	// By default, command line programs should not use the new assert dialog,
-	// and any asserts should be fatal, unless we are being debugged
-	if ( !Plat_IsInDebugSession() )
-		SpewOutputFunc( DefaultSpewFuncAbortOnAsserts );
 }

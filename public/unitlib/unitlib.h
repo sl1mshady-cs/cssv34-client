@@ -251,10 +251,9 @@ protected:
 	do {																\
 		if (!(_exp)) 													\
 		{ 																\
-			_SpewInfo( SPEW_ASSERT, __TFILE__, __LINE__ );				\
-			SpewRetval_t ret = _SpewMessage(_msg);						\
+			LoggingResponse_t ret = Log_Assert( "%s (%d) : %s\n", __TFILE__, __LINE__, _msg );	\
 			_executeExp; 												\
-			if ( ret == SPEW_DEBUGGER)									\
+			if ( ret == LR_DEBUGGER )									\
 			{															\
 				if ( !ShouldUseNewAssertDialog() || DoNewAssertDialog( __TFILE__, __LINE__, _msg ) ) \
 					DebuggerBreak();									\
@@ -265,6 +264,5 @@ protected:
 	} while (0)
 
 #define  Shipping_Assert( _exp )           							_Shipping_AssertMsg( _exp, _T("Assertion Failed: ") _T(#_exp), ((void)0), false )
-
 
 #endif	// UNITLIB_H

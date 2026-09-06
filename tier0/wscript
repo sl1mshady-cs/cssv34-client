@@ -28,6 +28,7 @@ def build(bld):
 		'dynfunction.cpp',
 		'fasttimer.cpp',
 		# 'InterlockedCompareExchange128.masm', [$WIN64]
+		'logging.cpp',
 		'mem.cpp',
 		'mem_helpers.cpp',
 		'memdbg.cpp',

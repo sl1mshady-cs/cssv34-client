@@ -33,6 +33,9 @@
 #define MIN_CMD_RATE				10.0f
 #define MAX_CMD_RATE				100.0f
 
+// server logging channel
+DECLARE_LOGGING_CHANNEL(LOG_CLIENT);
+
 extern ConVar cl_name;
 
 // This represents a server's 

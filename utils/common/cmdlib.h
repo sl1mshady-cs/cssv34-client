@@ -132,12 +132,32 @@ void CmdLib_Cleanup();
 void CmdLib_Exit( int exitCode );	// Use this to cleanup and call exit().
 
 // entrypoint if chaining spew functions
-SpewRetval_t CmdLib_SpewOutputFunc( SpewType_t type, char const *pMsg );
 unsigned short SetConsoleTextColor( int red, int green, int blue, int intensity );
 void RestoreConsoleTextColor( unsigned short color );
 
 // Append all spew output to the specified file.
 void SetSpewFunctionLogFile( char const *pFilename );
+
+class CCmdLibStandardLoggingListener : public ILoggingListener
+{
+public:
+	virtual void Log( const LoggingContext_t *pContext, const tchar *pMessage );
+};
+
+class CCmdLibFileLoggingListener : public ILoggingListener
+{
+public:
+	CCmdLibFileLoggingListener();
+	virtual void Log( const LoggingContext_t *pContext, const tchar *pMessage );
+	void Open( char const *pFilename );
+	void Close();
+
+private:
+	FileHandle_t m_pLogFile;
+};
+
+extern CCmdLibStandardLoggingListener g_CmdLibOutputLoggingListener;
+extern CCmdLibFileLoggingListener g_CmdLibFileLoggingListener;
 
 char *COM_Parse (char *data);
 

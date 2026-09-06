@@ -2093,7 +2093,7 @@ METHODDEF(void) term_destination (j_compress_ptr cinfo)
 GLOBAL(void) jpeg_UtlBuffer_dest (j_compress_ptr cinfo, CUtlBuffer *pBuffer )
 {
     JPEGDestinationManager_t *dest;
-    
+     
     /* The destination object is made permanent so that multiple JPEG images
     * can be written to the same file without re-executing jpeg_stdio_dest.
     * This makes it dangerous to use this manager and a different destination
@@ -2150,7 +2150,7 @@ bool CVideoMode_Common::TakeSnapshotJPEGToBuffer( CUtlBuffer& buf, int quality )
     cinfo.err = jpeg_std_error(&jerr);
 
     // create compressor
-    jpeg_create_compress(&cinfo);
+    jpeg_CreateCompress((&cinfo), 90, (size_t)sizeof(struct jpeg_compress_struct));
 
     // Hook CUtlBuffer to compression
     jpeg_UtlBuffer_dest(&cinfo, &buf );

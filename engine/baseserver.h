@@ -43,6 +43,9 @@ bool AllowDebugDedicatedServerOutsideSteam();
 // delta baseline, send a full update. 
 #define MAX_DELTA_TICKS	192		// this is about 3 seconds
 
+// server logging channel
+DECLARE_LOGGING_CHANNEL(LOG_SERVER);
+
 typedef struct
 {
 	netadr_t    adr;       // Address where challenge value was sent to.

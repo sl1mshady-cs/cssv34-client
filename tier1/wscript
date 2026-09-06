@@ -51,6 +51,7 @@ def build(bld):
 		'strtools.cpp',
 		'strtools_unicode.cpp',
 		'tier1.cpp',
+		'tier1_logging.cpp',
 		'tokenreader.cpp',
 		'uniqueid.cpp',
 		'utlbinaryblock.cpp',

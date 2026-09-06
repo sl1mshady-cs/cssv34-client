@@ -465,13 +465,8 @@ ThreadHandle_t CreateSimpleThread( ThreadFunc_t pfnThread, void *pParam, ThreadI
 
 bool ReleaseThreadHandle( ThreadHandle_t hThread )
 {
-#ifdef _WIN32
-	bool bRetVal = ( CloseHandle( hThread ) != 0 );
-	RemoveThreadHandleToIDMap( (HANDLE)hThread );
-	return bRetVal;
-#else
+	hThread = nullptr;
 	return true;
-#endif
 }
 
 //-----------------------------------------------------------------------------
