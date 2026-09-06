@@ -1490,6 +1490,11 @@ bool SVC_GameEvent::ReadFromBuffer( bf_read &buffer )
 	VPROF( "SVC_GameEvent::ReadFromBuffer" );
 
 	m_nLength = buffer.ReadUBitLong( NETMSG_LENGTH_BITS ); // max 8 * 256 bits
+	if (m_nLength >= (1 << NETMSG_LENGTH_BITS)) {
+		DevWarning(1, "Tried to read svc_GameEvent, but size is invalid. Skipping");
+		return false;
+	}
+
 	m_DataIn = buffer;
 	return buffer.SeekRelative( m_nLength );
 }

@@ -124,6 +124,9 @@ ConCommand askconnect_accept( "askconnect_accept", askconnect_accept_f, "Accept 
 // these convars needed for some CS:S v34 AC's, or it will ban/kick
 static ConVar cl_particles_show_bbox("cl_particles_show_bbox", "0", FCVAR_CLIENTDLL | FCVAR_CHEAT);
 
+// allow user to hide messages from server
+static ConVar cl_allow_remote_print("cl_allow_remote_print", "1", FCVAR_ARCHIVE);
+
 #ifndef SWDS
 extern IVEngineClient *engineClient;
 // ---------------------------------------------------------------------------------------- //
@@ -930,7 +933,21 @@ bool CBaseClientState::ProcessConnectionlessPacket( netpacket_t *packet )
 								// Host_Disconnect();
 							}
 							break;
-
+	
+	case A2A_PRINT:			{
+								if (strstr(string, "Banned by server") != 0)
+								{
+									COM_ExplainDisconnection(true, "Banned by server");
+									Disconnect("Banned by server", true);
+									break;
+								}
+								if (cl_allow_remote_print.GetBool())
+								{
+									msg.ReadString(string, sizeof(string));
+									ConMsg("%s\n", string);
+								}
+							}
+							break;
 	// Unknown?
 	default:
 							// Otherwise, don't do anything.
@@ -1049,8 +1066,9 @@ bool CBaseClientState::ProcessSignonState( NET_SignonState *msg )
 bool CBaseClientState::ProcessPrint( SVC_Print *msg )
 {
 	VPROF( "ProcessPrint" );
-
-	ConMsg( "%s", msg->m_szText );
+	if (cl_allow_remote_print.GetBool()) {
+		ConMsg( "%s", msg->m_szText );
+	}
 	return true;
 }
 

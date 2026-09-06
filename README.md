@@ -1,14 +1,7 @@
 # CS:S v34 Client
 [![GitHub Actions Status](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/build.yml/badge.svg)](https://github.com/sl1mshady-cs/cssv34-client/actions/workflows/build.yml)
 
-Information from [wikipedia](https://wikipedia.org/wiki/Source_(game_engine)):
-
-Source is a 3D game engine developed by Valve.
-It debuted as the successor to GoldSrc with Half-Life: Source in June 2004,
-followed by Counter-Strike: Source and Half-Life 2 later that year.
-Source does not have a concise version numbering scheme; instead, it was released in incremental versions
-
-Source code is based on [nillerusr's source engine](https://github.com/nillerusr/source-engine) and patched to work with CS:S v34 servers.
+This project is aimed to make [nillerusr's source engine](https://github.com/nillerusr/source-engine) compatible with CS:S v34 servers and allow cross-platform play.
 
 **Don't use it for commercial purposes.**
 
@@ -19,9 +12,7 @@ Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client/relea
 ---
 
 # Features:
-- Android, OSX, FreeBSD, Windows, Linux( glibc, musl ) support
-- Arm support( except windows )
-- 64bit support
+- Android (armeabi-v7a), Windows (x86, x64), Linux (i386, amd64) support
 - Modern toolchains support
 - Fixed many undefined behaviours
 - Touch support( even on windows/linux/osx )
@@ -30,18 +21,14 @@ Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client/relea
 - bsp v19-v21 support( bsp v21 support is partial, portal 2 and csgo maps works fine )
 - mdl v46-49 support
 - Removed useless/unnecessary dependencies
-- Achivement system working without steam
+- New code from [CS:GO 2019 leak](https://github.com/rusherr-c/csgo-src)
 - Fixed many bugs
 - Serverbrowser works without steam
 
-Known issues:
-- rare "unknown shaders" bug (will crash), partially fixed
-- unknown crashes
-
 ---
 
-Currently, stable support is only available for Windows.<br>
-Android, Linux, other platforms coming soon.
+# Contributing
+Read [CONTRIBUTING.md](https://github.com/sl1mshady-cs/cssv34-client/blob/master/CONTRIBUTING.md)
 
 # How to Build?
 
