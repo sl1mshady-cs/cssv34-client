@@ -13,7 +13,7 @@
 
 #include "logging.h"
 #include "utlbuffer.h"
-#include "color.h"
+#include "Color.h"
 
 class CBufferedLoggingListener : public ILoggingListener
 {
