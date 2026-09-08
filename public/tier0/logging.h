@@ -29,7 +29,7 @@
 #define SOURCE2_LOGGING 0
 
 // Used by CColorizedLoggingListener
-#if SOURCE2_LOGGING && defined( _WIN32 ) || (defined(POSIX) && !defined(_GAMECONSOLE))
+#if SOURCE2_LOGGING && (defined( _WIN32 ) || (defined(POSIX) && !defined(_GAMECONSOLE)))
 #include "tier0/win32consoleio.h"
 #endif
 
