@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include "color.h"
+#include "Color.h"
 #include "tier0/dbg.h"
 #include "tier0/threadtools.h"
 #include "tier0/icommandline.h"
