@@ -400,7 +400,7 @@ LoggingResponse_t CLoggingSystem::LogDirect( LoggingChannelID_t channelID, Loggi
 		return LR_CONTINUE;
 
 #ifdef ANDROID
-	__android_log_print( ANDROID_LOG_INFO, "SRCENG", "%s", pTempBuffer );
+	__android_log_print( ANDROID_LOG_INFO, "SRCENG", "%s", pMessage);
 #endif
 
 	LoggingContext_t context;
