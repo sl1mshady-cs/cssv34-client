@@ -72,7 +72,7 @@ enum
 	MAX_QUAD_INDICES = 16384,
 };
 
-DEFINE_LOGGING_CHANNEL_NO_TAGS(LOG_MESHMGR, "MeshManager");
+DEFINE_LOGGING_CHANNEL_NO_TAGS(LOG_MESHMGR, "MeshManager", 0, LS_MESSAGE, Color(150, 255, 150, 255));
 
 //-----------------------------------------------------------------------------
 //
