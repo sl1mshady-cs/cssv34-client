@@ -72,6 +72,7 @@ enum
 	MAX_QUAD_INDICES = 16384,
 };
 
+DEFINE_LOGGING_CHANNEL_NO_TAGS(LOG_MESHMGR, "MeshManager");
 
 //-----------------------------------------------------------------------------
 //
@@ -1227,7 +1228,7 @@ bool CIndexBufferDx8::Allocate()
 
 	if ( FAILED(hr) || ( m_pIndexBuffer == NULL ) )
 	{
-		Warning( "CIndexBufferDx8::Allocate: CreateIndexBuffer failed!\n" );
+		Log_Warning(LOG_MESHMGR, "CIndexBufferDx8::Allocate: CreateIndexBuffer failed!\n" );
 		return false;
 	}
 
@@ -1414,7 +1415,7 @@ bool CIndexBufferDx8::Lock( int nMaxIndexCount, bool bAppend, IndexDesc_t &desc 
 	// Did we ask for something too large?
 	if ( nMaxIndexCount > m_nIndexCount )
 	{
-		Warning( "Too many indices for index buffer. . tell a programmer (%d>%d)\n", nMaxIndexCount, m_nIndexCount );
+		Log_Warning(LOG_MESHMGR, "Too many indices for index buffer. . tell a programmer (%d>%d)\n", nMaxIndexCount, m_nIndexCount );
 		goto indexBufferLockFailed;
 	}
 
@@ -1468,7 +1469,7 @@ bool CIndexBufferDx8::Lock( int nMaxIndexCount, bool bAppend, IndexDesc_t &desc 
 
 	if ( FAILED( hr ) )
 	{
-		Warning( "Failed to lock index buffer in CIndexBufferDx8::LockIndexBuffer\n" );
+		Log_Warning( LOG_MESHMGR, "Failed to lock index buffer in CIndexBufferDx8::LockIndexBuffer\n" );
 		goto indexBufferLockFailed;
 	}
 
@@ -1643,7 +1644,7 @@ bool CVertexBufferDx8::Allocate()
 
 	if ( FAILED(hr) || ( m_pVertexBuffer == NULL ) )
 	{
-		Warning( "CVertexBufferDx8::Allocate: CreateVertexBuffer failed!\n" );
+		Log_Warning( LOG_MESHMGR, "CVertexBufferDx8::Allocate: CreateVertexBuffer failed!\n" );
 		return false;
 	}
 
@@ -1812,7 +1813,7 @@ bool CVertexBufferDx8::Lock( int nMaxVertexCount, bool bAppend, VertexDesc_t &de
 	// Did we ask for something too large?
 	if ( nMaxVertexCount > m_nVertexCount )
 	{
-		Warning( "Too many vertices for vertex buffer. . tell a programmer (%d>%d)\n", nMaxVertexCount, m_nVertexCount );
+		Log_Warning( LOG_MESHMGR, "Too many vertices for vertex buffer. . tell a programmer (%d>%d)\n", nMaxVertexCount, m_nVertexCount );
 		goto vertexBufferLockFailed;
 	}
 
@@ -1875,7 +1876,7 @@ bool CVertexBufferDx8::Lock( int nMaxVertexCount, bool bAppend, VertexDesc_t &de
 		}
 		else
 		{
-			Warning( "Failed to lock vertex buffer in CVertexBufferDx8::Lock\n" );
+			Log_Warning( LOG_MESHMGR, "Failed to lock vertex buffer in CVertexBufferDx8::Lock\n" );
 		}
 		goto vertexBufferLockFailed;
 	}
@@ -2400,7 +2401,7 @@ void CBaseMeshDX8::CopyToMeshBuilder(
 {
 	LOCK_SHADERAPI();
 	Assert( false );
-	Warning( "CopyToMeshBuilder called on something other than a temp mesh.\n" );
+	Log_Warning( LOG_MESHMGR, "CopyToMeshBuilder called on something other than a temp mesh.\n" );
 }
 
 
@@ -3020,9 +3021,9 @@ bool CMeshDX8::IsValidVertexFormat( VertexFormat_t vertexFormat )
 					// NOTE: ComputeVertexFormat() will make sure no materials support VERTEX_FORMAT_COMPRESSED
 					//       if vertex compression is disabled in the config
 					if ( g_pHardwareConfig->SupportsCompressedVertices() == VERTEX_COMPRESSION_NONE )
-						Warning( "ERROR: Compressed vertices in use but vertex compression is disabled (or not supported on this hardware)!\n" );
+						Log_Warning( LOG_MESHMGR, "ERROR: Compressed vertices in use but vertex compression is disabled (or not supported on this hardware)!\n" );
 					else
-						Warning( "ERROR: Compressed vertices in use but material does not support them!\n" );
+						Log_Warning( LOG_MESHMGR, "ERROR: Compressed vertices in use but material does not support them!\n" );
 				}
 				Assert( 0 );
 				bIsValid = false;
@@ -3048,7 +3049,7 @@ bool CMeshDX8::IsValidVertexFormat( VertexFormat_t vertexFormat )
 #ifdef _DEBUG
 		if ( !bIsValid )
 		{
-			Warning( "Material Format:" );
+			Log_Warning( LOG_MESHMGR, "Material Format:" );
 			if ( g_pShaderAPI->GetCurrentNumBones() > 0 )
 			{
 				vertexFormat |= VERTEX_BONE_INDEX;
@@ -3057,7 +3058,7 @@ bool CMeshDX8::IsValidVertexFormat( VertexFormat_t vertexFormat )
 			}
 
 			OutputVertexFormat( vertexFormat );
-			Warning( "Mesh Format:" );
+			Log_Warning( LOG_MESHMGR, "Mesh Format:" );
 			OutputVertexFormat( m_VertexFormat );
 		}
 #endif
@@ -3185,7 +3186,7 @@ void CMeshDX8::SetVertexStreamState( int nVertOffsetInBytes )
 				static bool bWarned = false;
 				if( !bWarned )
 				{
-					Warning( "Shader specifying too-thin vertex format, should be at least %d bytes! (Suppressing furthur warnings)\n", minimumStreamZeroStride );
+					Log_Warning( LOG_MESHMGR, "Shader specifying too-thin vertex format, should be at least %d bytes! (Suppressing furthur warnings)\n", minimumStreamZeroStride );
 					bWarned = true;
 				}
 			}
@@ -3408,7 +3409,7 @@ void CMeshDX8::CheckIndices( CPrimList *pPrim, int numPrimitives )
 			{
 				int index = g_pLastIndex->GetShadowIndex( j + pPrim->m_FirstIndex );
 				if ( ( index < (int)s_FirstVertex ) || ( index >= (int)( s_FirstVertex + s_NumVertices ) ) )
-					Warning("%s invalid index: %d [%u..%u]\n", __FUNCTION__, index, s_FirstVertex, s_FirstVertex + s_NumVertices - 1 );
+					Log_Warning( LOG_MESHMGR,"%s invalid index: %d [%u..%u]\n", __FUNCTION__, index, s_FirstVertex, s_FirstVertex + s_NumVertices - 1 );
 				Assert( index >= (int)s_FirstVertex );
 				Assert( index < (int)(s_FirstVertex + s_NumVertices) );
 			}
@@ -3434,7 +3435,7 @@ void CMeshDX8::RenderPass()
 	// vertex format...
 	if ( !IsValidVertexFormat( g_LastVertexFormat ) )
 	{
-		Warning( "Material %s does not support vertex format used by the mesh (maybe missing fields or mismatched vertex compression?), mesh will not be rendered. Grab a programmer!\n",
+		Log_Warning( LOG_MESHMGR, "Material %s does not support vertex format used by the mesh (maybe missing fields or mismatched vertex compression?), mesh will not be rendered. Grab a programmer!\n",
 			ShaderAPI()->GetBoundMaterial()->GetName() );
 		return;
 	}
@@ -3562,7 +3563,7 @@ void CDynamicMeshDX8::SetVertexFormat( VertexFormat_t format )
 	if ( CompressionType( format ) != VERTEX_COMPRESSION_NONE )
 	{
 		// UNDONE: support compressed dynamic meshes if needed (pro: less VB memory, con: CMeshBuilder gets slower)
-		Warning( "ERROR: dynamic meshes cannot use compressed vertices!\n" );
+		Log_Warning( LOG_MESHMGR, "ERROR: dynamic meshes cannot use compressed vertices!\n" );
 		Assert( 0 );
 		format &= ~VERTEX_FORMAT_COMPRESSED;
 	}
@@ -4904,7 +4905,7 @@ void CMeshMgr::ReleaseBuffers()
 {
 	if ( IsPC() && mat_debugalttab.GetBool() )
 	{
-		Warning( "mat_debugalttab: CMeshMgr::ReleaseBuffers\n" );
+		Log_Warning( LOG_MESHMGR, "mat_debugalttab: CMeshMgr::ReleaseBuffers\n" );
 	}
 
 	CleanUp();
@@ -4916,7 +4917,7 @@ void CMeshMgr::RestoreBuffers()
 {
 	if ( IsPC() && mat_debugalttab.GetBool() )
 	{
-		Warning( "mat_debugalttab: CMeshMgr::RestoreBuffers\n" );
+		Log_Warning( LOG_MESHMGR, "mat_debugalttab: CMeshMgr::RestoreBuffers\n" );
 	}
 	Init();
 }
@@ -5494,6 +5495,12 @@ int CMeshMgr::GetMaxVerticesToRender( IMaterial *pMaterial )
 {
 	Assert( (pMaterial == NULL) || ((IMaterialInternal *)pMaterial)->IsRealTimeVersion() );
 	
+	if (VertexFormatSize(fmt) <= 0)
+	{
+		Log_Warning(LOG_MESHMGR, "Invalid vertex format size (material %s)", pMaterial->GetName());
+		return 0;
+	}
+
 	// Be conservative, assume no compression (in here, we don't know if the caller will used a compressed VB or not)
 	// FIXME: allow the caller to specify which compression type should be used to compute size from the vertex format
 	//        (this can vary between multiple VBs/Meshes using the same material)
@@ -5821,7 +5828,7 @@ bool CMeshMgr::SetRenderState( int nVertexOffsetInBytes, int nFirstVertexIdx, Ve
 	// FIXME
 	if ( !IsValidVertexFormat( vertexFormat ) )
 	{
-		Warning( "Material %s is being applied to a model, you need $model=1 in the .vmt file!\n",
+		Log_Warning( LOG_MESHMGR, "Material %s is being applied to a model, you need $model=1 in the .vmt file!\n",
 			ShaderAPI()->GetBoundMaterial()->GetName() );
 		return false;
 	}
@@ -5898,7 +5905,7 @@ void CMeshMgr::RenderPassWithVertexAndIndexBuffers( void )
 		{
 //			int numPrimitives = NumPrimitives( s_NumVertices, pPrim->m_NumIndices );
 
-//			Warning( "CMeshMgr::RenderPassWithVertexAndIndexBuffers: DrawIndexedPrimitive: m_nFirstIndex = %d numPrimitives = %d\n", ( int )( ( CDynamiCIndexBufferDx8 * )m_pCurrentIndexBuffer )->m_FirstIndex, ( int )( m_nNumIndices / 3 ) );
+//			Log_Warning( LOG_MESHMGR, "CMeshMgr::RenderPassWithVertexAndIndexBuffers: DrawIndexedPrimitive: m_nFirstIndex = %d numPrimitives = %d\n", ( int )( ( CDynamiCIndexBufferDx8 * )m_pCurrentIndexBuffer )->m_FirstIndex, ( int )( m_nNumIndices / 3 ) );
 			{
 				VPROF( "Dx9Device()->DrawIndexedPrimitive" );
 //				VPROF_INCREMENT_COUNTER( "DrawIndexedPrimitive", 1 );
