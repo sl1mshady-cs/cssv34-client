@@ -16,6 +16,9 @@
 #include <sys/tty.h>
 #endif
 
+#ifdef ANDROID
+#include <android/log.h>
+#endif
 
 #define DBG_SPEW_ALL_WARNINGS_AND_ERRORS_ASSERT false
 
