@@ -731,7 +731,7 @@ int Array_GetLength( const unsigned char *pStruct, const SendProp *pProp, int ob
 void Array_Encode( const unsigned char *pStruct, DVariant *pVar, const SendProp *pProp, bf_write *pOut, int objectID )
 {
 	SendProp *pArrayProp = pProp->GetArrayProp();
-	AssertMsg( pArrayProp, "Array_Encode: missing m_pArrayProp for SendProp '%s'.", pProp->m_pVarName );
+	AssertMsg( pArrayProp, ("Array_Encode: missing m_pArrayProp for SendProp '%s'.", pProp->m_pVarName) );
 	
 	int nElements = Array_GetLength( pStruct, pProp, objectID );
 
@@ -793,7 +793,7 @@ void Array_Decode( DecodeInfo *pInfo )
 int Array_CompareDeltas( const SendProp *pProp, bf_read *p1, bf_read *p2 )
 {
 	SendProp *pArrayProp = pProp->GetArrayProp();
-	AssertMsg( pArrayProp, "Array_CompareDeltas: missing m_pArrayProp for SendProp '%s'.", pProp->m_pVarName );
+	AssertMsg( pArrayProp, ("Array_CompareDeltas: missing m_pArrayProp for SendProp '%s'.", pProp->m_pVarName) );
 
 	int nLengthBits = pProp->GetNumArrayLengthBits(); 
 	int length1 = p1->ReadUBitLong( nLengthBits );

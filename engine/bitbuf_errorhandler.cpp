@@ -37,7 +37,7 @@ void EngineBitBufErrorHandler( BitBufErrorType errorType, const char *pDebugName
 		}
 	}
 
-	AssertMsg( false, "%s: %s errorType: %d", __FUNCTION__, pDebugName, errorType );
+	AssertMsg( false, ("%s: %s errorType: %d", __FUNCTION__, pDebugName, errorType) );
 }
 
 void InstallBitBufErrorHandler()

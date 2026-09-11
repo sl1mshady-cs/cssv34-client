@@ -1496,7 +1496,7 @@ KeyValues* CMaterial::InitializeShader( KeyValues &keyValues, KeyValues &patchKe
 
 			if ( !HushAsserts() )
 			{
-				AssertMsg( pShader, "pShader==NULL. Shader: %s", GetName() );
+				AssertMsg( pShader, ("pShader==NULL. Shader: %s", GetName()) );
 			}
 
 #ifndef DEDICATED
@@ -1963,7 +1963,7 @@ bool CMaterial::UsesEnvCubemap( void )
 	{
 		if ( !HushAsserts() )
 		{
-			AssertMsg( m_pShader, "m_pShader==NULL. Shader: %s", GetName() );
+			AssertMsg( m_pShader, ("m_pShader==NULL. Shader: %s", GetName()) );
 		}
 		return false;
 	}
@@ -1984,7 +1984,7 @@ bool CMaterial::NeedsTangentSpace( void )
 	{
 		if ( !HushAsserts() )
 		{
-			AssertMsg( m_pShader, "m_pShader==NULL. Shader: %s", GetName() );
+			AssertMsg( m_pShader, ("m_pShader==NULL. Shader: %s", GetName()) );
 		}
 		return false;
 	}
@@ -2000,7 +2000,7 @@ bool CMaterial::NeedsPowerOfTwoFrameBufferTexture( bool bCheckSpecificToThisFram
 	{
 		if ( !HushAsserts() )
 		{
-			AssertMsg( m_pShader, "m_pShader==NULL. Shader: %s", GetName() );
+			AssertMsg( m_pShader, ("m_pShader==NULL. Shader: %s", GetName()) );
 		}
 		return false;
 	}
@@ -2016,7 +2016,7 @@ bool CMaterial::NeedsFullFrameBufferTexture( bool bCheckSpecificToThisFrame )
 	{
 		if ( !HushAsserts() )
 		{
-			AssertMsg( m_pShader, "m_pShader==NULL. Shader: %s", GetName() );
+			AssertMsg( m_pShader, ("m_pShader==NULL. Shader: %s", GetName()) );
 		}
 		return false;
 	}
@@ -3474,7 +3474,7 @@ bool AccumulateRecursiveVmtPatches( KeyValues &patchKeyValuesOut, KeyValues **pp
 #endif
 			if ( !HushAsserts() )
 			{
-				AssertMsg( false, "Failed to load $include VMT file (%s)", includeFileName.String() );
+				AssertMsg( false,( "Failed to load $include VMT file (%s)", includeFileName.String()) );
 			}
 			return false;
 		}

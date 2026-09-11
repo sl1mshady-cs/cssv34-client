@@ -5495,16 +5495,17 @@ int CMeshMgr::GetMaxVerticesToRender( IMaterial *pMaterial )
 {
 	Assert( (pMaterial == NULL) || ((IMaterialInternal *)pMaterial)->IsRealTimeVersion() );
 	
+	// Be conservative, assume no compression (in here, we don't know if the caller will used a compressed VB or not)
+	// FIXME: allow the caller to specify which compression type should be used to compute size from the vertex format
+	//        (this can vary between multiple VBs/Meshes using the same material)
+	VertexFormat_t fmt = pMaterial->GetVertexFormat() & ~VERTEX_FORMAT_COMPRESSED;
+
 	if (VertexFormatSize(fmt) <= 0)
 	{
 		Log_Warning(LOG_MESHMGR, "Invalid vertex format size (material %s)", pMaterial->GetName());
 		return 0;
 	}
 
-	// Be conservative, assume no compression (in here, we don't know if the caller will used a compressed VB or not)
-	// FIXME: allow the caller to specify which compression type should be used to compute size from the vertex format
-	//        (this can vary between multiple VBs/Meshes using the same material)
-	VertexFormat_t fmt = pMaterial->GetVertexFormat() & ~VERTEX_FORMAT_COMPRESSED;
 	int nMaxVerts = ShaderAPI()->GetCurrentDynamicVBSize() / VertexFormatSize( fmt );
 	if ( nMaxVerts > 65535 )
 	{

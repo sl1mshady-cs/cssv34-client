@@ -661,7 +661,7 @@ public:
 			VerifyPreUnlock();
 			if ( m_pLock->GetJobLocking() != &GJobCur() )
 			{
-				AssertMsg( false, "CScopedGenericLock::Unlock called when job %s doesn't own the lock", GJobCur().GetName() );
+				AssertMsg( false, ("CScopedGenericLock::Unlock called when job %s doesn't own the lock", GJobCur().GetName()) );
 				return;
 			}
 
