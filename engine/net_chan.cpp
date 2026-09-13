@@ -62,6 +62,8 @@ extern int  NET_ReceiveStream( int nSock, char * buf, int len, int flags );
 
 #define FLIPBIT(v,b) if (v&b) v &= ~b; else v |= b;
 
+DEFINE_LOGGING_CHANNEL_NO_TAGS(LOG_NETCHAN, "net_chan", 0, LS_MESSAGE, Color(87, 247, 137, 255));
+
 // We only need to checksum packets on the PC and only when we're actually sending them over the network.
 static bool ShouldChecksumPackets()
 {
@@ -1395,7 +1397,7 @@ bool CNetChan::ReadSubChannelData( bf_read &buf, int stream  )
 		if ( data->bytes > MAX_FILE_SIZE )
 		{
 			// This can happen with the compressed path above, which uses VarInt32 rather than MAX_FILE_SIZE_BITS
-			Warning( "Net message exceeds max size (%u / %u)\n", MAX_FILE_SIZE, data->bytes );
+			Log_Msg(LOG_NETCHAN, "Net message exceeds max size (%u / %u)\n", MAX_FILE_SIZE, data->bytes );
 			// Subsequent packets for this transfer will treated as invalid since we never setup a buffer.
 			return false;
 		}
@@ -1873,7 +1875,7 @@ bool CNetChan::ProcessMessages( bf_read &buf  )
 	{
 		if ( buf.IsOverflowed() )
 		{
-			Warning( "Buffer overflow in net message\n" );
+			Log_Msg(LOG_NETCHAN, "Buffer overflow in net message\n" );
 			return false;
 		}
 
@@ -1912,7 +1914,7 @@ bool CNetChan::ProcessMessages( bf_read &buf  )
 
 			if ( !netmsg->ReadFromBuffer( buf ) )
 			{
-				ConMsg( "Netchannel: failed reading message %s from %s.\n", msgname, remote_address.ToString() );
+				Log_Msg(LOG_NETCHAN, "Netchannel: failed reading message %s from %s.\n", msgname, remote_address.ToString() );
 				Assert ( 0 );
 				continue;
 			}
@@ -1923,7 +1925,7 @@ bool CNetChan::ProcessMessages( bf_read &buf  )
 			{
 				if ( (*showmsgname == '1') || !Q_stricmp(showmsgname, netmsg->GetName() ) )
 				{
-					ConMsg("Msg from %s: %s\n", remote_address.ToString(), netmsg->ToString() );
+					Log_Msg(LOG_NETCHAN, "Msg from %s: %s\n", remote_address.ToString(), netmsg->ToString() );
 				}
 			}
 
@@ -1931,7 +1933,7 @@ bool CNetChan::ProcessMessages( bf_read &buf  )
 			{
 				if ( (*blockmsgname== '1') || !Q_stricmp(blockmsgname, netmsg->GetName() ) )
 				{
-					ConMsg("Blocking message %s\n", netmsg->ToString() );
+					Log_Msg(LOG_NETCHAN, "Blocking message %s\n", netmsg->ToString() );
 					continue;
 				}
 			}
@@ -1968,7 +1970,7 @@ bool CNetChan::ProcessMessages( bf_read &buf  )
 		}
 		else
 		{
-			ConMsg( "Netchannel: unknown net message (%i) from %s.\n", cmd, remote_address.ToString() );
+			Log_Msg(LOG_NETCHAN, "Netchannel: unknown net message (%i) from %s.\n", cmd, remote_address.ToString() );
 			Assert ( 0 );
 			return false;
 		}
@@ -2154,7 +2156,7 @@ bool CNetChan::HandleUpload( dataFragments_t *data, INetChannelHandler *MessageH
 
 	if ( szErrorStr )
 	{
-		ConMsg( "Download file '%s' %s\n", data->filename, szErrorStr );
+		Log_Msg(LOG_NETCHAN, "Download file '%s' %s\n", data->filename, szErrorStr );
 	}
 
 	return true;
@@ -2172,14 +2174,14 @@ bool CNetChan::CheckReceivingList(int nList)
 
 	if ( data->ackedFragments > data->numFragments )
 	{
-		ConMsg( "Receiving failed: too many fragments %i/%i from %s\n", data->ackedFragments, data->numFragments, GetAddress() );
+		Log_Msg(LOG_NETCHAN, "Receiving failed: too many fragments %i/%i from %s\n", data->ackedFragments, data->numFragments, GetAddress() );
 		return false;
 	}
 
 	// Got all fragments.
 
 	if ( net_showfragments.GetBool() )
-		ConMsg("Receiving complete: %i fragments, %i bytes\n", data->numFragments, data->bytes );
+		Log_Msg(LOG_NETCHAN, "Receiving complete: %i fragments, %i bytes\n", data->numFragments, data->bytes );
 
 	if ( data->isCompressed )
 	{
@@ -2347,7 +2349,7 @@ int CNetChan::ProcessPacketHeader( netpacket_t * packet )
 				{
 					if ( net_showfragments.GetBool() )
 					{	
-						ConMsg("Resending subchan %i: start %i, num %i\n", subchan->index, subchan->startFraggment[0], subchan->numFragments[0] );
+						Log_Msg(LOG_NETCHAN, "Resending subchan %i: start %i, num %i\n", subchan->index, subchan->startFraggment[0], subchan->numFragments[0] );
 					}
 
 					subchan->state = SUBCHANNEL_TOSEND; // schedule for resend
@@ -2575,7 +2577,7 @@ bool CNetChan::SendData( bf_write &msg, bool bReliable )
 	{
 		if (  bReliable )
 		{
-			ConMsg( "ERROR! SendData reliabe data too big (%i)", msg.GetNumBytesWritten() );
+			Log_Msg(LOG_NETCHAN, "ERROR! SendData reliabe data too big (%i)", msg.GetNumBytesWritten() );
 		}
 
 		return false;
@@ -2691,7 +2693,7 @@ bool CNetChan::ProcessStream( void )
 
 		if ( m_StreamLength	> NET_MAX_PAYLOAD_V23)
 		{
-			ConMsg( "ERROR! Stream indata too big (%i)", m_StreamLength );
+			Log_Msg(LOG_NETCHAN, "ERROR! Stream indata too big (%i)", m_StreamLength );
 			return false;
 		}
 	}
@@ -2762,7 +2764,7 @@ bool CNetChan::ProcessStream( void )
 
 		if ( m_StreamReceived > m_StreamLength )
 		{
-			ConMsg( "ERROR! Stream indata oversize." );
+			Log_Msg(LOG_NETCHAN, "ERROR! Stream indata oversize." );
 			return false;
 		}
 

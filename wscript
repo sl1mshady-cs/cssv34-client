@@ -592,7 +592,9 @@ def configure(conf):
 	# And here C++ flags starts to be treated separately
 	cxxflags = list(cflags)
 	if conf.env.DEST_OS != 'win32':
-		cxxflags += ['-std=c++11','-fpermissive']
+		cxxflags += ['-std=c++17','-fpermissive']
+	else:
+		cxxflags += ['/std:c++17']
 
 	if conf.env.COMPILER_CC == 'gcc':
 		conf.define('COMPILER_GCC', 1)

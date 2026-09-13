@@ -55,8 +55,8 @@ CLoadingDialog::CLoadingDialog( vgui::Panel *parent ) : Frame(parent, "LoadingDi
 	m_flLastSecondaryProgressUpdateTime = 0.0f;
 	m_flSecondaryProgressStartTime = 0.0f;
 
-	m_pProgress = new ProgressBar( this, "Progress" );
-	m_pProgress2 = new ProgressBar( this, "Progress2" );
+	m_pProgress = new ContinuousProgressBar( this, "Progress" );
+	m_pProgress2 = new ContinuousProgressBar( this, "Progress2" );
 	m_pInfoLabel = new Label( this, "InfoLabel", "" );
 	m_pCancelButton = new Button( this, "CancelButton", "#GameUI_Cancel" );
 	m_pTimeRemainingLabel = new Label( this, "TimeRemainingLabel", "" );
