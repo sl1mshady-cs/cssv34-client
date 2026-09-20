@@ -76,7 +76,7 @@ char *V_strupr( char *start );
 char *V_strlower( char *start );
 int V_stricmp( const char *s1, const char *s2 );
 int	V_strncmp( const char *s1, const char *s2, int count );
-int V_strnicmp( const char *s1, const char *s2, int n );
+int V_strnicmp( const char *s1, const char *s2, int count );
 
 //-----------------------------------------------------------------------------
 // Purpose: Slightly modified strtok. Does not modify the input string. Does

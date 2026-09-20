@@ -1866,6 +1866,7 @@ void CClientState::FinishSignonState_New()
 
 	// check if we have clientmod emulation enabled
 	extern ConVar cm_enabled;
+	
 	if (!cm_enabled.GetBool())
 		return;
 

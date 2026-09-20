@@ -399,16 +399,20 @@ char *V_strnlwr(char *s, size_t count)
 
 int V_stricmp( const char *str1, const char *str2 )
 {
-	// It is not uncommon to compare a string to itself. See
-	// VPanelWrapper::GetPanel which does this a lot. Since stricmp
-	// is expensive and pointer comparison is cheap, this simple test
-	// can save a lot of cycles, and cache pollution.
+	AssertValidStringPtr( str1 );
+	AssertValidStringPtr( str2 );
+
+	// It is not uncommon to compare a string to itself.
+	// Since stricmp is expensive and pointer comparison is cheap, 
+	// this simple test can save a lot of cycles, and cache pollution.
 	if ( str1 == str2 )
 	{
 		return 0;
 	}
+
 	const unsigned char *s1 = (const unsigned char*)str1;
 	const unsigned char *s2 = (const unsigned char*)str2;
+
 	for ( ; *s1; ++s1, ++s2 )
 	{
 		if ( *s1 != *s2 )
@@ -427,13 +431,19 @@ int V_stricmp( const char *str1, const char *str2 )
 			}
 		}
 	}
+
 	return *s2 ? -1 : 0;
 }
 
 int V_strnicmp( const char *str1, const char *str2, int n )
 {
+	Assert( n >= 0 );
+	AssertValidStringPtr( str1, n );
+	AssertValidStringPtr( str2, n );
+
 	const unsigned char *s1 = (const unsigned char*)str1;
 	const unsigned char *s2 = (const unsigned char*)str2;
+
 	for ( ; n > 0 && *s1; --n, ++s1, ++s2 )
 	{
 		if ( *s1 != *s2 )
@@ -452,6 +462,7 @@ int V_strnicmp( const char *str1, const char *str2, int n )
 			}
 		}
 	}
+
 	return (n > 0 && *s2) ? -1 : 0;
 }
 

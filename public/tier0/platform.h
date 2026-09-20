@@ -1917,8 +1917,6 @@ int	_V_stricmp_NegativeForUnequal	  ( const char *s1, const char *s2 );
 #undef strcmpi
 #define stricmp(s1,s2) _V_stricmp(s1, s2)
 #define strcmpi(s1,s2) _V_stricmp(s1, s2)
-#undef strnicmp
-#define strnicmp V_strncasecmp 
 #endif
 
 // Use AlignedByteArray_t if you need an appropriately aligned array of T with no constructor (e.g CUtlMemoryFixed):
