@@ -36,12 +36,12 @@ Using a WAF build system you need to install python. I've recommend to use Pytho
 - Add `--prefix=DIRECTORY` where `DIRECTORY` is output installation directory for game binaries. 
 Default `__build__` if you don't specify a prefix.
 - Configure build games using `--build-games=GAME`, `GAME` can be one of those:
-    > cstrike = Counter-Strike: Source // Default - This will be selected if you don't specify a game
-    > hl2 = Half-Life 2
-    > episodic = Half-Life 2 Episode 1
-    > hl2mp = Half-Life 2: Deathmatch
-    > dod = Day of Defeat
-    > portal = Portal
+    > cstrike = Counter-Strike: Source // Default - This will be selected if you don't specify a game<br>
+    > hl2 = Half-Life 2<br>
+    > episodic = Half-Life 2 Episode 1<br>
+    > hl2mp = Half-Life 2: Deathmatch<br>
+    > dod = Day of Defeat<br>
+    > portal = Portal<br>
 - To supress all the warnings during compilation add `--disable-warns`.
 - Want voice chat? Add `--enable-speex` `--enable-opus` arguments to WAF.
 - **Want dedicated server?** Just add `-d` argument to WAF.
