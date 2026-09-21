@@ -32,25 +32,20 @@ Read [CONTRIBUTING.md](https://github.com/sl1mshady-cs/cssv34-client/blob/master
 
 # How to Build?
 
-Windows:
-- Run configure_cstrike_release.bat or configure_cstrike_debug.bat
-- If you want target 32 bit, add `-4` or `--32bits` at the end
-- OPTIONAL: Run create_visualstudio_solution.bat to create the visual studio solution
-- Run build_projects.bat
-- Output files will be copied to `./__build__`
+Read [Build Instructions](https://github.com/sl1mshady-cs/cssv34-client/blob/master/.github/docs/building_engine.md)
 
 ---
 
 # How to Run?
 
 - You need to download content. Download it from: [here](https://drive.google.com/file/d/1wzovBhjmJ_mDTpS3Lq89x57zhHTykgcN/view)
-- Unpack this content into `__build__` folder
+- Unpack this content into the output folder that you configurated.
 - Run hl2_launcher.exe with `-game cstrike` (you can create .bat file for it)
 
 ---
 
 # Debugging the engine
 - Set hl2_launcher as the startup project (if it isn't already) by right clicking it and pressing "Set as Startup Project".
-- Right click launcher_main, go to properties and click on the debugging section. Set "Command" to point to your compiled `hl2_launcher.exe` (in the `__build__` folder).
+- Right click launcher_main, go to properties and click on the debugging section. Set "Command" to point to your compiled `hl2_launcher.exe` (in the your output folder).
 - Set "Command Line Arguments" to `-game cstrike -insecure -sw -dev -allowdebug` (feel free to add more such as `+sv_cheats 1`).
 - Press "Local Windows Debugger" at the top of Visual Studio to then launch the game and debug it.

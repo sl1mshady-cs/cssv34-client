@@ -9,7 +9,7 @@ while preserving original game behavior wherever possible.
 ---
 
 # Before You Start
-### !! You should know the basics of working with the Source SDK. !!
+### You should know the basics of working with the Source SDK.
 
 Please:
 
@@ -20,20 +20,11 @@ Please:
 
 ---
 
-## Development Environment
-#### The project currently targets Windows.
-
-Recommended environment:
-
-- Microsoft Visual Studio 2022 or 2026 (2022 requires additional changes)
-- Windows 10 SDK (latest stable)
-- MFC libraries installed
-- v34 Dedicated server for multiplayer testing
-
 ## This may also be necessary
 - [SDK for CSS v34](https://github.com/rusherr-c/cssv34-sdk)
-- [Original Source 2007 Source code](https://github.com/uvbs/source-2007)
-- [Original nillerusr's Source 2013 Source code](https://github.com/nillerusr/source-engine)
+- [Source Engine 2007 Source Code](https://github.com/uvbs/source-2007)
+- [CS:GO Engine Source Code](https://github.com/rusherr-c/csgo-src)
+- [nillerusr's Engine Source Code](https://github.com/nillerusr/source-engine)
 
 ---
 
@@ -44,8 +35,7 @@ When reporting a bug, please include as much information as possible.
 Useful information includes:
 
 - Operating System
-- Visual Studio version
-- Windows SDK version
+- Compiler
 - Dedicated server version
 - Client build being used
 - Console output
