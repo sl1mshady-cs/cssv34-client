@@ -32,7 +32,7 @@ Read [CONTRIBUTING.md](https://github.com/sl1mshady-cs/cssv34-client/blob/master
 
 # How to Build?
 
-Read [Build Instructions](https://github.com/sl1mshady-cs/cssv34-client/blob/master/.github/docs/building_engine.md)
+Read [Build Instructions](https://github.com/sl1mshady-cs/cssv34-client/blob/master/.github/docs/building-engine.md)
 
 ---
 
