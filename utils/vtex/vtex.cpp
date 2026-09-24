@@ -61,12 +61,15 @@
 #endif
 
 //#define DEBUG_NO_COMPRESSION
+static bool g_NoPause = false;
 static bool g_Quiet = false;
 static const char *g_ShaderName = NULL;
 static bool g_CreateDir = true;
 static bool g_UseGameDir = true;
 
+static bool g_bUseStandardError = false;
 static bool g_bWarningsAsErrors = false;
+
 static bool g_bUsedAsLaunchableDLL = false;
 
 static char g_ForcedOutputDir[MAX_PATH];
@@ -119,6 +122,23 @@ static bool VTexErrorAborts()
 	return true;
 }
 
+static void Pause( void )
+{
+	if( !g_NoPause )
+	{
+		printf( "\nHit a key to continue\n" );
+#ifdef PLATFORM_WINDOWS
+		getch();
+#endif	
+	}
+}
+
+#if defined( _DEBUG ) && defined( _WIN32 )
+#define DebuggerOutput2(x, y) (void)( OutputDebugString( x ), OutputDebugString( y ) )
+#else
+#define DebuggerOutput2(x, y) (void)( (x), (y) )
+#endif
+
 
 static void VTexError( const char *pFormat, ... )
 {
@@ -128,15 +148,24 @@ static void VTexError( const char *pFormat, ... )
 	Q_vsnprintf( str, sizeof( str ), pFormat, marker );
 	va_end( marker );
 
+	DebuggerOutput2( "[VTEXDBG] ERROR: ", str );
+
 	if ( !VTexErrorAborts() )
 	{
 		fprintf( stderr, "ERROR: %s", str );
 		return;
 	}
 
-
-	fprintf( stderr, "ERROR: %s", str );
-	exit( 1 );	
+	if ( g_bUseStandardError )
+	{
+		Error( "ERROR: %s", str );
+	}
+	else
+	{
+		fprintf( stderr, "ERROR: %s", str );
+		Pause();
+		exit( 1 );
+	}	
 }
 
 
@@ -148,17 +177,65 @@ static void VTexWarning( const char *pFormat, ... )
 	Q_vsnprintf( str, sizeof( str ), pFormat, marker );
 	va_end( marker );
 
+	DebuggerOutput2( "[VTEXDBG] WARNING: ", str );
+
 	if ( g_bWarningsAsErrors )
 	{
 		VTexError( "%s", str );
 	}
 	else
 	{
-		fprintf( stderr, "WARN: %s", str );
+		fprintf( stderr, "WARNING: %s", str );
+		Pause();
 	}	
 }
 
 
+static void VTexWarningNoPause( const char *pFormat, ... )
+{
+	char str[4096];
+	va_list marker;
+	va_start( marker, pFormat );
+	Q_vsnprintf( str, sizeof( str ), pFormat, marker );
+	va_end( marker );
+
+	DebuggerOutput2( "[VTEXDBG] WARNING: ", str );
+
+	if ( g_bWarningsAsErrors )
+	{
+		VTexError( "%s", str );
+	}
+	else
+	{
+		fprintf( stderr, "WARNING: %s", str );
+	}	
+}
+
+static void VTexMsg( const char *pFormat, ... )
+{
+	char str[4096];
+	va_list marker;
+	va_start( marker, pFormat );
+	Q_vsnprintf( str, sizeof( str ), pFormat, marker );
+	va_end( marker );
+
+	DebuggerOutput2( "[VTEXDBG] MSG: ", str );
+
+	fprintf( stdout, "%s", str );
+}
+
+static void VTexMsgEx( FILE *fout, const char *pFormat, ... )
+{
+	char str[4096];
+	va_list marker;
+	va_start( marker, pFormat );
+	Q_vsnprintf( str, sizeof( str ), pFormat, marker );
+	va_end( marker );
+
+	DebuggerOutput2( "[VTEXDBG] MSG: ", str );
+
+	fprintf( fout, "%s", str );
+}
 
 struct VTexConfigInfo_t
 {
@@ -2593,15 +2670,20 @@ bool Process_File( char *pInputBaseName, int maxlen )
 	return TRUE;
 }
 
-static SpewRetval_t VTexOutputFunc( SpewType_t spewType, char const *pMsg )
+class CVTexLoggingListener : public ILoggingListener
 {
-	printf( "%s", pMsg );
-	if (spewType == SPEW_ERROR)
+public:
+	virtual void Log( const LoggingContext_t *pContext, const tchar *pMessage )
 	{
-		return SPEW_ABORT;
+		VTexMsg( "%s", pMessage );
+		if ( pContext->m_Severity == LS_ERROR )
+		{
+			Pause();
+		}
 	}
-	return (spewType == SPEW_ASSERT) ? SPEW_DEBUGGER : SPEW_CONTINUE; 
-}
+};
+
+CVTexLoggingListener g_VTexLoggingListener;
 
 
 class CVTex : public CTier2AppSystem< IVTex >, public ILaunchableDLL
@@ -2692,7 +2774,8 @@ int CVTex::VTex( int argc, char **argv )
 
 	if ( g_bUsedAsLaunchableDLL )
 	{
-		SpewOutputFunc( VTexOutputFunc );
+		LoggingSystem_PushLoggingState();
+		LoggingSystem_RegisterLoggingListener( &g_VTexLoggingListener );
 	}
 
 	MathLib_Init(  2.2f, 2.2f, 0.0f, 1.0f, false, false, false, false );
@@ -2827,7 +2910,7 @@ int CVTex::VTex( int argc, char **argv )
 	if ( g_bUsedAsLaunchableDLL )
 	{
 		// Make sure any further spew doesn't call the function in this module (which will be unloaded shortly)
-		SpewOutputFunc( NULL );
+		LoggingSystem_PopLoggingState();
 	}
 
 	return 0;

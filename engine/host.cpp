@@ -856,8 +856,7 @@ void Host_EndGame (bool bShowMainMenu, const char *message, ...)
 	va_start (argptr,message);
 	Q_vsnprintf (string,sizeof(string),message,argptr);
 	va_end (argptr);
-	ConMsg ("Host_EndGame: %s\n",string);
-
+	Warning("Host_EndGame: %s\n", string);
 #ifndef SWDS
 	scr_disabled_for_loading = true;
 #endif
@@ -938,7 +937,8 @@ void Host_Error (const char *error, ...)
 	// Reenable screen updates
 	SCR_EndLoadingPlaque ();		
 #endif
-	ConMsg( "\nHost_Error: %s\n\n", string );
+	ConMsg("\nHost_Error: %s\n\n", string);
+	Log_Assert( "\nHost_Error: %s\n\n", string );
 
 	Host_Disconnect( true, string );
 

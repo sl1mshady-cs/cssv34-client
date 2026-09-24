@@ -130,7 +130,7 @@ bool CRConServer::ConnectToListeningClient( const netadr_t &adr, bool bSingleSoc
 {
 	if ( m_Socket.ConnectSocket( adr, bSingleSocket ) < 0 )
 	{
-		ConWarning( "Unable to connect to remote client (%s)\n", adr.ToString() );
+		Warning( "Unable to connect to remote client (%s)\n", adr.ToString() );
 		return false;
 	}
 	return true;

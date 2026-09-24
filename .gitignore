@@ -397,3 +397,4 @@ FodyWeavers.xsd
 !/lib/win32/amd64/*.dll
 !/lib/android/aarch64/*.a
 !/lib/android/arm/*.a
+/win64_build

@@ -424,7 +424,7 @@ void CDmxElement::UnpackIntoStructure( void *pData, size_t DestSizeInBytes, cons
 			}
 
 			AssertMsg( pUnpack->m_nSize == CDmxAttribute::AttributeDataSize( pAttribute->GetType() ), 
-					   "CDmxElement::UnpackIntoStructure: Incorrect size to unpack data into in attribute \"%s\"!\n", pUnpack->m_pAttributeName );
+					   ("CDmxElement::UnpackIntoStructure: Incorrect size to unpack data into in attribute \"%s\"!\n", pUnpack->m_pAttributeName) );
 			memcpy( pDest, pAttribute->m_pData, pUnpack->m_nSize );
 		}
 	}
@@ -455,7 +455,7 @@ void CDmxElement::AddAttributesFromStructure_Internal( const void *pData, size_t
 
 		if ( HasAttribute( pUnpack->m_pAttributeName ) )
 		{
-			AssertMsg( 0, "CDmxElement::AddAttributesFromStructure: Attribute %s already exists!\n", pUnpack->m_pAttributeName );
+			AssertMsg( 0, ("CDmxElement::AddAttributesFromStructure: Attribute %s already exists!\n", pUnpack->m_pAttributeName) );
 			continue;
 		}
 
@@ -481,7 +481,7 @@ void CDmxElement::AddAttributesFromStructure_Internal( const void *pData, size_t
 				}
 
 				AssertMsg( nSize == CDmxAttribute::AttributeDataSize( pUnpack->m_AttributeType ), 
-						   "CDmxElement::UnpackIntoStructure: Incorrect size to unpack data into in attribute \"%s\"!\n", pUnpack->m_pAttributeName );
+						   ("CDmxElement::UnpackIntoStructure: Incorrect size to unpack data into in attribute \"%s\"!\n", pUnpack->m_pAttributeName) );
 				pAttribute->SetValue( pUnpack->m_AttributeType, pSrc, nSize );
 			}
 		}

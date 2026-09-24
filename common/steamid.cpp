@@ -523,6 +523,33 @@ bool CSteamID::SetFromSteam2String( const char *pchSteam2ID, EUniverse eUniverse
 //			code, this code returns a pointer to a static buffer and is NOT thread-safe.
 // Output:  buffer with rendered Steam ID
 //-----------------------------------------------------------------------------
+const char * CSteamID::RenderAsSteam2String() const
+{
+	// longest length of returned string is k_cBufLen
+	//	[STEAM_%u:%u:%u]
+	//	 6+2+2+11=21
+	const int k_cBufLen = 21;
+
+	const int k_cBufs = 4;	// # of static bufs to use (so people can compose output with multiple calls to Render() )
+	static char rgchBuf[k_cBufs][k_cBufLen];
+	static int nBuf = 0;
+	char * pchBuf = rgchBuf[nBuf];	// get pointer to current static buf
+	nBuf ++;	// use next buffer for next call to this method
+	nBuf %= k_cBufs;
+
+	V_snprintf( pchBuf, k_cBufLen, "STEAM_%u:%u:%u", 
+		m_steamid.m_comp.m_unAccountID & 1, // 1 in most of the cases
+		m_steamid.m_comp.m_unAccountID % 2,
+		m_steamid.m_comp.m_unAccountID / 2);
+
+	return pchBuf;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Renders the steam ID to a buffer.  NOTE: for convenience of calling
+//			code, this code returns a pointer to a static buffer and is NOT thread-safe.
+// Output:  buffer with rendered Steam ID
+//-----------------------------------------------------------------------------
 const char * CSteamID::Render() const
 {
 	// longest length of returned string is k_cBufLen

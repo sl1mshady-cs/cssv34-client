@@ -10,6 +10,8 @@
 
 #include <clientticketmgr.h>
 
+DEFINE_LOGGING_CHANNEL_NO_TAGS(LOG_CLTMGR, "CLTMgr", 0, LS_MESSAGE, Color(255, 150, 150, 255));
+
 // RevEmu3 Ticket
 struct ticketdata_t
 {
@@ -85,7 +87,9 @@ void CTicket::Init()
 
 	m_nSteamID = JSHash((const uint8*)id, strlen(id));
 
-	Msg("Your SteamID: STEAM_0:0:%u\n", (m_nSteamID & ~0x80000000));
+	CSteamID steamID(m_nSteamID * 2, k_EUniversePublic, k_EAccountTypeIndividual);
+
+	Log_Msg(LOG_CLTMGR, "Your SteamID: %s\n", steamID.RenderAsSteam2String());
 
 	memset(&m_Ticket, 0, TICKET_SIZE);
 	m_Ticket.type = 'J';

@@ -155,7 +155,8 @@ m_HideTooltip( this, &HTML::BrowserHideToolTip )
 	}
 	else
 	{
-		Warning("Unable to access SteamHTMLSurface\n");
+		// todo: make HTML surfaces work without Steam
+		Warning("Unable to access SteamHTMLSurface (panel %s)\n", GetName());
 	}
 	m_iScrollBorderX=m_iScrollBorderY=0;
 	m_bScrollBarEnabled = true;

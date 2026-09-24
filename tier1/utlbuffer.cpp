@@ -536,6 +536,49 @@ bool CUtlBuffer::EatCPPComment()
 	return false;
 }
 
+
+//-----------------------------------------------------------------------------
+// Eats C style comments
+//-----------------------------------------------------------------------------
+bool CUtlBuffer::EatCComment( int *pOutSkippedNewlineCount )
+{
+	if ( IsText() && IsValid() )
+	{
+		// If we don't have '/*' next, we're done
+		const char *pPeek = ( const char * )PeekGet( 2 * sizeof( char ), 0 );
+		if ( !pPeek || ( pPeek[0] != '/' ) || ( pPeek[1] != '*' ) )
+			return false;
+
+		if ( pOutSkippedNewlineCount )
+		{
+			*pOutSkippedNewlineCount = 0;
+		}
+
+		// eat the open chars
+		m_Get += 2;
+
+		// read until we see a '*/'
+		while ( IsValid() )
+		{
+			pPeek = ( const char * )PeekGet( 2 * sizeof( char ), 0 );
+			if ( !pPeek )
+				return false;
+
+			if ( ( pPeek[0] == '*' ) && ( pPeek[1] == '/' ) )
+			{
+				m_Get += 2;
+				return true;
+			}
+			char c = GetChar();
+			if ( c == '\n' && pOutSkippedNewlineCount != NULL )
+			{
+				( *pOutSkippedNewlineCount )++;
+			}
+		}
+	}
+	return false;
+}
+
 	
 //-----------------------------------------------------------------------------
 // Peeks how much whitespace to eat

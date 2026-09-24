@@ -988,7 +988,7 @@ EResult CSteamWorksGameStatsUploader::ParseKeyValuesAndSendStats( KeyValues *pKV
 
 	if ( res != k_EResultOK )
 	{
-		AssertMsg( false, "Failed To Submit table %s", pzTable );
+		AssertMsg( false, ("Failed To Submit table %s", pzTable) );
 	}
 	return res;
 }

@@ -81,6 +81,10 @@
 #include <vgui/ISurface.h>
 #include <vgui_controls/EditablePanel.h>
 
+//#include "RmlUi/Core.h"
+//#include "RmlUi/Debugger.h"
+//#include "RmlUi_Backend.h"
+
 #include <vgui_controls/MenuButton.h>
 #include <vgui_controls/Menu.h>
 #include <vgui_controls/PHandle.h>
@@ -119,6 +123,8 @@ extern CreateInterfaceFn g_AppSystemFactory;
 // functions to reference GameUI and GameConsole functions, from GameUI.dll
 IGameUI *staticGameUIFuncs = NULL;
 IGameConsole *staticGameConsole = NULL;
+
+//Rml::Context* g_pRmlContext = nullptr;
 
 // cache some of the state we pass through to matsystemsurface, for visibility
 bool s_bWindowsInputEnabled = true;
@@ -562,6 +568,30 @@ bool CEngineVGui::SetVGUIDirectories()
 //-----------------------------------------------------------------------------
 void CEngineVGui::Init()
 {
+	// Initialize RmlUi
+	//int window_width = videomode->GetModeUIWidth();
+	//int window_height = videomode->GetModeUIHeight();
+
+	//if (!Backend::Initialize("Source Engine", window_width, window_height, true))
+	//{
+	//	return;
+	//}
+
+	//Rml::SetSystemInterface(Backend::GetSystemInterface());
+	//Rml::SetRenderInterface(Backend::GetRenderInterface());
+
+	//Rml::Initialise();
+
+	//g_pRmlContext = Rml::CreateContext("main", Rml::Vector2i(window_width, window_height));
+	//if (!g_pRmlContext)
+	//{
+	//	Rml::Shutdown();
+	//	Backend::Shutdown();
+	//	return;
+	//}
+	
+	//Rml::Debugger::Initialise(g_pRmlContext);
+
 	COM_TimestampedLog( "Loading gameui.dll" );
 
 	// load the GameUI dll
@@ -906,6 +936,9 @@ extern bool g_bUsingLegacyAppSystems;
 //-----------------------------------------------------------------------------
 void CEngineVGui::Shutdown()
 {
+	//Rml::Shutdown();
+	//Backend::Shutdown();
+
 	if ( IsPC() && CL_IsHL2Demo() ) // if they are playing the demo then open the storefront on shutdown
 	{
 		vgui::system()->ShellExecute("open", "steam://store_demo/220");
@@ -1667,6 +1700,14 @@ void CEngineVGui::Simulate()
 		vgui::surface()->CalculateMouseVisible();
 		VGui_ActivateMouse();
 	}
+
+	//Backend::ProcessEvents(g_pRmlContext);
+
+	//g_pRmlContext->Update();
+
+	//Backend::BeginFrame();
+	//g_pRmlContext->Render();
+	//Backend::PresentFrame();
 
 //	if ( !vgui::ivgui()->IsRunning() )
 //		Cbuf_AddText( "quit\n" );

@@ -103,14 +103,28 @@ template<> inline unsigned HashItem<char *>(char * const &pszKey )
 
 
 //-----------------------------------------------------------------------------
-// Murmur hash
+///-- Murmur hash --///
+// 
+// MurmurHash2 and MurmurHash3 were written by Austin Appleby, and is placed 
+// in the public domain. 
+// The author hereby disclaims copyright to this source code.
 //-----------------------------------------------------------------------------
 uint32 MurmurHash2( const void * key, int len, uint32 seed );
 
 // return murmurhash2 of a downcased string
 uint32 MurmurHash2LowerCase( char const *pString, uint32 nSeed );
+uint32 MurmurHash2LowerCase( char const *pString, int len, uint32 nSeed );
 
-uint64 MurmurHash64( const void * key, int len, uint32 seed );
+///// RuSHeRR Custom /////
 
+uint64 MurmurHash2_64( const void * key, int len, uint32 seed );
+
+// Backward compat (MurmurHash2_64)
+uint64 MurmurHash64( const void* key, int len, uint32 seed );
+
+uint32 MurmurHash3( const void* key, int len, uint32 seed );
+
+// return murmurhash3 of a downcased string
+uint32 MurmurHash3LowerCase( char const *pString, uint32 nSeed );
 
 #endif /* !GENERICHASH_H */

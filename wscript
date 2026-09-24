@@ -63,6 +63,7 @@ projects={
 		'ivp/havana/havok/hk_math',
 		'ivp/ivp_compact_builder',
 		'ivp/ivp_physics',
+		'kv3lib',
 		'launcher',
 		'launcher_main',
 		'materialsystem',
@@ -97,6 +98,7 @@ projects={
 	],
 	'tests': [
 		'appframework',
+		'kv3lib',
 		'tier0',
 		'tier1',
 		'tier2',
@@ -112,6 +114,7 @@ projects={
 		'unittests/tier3test',
 		'unittests/mathlibtest',
 		'utils/unittest'
+<<<<<<< HEAD
 	],
 	'dedicated': [
 		'appframework',
@@ -146,6 +149,8 @@ projects={
 		'vstdlib',
 		'vtf',
 		'steam_api'
+=======
+>>>>>>> master
 	]
 }
 
@@ -177,10 +182,9 @@ def run_test(self, fragment, msg):
 	return False if result == None else True
 
 def define_platform(conf):
-	conf.env.DEDICATED = conf.options.DEDICATED
 	conf.env.TESTS = conf.options.TESTS
 	conf.env.TOGLES = conf.options.TOGLES
-	conf.env.GL = conf.options.GL and not conf.options.TESTS and not conf.options.DEDICATED
+	conf.env.GL = conf.options.GL and not conf.options.TESTS
 	conf.env.OPUS = conf.options.OPUS
 	conf.env.SPEEX = conf.options.SPEEX
 
@@ -189,10 +193,6 @@ def define_platform(conf):
 
 	if not (arch32 ^ arch64):
 		conf.fatal('Your compiler sucks')
-
-	if conf.options.DEDICATED:
-		conf.options.SDL = False
-		conf.define('DEDICATED', 1)
 
 	if conf.options.TESTS:
 		conf.define('UNITTESTS', 1)
@@ -288,9 +288,6 @@ def options(opt):
 
 	grp.add_option('-4', '--32bits', action = 'store_true', dest = 'TARGET32', default = False,
 		help = 'allow targetting 32-bit engine(Linux/Windows/OSX x86 only) [default: %default]')
-
-	grp.add_option('-d', '--dedicated', action = 'store_true', dest = 'DEDICATED', default = False,
-		help = 'build dedicated server [default: %default]')
 
 	grp.add_option('--tests', action = 'store_true', dest = 'TESTS', default = False,
 		help = 'build unit tests [default: %default]')
@@ -391,18 +388,15 @@ def check_deps(conf):
 		if conf.env.DEST_OS != 'win32':
 			if conf.options.SDL:
 				conf.check_cfg(package='sdl2', uselib_store='SDL2', args=['--cflags', '--libs'])
-			if conf.options.DEDICATED:
-				conf.check_cfg(package='libedit', uselib_store='EDIT', args=['--cflags', '--libs'])
+			conf.check_pkg('freetype2', 'FT2', FT2_CHECK)
+			conf.check_pkg('fontconfig', 'FC', FC_CHECK)
+			if conf.env.DEST_OS == "darwin":
+				conf.env.FRAMEWORK_OPENAL = "OpenAL"
 			else:
-				conf.check_pkg('freetype2', 'FT2', FT2_CHECK)
-				conf.check_pkg('fontconfig', 'FC', FC_CHECK)
-				if conf.env.DEST_OS == "darwin":
-					conf.env.FRAMEWORK_OPENAL = "OpenAL"
-				else:
-					conf.check_cfg(package='openal', uselib_store='OPENAL', args=['--cflags', '--libs'])
-				conf.check_cfg(package='libjpeg', uselib_store='JPEG', args=['--cflags', '--libs'])
-				conf.check_cfg(package='libpng', uselib_store='PNG', args=['--cflags', '--libs'])
-				conf.check_cfg(package='libcurl', uselib_store='CURL', args=['--cflags', '--libs'])
+				conf.check_cfg(package='openal', uselib_store='OPENAL', args=['--cflags', '--libs'])
+			conf.check_cfg(package='libjpeg', uselib_store='JPEG', args=['--cflags', '--libs'])
+			conf.check_cfg(package='libpng', uselib_store='PNG', args=['--cflags', '--libs'])
+			conf.check_cfg(package='libcurl', uselib_store='CURL', args=['--cflags', '--libs'])
 			conf.check_cfg(package='zlib', uselib_store='ZLIB', args=['--cflags', '--libs'])
 
 			if conf.options.OPUS:
@@ -477,7 +471,6 @@ def configure(conf):
 
 	if conf.env.DEST_OS == 'win32':
 		projects['game'] += ['utils/bzip2']
-		projects['dedicated'] += ['utils/bzip2']
 	if conf.options.OPUS or conf.env.DEST_OS == 'android':
 		projects['game'] += ['engine/voice_codecs/opus']
 
@@ -552,7 +545,7 @@ def configure(conf):
 	else:
 		cflags += [
 			'/I'+os.path.abspath('.')+'/thirdparty/SDL',
-			'/arch:SSE' if conf.env.DEST_CPU == 'x86' else '/arch:AVX',
+			'/arch:SSE',
 			'/GF',
 			'/Gy',
 			'/fp:fast',
@@ -633,8 +626,6 @@ def configure(conf):
 
 	if conf.options.TESTS:
 		conf.add_subproject(projects['tests'])
-	elif conf.options.DEDICATED:
-		conf.add_subproject(projects['dedicated'])
 	else:
 		conf.add_subproject(projects['game'])
 
@@ -648,7 +639,6 @@ def build(bld):
 
 	if bld.env.DEST_OS == 'win32':
 		projects['game'] += ['utils/bzip2']
-		projects['dedicated'] += ['utils/bzip2']
 
 	if bld.env.OPUS or bld.env.DEST_OS == 'android':
 		projects['game'] += ['engine/voice_codecs/opus']
@@ -658,8 +648,6 @@ def build(bld):
 
 	if bld.env.TESTS:
 		bld.add_subproject(projects['tests'])
-	elif bld.env.DEDICATED:
-		bld.add_subproject(projects['dedicated'])
 	else:
 		if bld.env.TOGLES:
 			projects['game'] += ['togles']

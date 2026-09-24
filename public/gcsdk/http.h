@@ -117,13 +117,13 @@ public:
 	// Set the relative URL for the request
 	void SetURL( const char *pchURL ) 
 	{ 
-		AssertMsg( pchURL && pchURL[0] == '/', "URLs must start with the slash (/) character. Param: %s", pchURL );
+		AssertMsg( pchURL && pchURL[0] == '/', ("URLs must start with the slash (/) character. Param: %s", pchURL) );
 		m_pProto->set_url( pchURL );
 	}
 
 	void SetURLDirect( const char *pchURL, size_t size ) 
 	{ 
-		AssertMsg( pchURL && pchURL[0] == '/', "URLs must start with the slash (/) character. Param: %s", pchURL );
+		AssertMsg( pchURL && pchURL[0] == '/', ("URLs must start with the slash (/) character. Param: %s", pchURL) );
 		m_pProto->set_url( pchURL, size );
 	}
 

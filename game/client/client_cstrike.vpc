@@ -39,8 +39,6 @@ $Project "Client (CStrike)"
 		$File	"hud_voicestatus.cpp"
 		$File	"hud_baseachievement_tracker.cpp"
 		$File	"hud_baseachievement_tracker.h"
-		$File	"$SRCDIR\game\client\hud_vote.h"
-		$File	"$SRCDIR\game\client\hud_vote.cpp"
 		$File	"$SRCDIR\game\shared\predicted_viewmodel.cpp"
 		$File	"$SRCDIR\game\shared\predicted_viewmodel.h"
 		

@@ -5491,8 +5491,8 @@ void CMaterialSystem::ReloadMaterials( const CCommand &args )
 {
 	if( args.ArgC() != 2 )
 	{
-		ConWarning( "Usage: mat_reloadmaterial material_name_substring\n"
-					"   or  mat_reloadmaterial substring1*substring2*...*substringN\n" );
+		Warning( "Usage: mat_reloadmaterial material_name_substring\n"
+			     "   or  mat_reloadmaterial substring1*substring2*...*substringN\n" );
 		return;
 	}
 	ReloadMaterials( args[ 1 ] );

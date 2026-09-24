@@ -47,7 +47,7 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 		CGameEventDescriptor* descriptor = g_GameEventManager.GetEventDescriptor(eventid);
 		const char* name = descriptor->name;
 
-		DevMsg("svc_GameEvent: %s (%d)\n", name, eventid);
+		//DevMsg("svc_GameEvent: %s (%d)\n", name, eventid);
 
 		if (name && !strcmp(name, "player_disconnect"))
 		{
@@ -94,7 +94,7 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 
 		if (msgType < 0)
 		{
-			DevMsg("UserMsg Rejected: type %d dataLengthInBits %d\n", msgType, dataLengthInBits);
+			//DevMsg("UserMsg Rejected: type %d dataLengthInBits %d\n", msgType, dataLengthInBits);
 			return false;
 		}
 
@@ -109,7 +109,7 @@ bool CClientModManager::CheckFragment(uint8 cmd, bf_read& buf, bf_read& fallback
 			auto dataLength = buf.ReadUBitLong(16);
 			char databuf[4096];
 			buf.ReadBytes(databuf, dataLength);
-			DevMsg("svc_Menu Rejected: type %d dataLength %d\n", Type, dataLength);
+			//DevMsg("svc_Menu Rejected: type %d dataLength %d\n", Type, dataLength);
 			return false;
 		}
 	}

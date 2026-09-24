@@ -134,6 +134,14 @@ T Max( T const &val1, T const &val2 )
 	return val1 > val2 ? val1 : val2;
 }
 
+template <typename T>
+void Swap(T& a, T& b)
+{
+	T temp = a;
+	a = b;
+	b = temp;
+}
+
 #endif
 
 #ifndef FALSE

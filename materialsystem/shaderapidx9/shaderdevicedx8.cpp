@@ -100,6 +100,8 @@ static ConVar mat_forcedynamic( "mat_forcedynamic", "0", FCVAR_CHEAT );
 // this is hooked into the engines convar
 ConVar mat_debugalttab( "mat_debugalttab", "0", FCVAR_CHEAT );
 
+// A logging channel used during engine initialization
+DEFINE_LOGGING_CHANNEL_NO_TAGS( LOG_EngineInitialization, "EngineInitialization" );
 
 //-----------------------------------------------------------------------------
 //
@@ -2264,12 +2266,14 @@ IDirect3DDevice9* CShaderDeviceDx8::InvokeCreateDevice( void* hWnd, int nAdapter
 	// Otherwise we failed, show a message and shutdown
 	if ( pszMoreInfo )
 	{
-		DWarning( "init", 0, "Failed to create %s device!\nError 0x%lX: %s\n\nPlease see the following for more info.\n"
+		Log_Warning( LOG_EngineInitialization, 
+			"Failed to create %s device!\nError 0x%lX: %s\n\nPlease see the following for more info.\n"
 			"http://support.steampowered.com/cgi-bin/steampowered.cfg/php/enduser/std_adp.php?p_faqid=772\n", IsOpenGL() ? "OpenGL" : "D3D", hr, pszMoreInfo );
 	}
 	else
 	{
-		DWarning( "init", 0, "Failed to create %s device!\nError 0x%lX.\n\nPlease see the following for more info.\n"
+		Log_Warning( LOG_EngineInitialization, 
+			"Failed to create %s device!\nError 0x%lX.\n\nPlease see the following for more info.\n"
 			"http://support.steampowered.com/cgi-bin/steampowered.cfg/php/enduser/std_adp.php?p_faqid=772\n", IsOpenGL() ? "OpenGL" : "D3D", hr );
 	}
 

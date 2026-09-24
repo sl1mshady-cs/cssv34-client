@@ -527,7 +527,7 @@ void CGameUI::Start()
 		Q_strncpy( szConfigDir, m_szPlatformDir, sizeof( szConfigDir ) );
 		Q_strncat( szConfigDir, "config", sizeof( szConfigDir ), COPY_ALL_CHARACTERS );
 
-		Msg( "Steam config directory: %s\n", szConfigDir );
+		Msg("Game Config directory: %s\n", szConfigDir);
 
 		g_pFullFileSystem->AddSearchPath(szConfigDir, "CONFIG");
 		g_pFullFileSystem->CreateDirHierarchy("", "CONFIG");

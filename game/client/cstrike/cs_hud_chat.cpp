@@ -29,6 +29,7 @@ DECLARE_HUD_MESSAGE( CHudChat, SayText2 );
 DECLARE_HUD_MESSAGE( CHudChat, TextMsg );
 DECLARE_HUD_MESSAGE( CHudChat, RawAudio );
 
+extern ConVar cl_chat_print_to_console;
 
 //=====================
 //CHudChatLine
@@ -192,7 +193,10 @@ void CHudChat::MsgFunc_SayText2( bf_read &msg )
 		// print raw chat text
 		ChatPrintf( client, iFilter, "%s", ansiString );
 
-		Msg( "%s\n", RemoveColorMarkup(ansiString) );
+		if (cl_chat_print_to_console.GetBool())
+		{
+			Msg( "%s\n", RemoveColorMarkup(ansiString) );
+		}
 
 		if ( playChatSound )
 		{

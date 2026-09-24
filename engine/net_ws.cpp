@@ -203,6 +203,21 @@ static CUtlVectorMT< CUtlVector< pendingsocket_t > >	s_PendingSockets;
 CTSQueue<loopback_t *> s_LoopBacks[LOOPBACK_SOCKETS];
 static netpacket_t*	s_pLagData[MAX_SOCKETS];  // List of lag structures, if fakelag is set.
 
+BEGIN_DEFINE_LOGGING_CHANNEL(LOG_Network, "net", 0, LS_MESSAGE, Color(87, 247, 137, 255));
+ADD_LOGGING_CHANNEL_TAG("#engine");
+END_DEFINE_LOGGING_CHANNEL();
+
+Color NetworkColor			( 209, 231, 255, 255 );
+Color NetworkWarnColor		( 237, 200, 50, 255 );
+Color NetworkErrorColor		( 255, 100, 100, 255 );
+Color NetworkCompleteColor	( 100, 200, 100, 255 );
+
+// Basic Helpers
+#define NET_Msg(...) Log_Msg(LOG_Network, NetworkColor, __VA_ARGS__)
+#define NET_Warning(...) Log_Warning(LOG_Network, NetworkWarnColor, __VA_ARGS__)
+#define NET_Error(...) Log_Warning(LOG_Network, NetworkErrorColor, __VA_ARGS__)
+#define NET_Complete(...) Log_Msg(LOG_Network, NetworkCompleteColor, __VA_ARGS__)
+
 unsigned short NET_HostToNetShort( unsigned short us_in )
 {
 	return htons( us_in );
@@ -498,7 +513,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 	{
 		NET_GetLastError(); 
 		if ( net_error != WSAEAFNOSUPPORT )
-			Msg ("WARNING: NET_OpenSockett: socket failed: %s", NET_ErrorString(net_error));
+			NET_Warning("NET_OpenSocket: socket failed: %s", NET_ErrorString(net_error));
 
 		return 0;
 	}
@@ -510,7 +525,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 	if ( ret == -1 )
 	{
 		NET_GetLastError();
-		Msg ("WARNING: NET_OpenSocket: ioctl FIONBIO: %s\n", NET_ErrorString(net_error) );
+		NET_Warning("NET_OpenSocket: ioctl FIONBIO: %s\n", NET_ErrorString(net_error) );
 	}
 	
 	if ( protocol == IPPROTO_TCP )
@@ -522,7 +537,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 			if (ret == -1)
 			{
 				NET_GetLastError();		
-				Msg ("WARNING: NET_OpenSocket: setsockopt SO_KEEPALIVE: %s\n", NET_ErrorString(net_error));
+				NET_Warning("NET_OpenSocket: setsockopt SO_KEEPALIVE: %s\n", NET_ErrorString(net_error));
 				return 0;
 			}
 		}
@@ -534,7 +549,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 		if (ret == -1)
 		{
 			NET_GetLastError();		
-			Msg ("WARNING: NET_OpenSocket: setsockopt SO_LINGER: %s\n", NET_ErrorString(net_error));
+			NET_Warning("NET_OpenSocket: setsockopt SO_LINGER: %s\n", NET_ErrorString(net_error));
 			return 0;
 		}
 
@@ -543,7 +558,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 		if (ret == -1)
 		{
 			NET_GetLastError();		
-			Msg ("WARNING: NET_OpenSocket: setsockopt TCP_NODELAY: %s\n", NET_ErrorString(net_error));
+			NET_Warning("NET_OpenSocket: setsockopt TCP_NODELAY: %s\n", NET_ErrorString(net_error));
 			return 0;
 		}
 
@@ -552,7 +567,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 		if (ret == -1)
 		{
 			NET_GetLastError();		
-			Msg ("WARNING: NET_OpenSocket: setsockopt SO_SNDBUF: %s\n", NET_ErrorString(net_error));
+			NET_Warning("NET_OpenSocket: setsockopt SO_SNDBUF: %s\n", NET_ErrorString(net_error));
 			return 0;
 		}
 
@@ -561,7 +576,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 		if (ret == -1)
 		{
 			NET_GetLastError();		
-			Msg ("WARNING: NET_OpenSocket: setsockopt SO_RCVBUF: %s\n", NET_ErrorString(net_error));
+			NET_Warning("NET_OpenSocket: setsockopt SO_RCVBUF: %s\n", NET_ErrorString(net_error));
 			return 0;
 		}
 		
@@ -577,7 +592,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 	if ( ret == -1 )
 	{
 		NET_GetLastError();		
-		Msg ("WARNING: NET_OpenSocket: getsockopt SO_RCVBUF: %s\n", NET_ErrorString(net_error));
+		NET_Warning("NET_OpenSocket: getsockopt SO_RCVBUF: %s\n", NET_ErrorString(net_error));
 		return 0;
 	}
 
@@ -586,7 +601,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 		static bool bFirst = true;
 		if ( bFirst )
 		{
-			Msg( "UDP socket SO_RCVBUF size %d bytes, changing to %d\n", opt, net_udp_rcvbuf.GetInt() );
+			NET_Msg( "UDP socket SO_RCVBUF size %d bytes, changing to %d\n", opt, net_udp_rcvbuf.GetInt() );
 		}
 		bFirst = false;
 	}
@@ -596,7 +611,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 	if (ret == -1)
 	{
 		NET_GetLastError();		
-		Msg ("WARNING: NET_OpenSocket: setsockopt SO_RCVBUF: %s\n", NET_ErrorString(net_error));
+		NET_Warning("NET_OpenSocket: setsockopt SO_RCVBUF : % s\n", NET_ErrorString(net_error));
 		return 0;
 	}
 
@@ -605,7 +620,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 	if (ret == -1)
 	{
 		NET_GetLastError();		
-		Msg ("WARNING: NET_OpenSocket: setsockopt SO_SNDBUF: %s\n", NET_ErrorString(net_error));
+		NET_Warning("NET_OpenSocket: setsockopt SO_SNDBUF: %s\n", NET_ErrorString(net_error));
 		return 0;
 	}
 
@@ -618,7 +633,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 		if (ret == -1)
 		{
 			NET_GetLastError();		
-			Msg ("WARNING: NET_OpenSocket: setsockopt SO_BROADCAST: %s\n", NET_ErrorString(net_error));
+			NET_Warning("NET_OpenSocket: setsockopt SO_BROADCAST: %s\n", NET_ErrorString(net_error));
 			return 0;
 		}
 	}
@@ -630,7 +645,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 		if (ret == -1)
 		{
 			NET_GetLastError();
-			Msg ("WARNING: NET_OpenSocket: setsockopt SO_REUSEADDR: %s\n", NET_ErrorString(net_error));
+			NET_Warning("NET_OpenSocket: setsockopt SO_REUSEADDR: %s\n", NET_ErrorString(net_error));
 			return 0;
 		}
 	}
@@ -665,7 +680,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 			if ( port != PORT_ANY && port_offset != 0 )
 			{
 				port += port_offset;	// update port
-				ConDMsg( "Socket bound to non-default port %i because original port was already in use.\n", port );
+				NET_Warning( "Socket bound to non-default port %i because original port was already in use.\n", port );
 			}
 			break;
 		}
@@ -674,7 +689,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 
 		if ( port == PORT_ANY || net_error != WSAEADDRINUSE )
 		{
-			Msg ("WARNING: NNET_OpenSocket: bind: %s\n", NET_ErrorString(net_error));
+			NET_Warning("NET_OpenSocket: bind: %s\n", NET_ErrorString(net_error));
 			NET_CloseSocket(newsocket,-1);
 			return 0;
 		}
@@ -685,7 +700,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 	const bool bStrictBind = CommandLine()->FindParm( "-strictportbind" );
 	if ( port_offset == PORT_TRY_MAX && !bStrictBind )
 	{
-		Msg( "WARNING: UDP_OpenSocket: unable to bind socket\n" );
+		NET_Warning("UDP_OpenSocket: unable to bind socket\n" );
 		NET_CloseSocket( newsocket,-1 );
 		return 0;
 	}
@@ -699,7 +714,7 @@ int NET_OpenSocket ( const char *net_interface, int& port, int protocol )
 		}
 		else
 		{
-			Warning( "WARNING: Port %i was unavailable - bound to port %i instead\n", port - port_offset, port );
+			NET_Warning("Port %i was unavailable - bound to port %i instead\n", port - port_offset, port );
 		}
 	}
 	
@@ -730,7 +745,7 @@ int NET_ConnectSocket( int sock, const netadr_t &addr )
 
 	if ( !netsock->hTCP )
 	{
-		Msg( "Warning! NET_ConnectSocket failed opening socket %i, port %i.\n", sock, net_sockets[sock].nPort );
+		NET_Warning("NET_ConnectSocket failed opening socket %i, port %i.\n", sock, net_sockets[sock].nPort );
 		return false;
 	}
 
@@ -742,7 +757,7 @@ int NET_ConnectSocket( int sock, const netadr_t &addr )
 
 		if ( net_error != WSAEWOULDBLOCK )
 		{
-			Msg ("NET_ConnectSocket: %s\n", NET_ErrorString( net_error ) );
+			NET_Msg("NET_ConnectSocket: %s\n", NET_ErrorString( net_error ) );
 			return 0;
 		}
 	}
@@ -763,7 +778,7 @@ int NET_SendStream( int nSock, const char * buf, int len, int flags )
 			return 0; // ignore EWOULDBLOCK
 		}
 
-		Msg ("NET_SendStream: %s\n", NET_ErrorString( net_error ) );
+		NET_Msg("NET_SendStream: %s\n", NET_ErrorString( net_error ) );
 	}
 
 	return ret;
@@ -782,7 +797,7 @@ int NET_ReceiveStream( int nSock, char * buf, int len, int flags )
 			return 0; // ignore EWOULDBLOCK
 		}
 
-		Msg ("NET_ReceiveStream: %s\n", NET_ErrorString( net_error ) );
+		NET_Msg("NET_ReceiveStream: %s\n", NET_ErrorString( net_error ) );
 	}
 
 	return ret;
@@ -830,7 +845,7 @@ void NET_RemoveNetChannel(INetChannel *netchan, bool bDeleteNetChan)
 	AUTO_LOCK_FM( s_NetChannels );
 	if ( s_NetChannels.Find( static_cast<CNetChan*>(netchan) ) == s_NetChannels.InvalidIndex() )
 	{
-		DevMsg(1, "NET_CloseNetChannel: unknown channel.\n");
+		NET_Msg("NET_CloseNetChannel: unknown channel.\n");
 		return;
 	}
 
@@ -858,7 +873,7 @@ void NET_SendLoopPacket (int sock, int length, const unsigned char *data, const 
 
 	if ( length > NET_MAX_PAYLOAD )
 	{
-		DevMsg( "NET_SendLoopPacket:  packet too big (%i).\n", length );
+		NET_Msg( "NET_SendLoopPacket:  packet too big (%i).\n", length );
 		return;
 	}
 
@@ -886,7 +901,7 @@ void NET_SendLoopPacket (int sock, int length, const unsigned char *data, const 
 	}
 	else
 	{
-		DevMsg( "NET_SendLoopPacket:  invalid socket (%i).\n", sock );
+		NET_Msg( "NET_SendLoopPacket:  invalid socket (%i).\n", sock );
 		return;
 	}
 }
@@ -917,7 +932,7 @@ void NET_AddToLagged( netpacket_t **pList, netpacket_t *pPacket )
 {
 	if ( pPacket->pNext )
 	{
-		Msg("NET_AddToLagged::Packet already linked\n");
+		NET_Msg("NET_AddToLagged::Packet already linked\n");
 		return;
 	}
 
@@ -1247,7 +1262,7 @@ bool NET_GetLong(const int sock, netpacket_t* packet)
 
 	if (packet->size < sizeof(SPLITPACKET))
 	{
-		Msg("Invalid split packet length %i\n", packet->size);
+		NET_Error("Invalid split packet length %i\n", packet->size);
 		return false;
 	}
 
@@ -1271,7 +1286,7 @@ bool NET_GetLong(const int sock, netpacket_t* packet)
 	if (packetNumber >= MAX_SPLITPACKET_SPLITS ||
 		packetCount > MAX_SPLITPACKET_SPLITS)
 	{
-		Msg("NET_GetLong:  Split packet from %s with too many split parts (number %i/ count %i) where %i is max count allowed\n",
+		NET_Error("NET_GetLong:  Split packet from %s with too many split parts (number %i/ count %i) where %i is max count allowed\n",
 			packet->from.ToString(),
 			packetNumber,
 			packetCount,
@@ -1302,7 +1317,7 @@ bool NET_GetLong(const int sock, netpacket_t* packet)
 
 		if (net_showsplits.GetInt() && net_showsplits.GetInt() != 3)
 		{
-			Msg("<-- Split packet %i of %i, seq %i, size %i from %s\n",
+			NET_Complete("<-- Split packet %i of %i, seq %i, size %i from %s\n",
 				packetNumber + 1,
 				packetCount,
 				sequenceNumber,
@@ -1312,7 +1327,7 @@ bool NET_GetLong(const int sock, netpacket_t* packet)
 	}
 	else
 	{
-		Msg("NET_GetLong:  Ignoring duplicated split packet %i of %i ( %i bytes ) from %s\n", packetNumber + 1, packetCount, size, packet->from.ToString());
+		NET_Warning("NET_GetLong:  Ignoring duplicated split packet %i of %i ( %i bytes ) from %s\n", packetNumber + 1, packetCount, size, packet->from.ToString());
 	}
 
 
@@ -1328,7 +1343,7 @@ bool NET_GetLong(const int sock, netpacket_t* packet)
 		entry->netsplit.currentSequence = -1;	// Clear packet
 		if (entry->netsplit.totalSize > sizeof(entry->netsplit.buffer))
 		{
-			Msg("Split packet too large! %d bytes from %s\n", entry->netsplit.totalSize, packet->from.ToString());
+			NET_Error("Split packet too large! %d bytes from %s\n", entry->netsplit.totalSize, packet->from.ToString());
 			return false;
 		}
 
@@ -1356,14 +1371,14 @@ bool NET_GetLong(const int sock, netpacket_t* packet)
 
 			if (result != BZ_OK || destLen != decompressedSize)
 			{
-				Msg("Error decompressing split packet %d bytes from %s (%i)\n", entry->netsplit.totalSize, packet->from.ToString(), result);
+				NET_Error("Error decompressing split packet %d bytes from %s (%i)\n", entry->netsplit.totalSize, packet->from.ToString(), result);
 				delete[] decompressBuffer;
 				return false;
 			}
 
 			if (CRC32_ProcessSingleBuffer(decompressBuffer, decompressedSize) != expectedCRC)
 			{
-				Msg("Error decompressing split packet %d bytes from %s, crc's don't match\n", entry->netsplit.totalSize, packet->from.ToString());
+				NET_Error("Error decompressing split packet %d bytes from %s, crc's don't match\n", entry->netsplit.totalSize, packet->from.ToString());
 				delete[] decompressBuffer;
 				return false;
 			}
@@ -1444,7 +1459,7 @@ bool NET_ReceiveDatagram ( const int sock, netpacket_t * packet )
 
 		if ( net_showudp_wire.GetBool() )
 		{
-			Msg( "WIRE:  UDP sz=%d tm=%f rt %f from %s\n", ret, net_time, Plat_FloatTime(), packet->from.ToString() );
+			NET_Msg( "WIRE:  UDP sz=%d tm=%f rt %f from %s\n", ret, net_time, Plat_FloatTime(), packet->from.ToString() );
 		}
 
 		MEM_ALLOC_CREDIT();
@@ -1531,7 +1546,7 @@ bool NET_ReceiveDatagram ( const int sock, netpacket_t * packet )
 				{
 					if ( net_showudp.GetBool() )
 					{
-						Msg( "UDP:  discarding %d bytes from %s due to decompression error [%d decomp, actual %d] at tm=%f rt=%f\n", ret, packet->from.ToString(), uDecompressedSize, actualSize, 
+						NET_Error( "UDP:  discarding %d bytes from %s due to decompression error [%d decomp, actual %d] at tm=%f rt=%f\n", ret, packet->from.ToString(), uDecompressedSize, actualSize, 
 							(float)net_time, (float)Plat_FloatTime() );
 					}
 					return false;
@@ -1570,7 +1585,7 @@ bool NET_ReceiveDatagram ( const int sock, netpacket_t * packet )
 		}
 		else
 		{
-			ConDMsg ( "NET_ReceiveDatagram:  Oversize packet from %s\n", packet->from.ToString() );
+			NET_Warning ( "NET_ReceiveDatagram:  Oversize packet from %s\n", packet->from.ToString() );
 		}
 	}
 	else if ( ret == -1  )									// error?
@@ -1584,11 +1599,11 @@ bool NET_ReceiveDatagram ( const int sock, netpacket_t * packet )
 		case WSAECONNREFUSED:
 			break;
 		case WSAEMSGSIZE:
-			ConDMsg ("NET_ReceivePacket: %s\n", NET_ErrorString(net_error));
+			NET_Warning ("NET_ReceivePacket: %s\n", NET_ErrorString(net_error));
 			break;
 		default:
 			// Let's continue even after errors
-			ConDMsg ("NET_ReceivePacket: %s\n", NET_ErrorString(net_error));
+			NET_Warning ("NET_ReceivePacket: %s\n", NET_ErrorString(net_error));
 			break;
 		}
 	}
@@ -1754,14 +1769,14 @@ void NET_ProcessPending( void )
 
 						if ( net_showtcp.GetInt() )
 						{
-							Msg ("TCP <- %s: connection accepted\n", psock->addr.ToString() );
+							NET_Complete ("TCP <- %s: connection accepted\n", psock->addr.ToString() );
 						}
 						
 						break;
 					}
 					else
 					{
-						Msg ("TCP <- %s: IP address mismatch.\n", psock->addr.ToString() );
+						NET_Error ("TCP <- %s: IP address mismatch.\n", psock->addr.ToString() );
 					}
 				}
 			}
@@ -1769,7 +1784,7 @@ void NET_ProcessPending( void )
 
 		if ( !bOK )
 		{
-			Msg ("TCP <- %s: invalid connection request.\n", psock->addr.ToString() );
+			NET_Error ("TCP <- %s: invalid connection request.\n", psock->addr.ToString() );
 			NET_CloseSocket( psock->newsock );
 		}
 
@@ -1799,7 +1814,7 @@ void NET_ProcessListen(int sock)
 
 		if ( net_error != WSAEWOULDBLOCK )
 		{
-			ConDMsg ("NET_ThreadListen: %s\n", NET_ErrorString(net_error));
+			NET_Warning ("NET_ThreadListen: %s\n", NET_ErrorString(net_error));
 		}
 		return;
 	}
@@ -1824,7 +1839,7 @@ void NET_ProcessListen(int sock)
 
 	if ( net_showtcp.GetInt() )
 	{
-		Msg ("TCP <- %s: connection request.\n", psock.addr.ToString() );
+		NET_Msg ("TCP <- %s: connection request.\n", psock.addr.ToString() );
 	}
 }
 
@@ -1885,7 +1900,7 @@ void NET_ProcessSocket( int sock, IConnectionlessPacketHandler *handler )
 
 			if ( net_showudp.GetInt() )
 			{
-				Msg("UDP <- %s: sz=%i OOB '%c' wire=%i\n", packet->from.ToString(), packet->size, packet->data[4], packet->wiresize );
+				NET_Msg("UDP <- %s: sz=%i OOB '%c' wire=%i\n", packet->from.ToString(), packet->size, packet->data[4], packet->wiresize );
 			}
 
 			handler->ProcessConnectionlessPacket( packet );
@@ -1934,11 +1949,11 @@ void NET_LogBadPacket(netpacket_t * packet)
 
 	if ( i < 1000 )
 	{
-		Msg( "Error buffer for %s written to %s\n", packet->from.ToString(), filename );
+		NET_Msg( "Error buffer for %s written to %s\n", packet->from.ToString(), filename );
 	}
 	else
 	{
-		Msg( "Couldn't write error buffer, delete error###.dat files to make space\n" );
+		NET_Msg( "Couldn't write error buffer, delete error###.dat files to make space\n" );
 	}
 }
 
@@ -2045,7 +2060,7 @@ int NET_SendTo( bool verbose, SOCKET s, const char FAR * buf, int len, const str
 		( nSend > 0 ) && 
 		( len > MAX_ROUTABLE_PAYLOAD ) )
 	{
-		ConDMsg( "NET_SendTo:  Packet length (%i) > (%i) bytes\n", len, MAX_ROUTABLE_PAYLOAD );
+		NET_Warning( "NET_SendTo:  Packet length (%i) > (%i) bytes\n", len, MAX_ROUTABLE_PAYLOAD );
 	}
 #endif
 	return nSend;
@@ -2318,12 +2333,12 @@ int NET_SendLong(INetChannel* chan, int sock, SOCKET s, const char FAR* buf, int
 
 			if (bCompress)
 			{
-				Msg("Split packet [compressed] %i/%i, size %i uncompressed %i, dest %s\n",
+				NET_Complete("--> Split packet [compressed] %i/%i, size %i uncompressed %i, dest %s\n",
 					nPacketNumber, nPacketCount, size, len, adr.ToString());
 			}
 			else
 			{
-				Msg("Split packet [uncompressed] %i/%i, size %i, dest %s\n",
+				NET_Complete("--> Split packet [uncompressed] %i/%i, size %i, dest %s\n",
 					nPacketNumber, nPacketCount, size, len, adr.ToString());
 			}
 		}
@@ -2353,7 +2368,7 @@ int NET_SendPacket ( INetChannel *chan, int sock,  const netadr_t &to, const uns
 	if ( net_showudp.GetInt() && (*(unsigned int*)data == CONNECTIONLESS_HEADER) )
 	{
 		Assert( !bUseCompression );
-		Msg("UDP -> %s: sz=%i OOB '%c'\n", to.ToString(), length, data[4] );
+		NET_Msg ("UDP -> %s: sz=%i OOB '%c'\n", to.ToString(), length, data[4]);
 	}
 
 	if ( (!NET_IsMultiplayer() && sock != NS_CLIENT) || to.type == NA_LOOPBACK || ( to.IsLocalhost() && !net_usesocketsforloopback.GetBool() ) )
@@ -2378,7 +2393,7 @@ int NET_SendPacket ( INetChannel *chan, int sock,  const netadr_t &to, const uns
 	}
 	else
 	{
-		DevMsg("NET_SendPacket: bad address type (%i)\n", to.type );
+		NET_Error("NET_SendPacket: bad address type (%i)\n", to.type );
 		return length;
 	}
 
@@ -2511,7 +2526,7 @@ int NET_SendPacket ( INetChannel *chan, int sock,  const netadr_t &to, const uns
 		if ( ( net_error == WSAEADDRNOTAVAIL) && ( to.type == NA_BROADCAST ) )
 			return 0;
 
-		ConDMsg ("NET_SendPacket Warning: %s : %s\n", NET_ErrorString(net_error), to.ToString() );
+		NET_Warning ("NET_SendPacket Warning: %s : %s\n", NET_ErrorString(net_error), to.ToString() );
 		ret = length;
 	}
 	
@@ -2775,7 +2790,7 @@ void NET_GetLocalAddress (void)
 
 	if ( net_noip )
 	{
-		Msg("TCP/UDP Disabled.\n");
+		NET_Complete("TCP/UDP Disabled.\n");
 	}
 	else
 	{
@@ -3082,7 +3097,7 @@ void NET_Config ( void )
 		NET_ConfigLoopbackBuffers( true );
 	}
 
-	Msg( "Network: IP %s, mode %s, dedicated %s, ports %i SV / %i CL\n", 
+	NET_Msg( "Network: IP %s, mode %s, dedicated %s, ports %i SV / %i CL\n", 
 		net_local_adr.ToString(true), net_multiplayer?"MP":"SP", net_dedicated?"Yes":"No", 
 		net_sockets[NS_SERVER].nPort, net_sockets[NS_CLIENT].nPort );
 }
@@ -3099,7 +3114,7 @@ void NET_SetDedicated ()
 {
 	if ( net_noip )
 	{
-		Msg( "Warning! Dedicated not possible with -noip parameter.\n");
+		NET_Warning( "Warning! Dedicated not possible with -noip parameter.\n");
 		return;		
 	}
 
@@ -3128,7 +3143,7 @@ void NET_ListenSocket( int sock, bool bListen )
 
 		if ( !netsock->hTCP )
 		{
-			Msg( "Warning! NET_ListenSocket failed opening socket %i, port %i.\n", sock, net_sockets[sock].nPort );
+			NET_Msg( "Warning! NET_ListenSocket failed opening socket %i, port %i.\n", sock, net_sockets[sock].nPort );
 			return;
 		}
 
@@ -3151,7 +3166,7 @@ void NET_ListenSocket( int sock, bool bListen )
 		if ( ret == -1 )
 		{
 			NET_GetLastError();
-			Msg ("WARNING: NET_ListenSocket bind failed on socket %i, port %i.\n", netsock->hTCP, netsock->nPort );
+			NET_Warning("WARNING: NET_ListenSocket bind failed on socket %i, port %i.\n", netsock->hTCP, netsock->nPort );
 			return;
 		}
 
@@ -3159,7 +3174,7 @@ void NET_ListenSocket( int sock, bool bListen )
 		if ( ret == -1 )
 		{
 			NET_GetLastError();
-			Msg ("WARNING: NET_ListenSocket listen failed on socket %i, port %i.\n", netsock->hTCP, netsock->nPort );
+			NET_Warning("WARNING: NET_ListenSocket listen failed on socket %i, port %i.\n", netsock->hTCP, netsock->nPort );
 			return;
 		}
 
@@ -3171,13 +3186,13 @@ void NET_SetMutiplayer(bool multiplayer)
 {
 	if ( net_noip && multiplayer )
 	{
-		Msg( "Warning! Multiplayer mode not available with -noip parameter.\n");
+		NET_Warning( "Warning! Multiplayer mode not available with -noip parameter.\n");
 		return;		
 	}
 
 	if ( net_dedicated && !multiplayer )
 	{
-		Msg( "Warning! Singleplayer mode not available on dedicated server.\n");
+		NET_Warning( "Warning! Singleplayer mode not available on dedicated server.\n");
 		return;		
 	}
 
@@ -3243,25 +3258,25 @@ void NET_Init( bool bIsDedicated )
 		{
 			// Allow cross-platform communication
 			xnsp.cfgFlags = XNET_STARTUP_BYPASS_SECURITY;
-			Msg( "Xbox 360 network is Unsecure\n" );
+			NET_Error( "Xbox 360 network is Unsecure\n" );
 		}
 
 		INT err = XNetStartup( &xnsp );
 		if ( err )
 		{
-			ConMsg( "Error! Failed to set XNET Security Bypass.\n");
+			NET_Error( "Error! Failed to set XNET Security Bypass.\n");
 		}
 		err = XOnlineStartup();
 		if ( err != ERROR_SUCCESS )
 		{
-			ConMsg( "Error! XOnlineStartup failed.\n");
+			NET_Error( "Error! XOnlineStartup failed.\n");
 		}
 #else
 		// initialize winsock 2.0
 		WSAData wsaData;
 		if ( WSAStartup( MAKEWORD(2,0), &wsaData ) != 0 )
 		{
-			ConMsg( "Error! Failed to load network socket library.\n");
+			NET_Error( "Error! Failed to load network socket library.\n");
 			net_noip = true;
 		}
 #endif	// _X360
@@ -3345,13 +3360,13 @@ void NET_Shutdown (void)
 		nError = WSACleanup();
 		if ( nError )
 		{
-			Msg("Failed to complete WSACleanup = 0x%x.\n", nError );
+			NET_Error("Failed to complete WSACleanup = 0x%x.\n", nError );
 		}
 #if defined(_X360)
 		nError = XOnlineCleanup();
 		if ( nError != ERROR_SUCCESS )
 		{
-			Msg( "Warning! Failed to complete XOnlineCleanup = 0x%x.\n", nError );
+			NET_Error( "Warning! Failed to complete XOnlineCleanup = 0x%x.\n", nError );
 		}
 #endif	// _X360
 	}
@@ -3363,15 +3378,15 @@ void NET_Shutdown (void)
 
 void NET_PrintChannelStatus( INetChannel * chan )
 {
-	Msg( "NetChannel '%s':\n", chan->GetName() );
-	Msg( "- remote IP: %s %s\n", chan->GetAddress(), chan->IsPlayback()?"(Demo)":"" );
-	Msg( "- online: %s\n", COM_FormatSeconds( chan->GetTimeConnected() ) );
-	Msg( "- reliable: %s\n", chan->HasPendingReliableData()?"pending data":"available" );
-	Msg( "- latency: %.1f, loss %.2f\n", chan->GetAvgLatency(FLOW_OUTGOING), chan->GetAvgLoss(FLOW_INCOMING) );
-	Msg( "- packets: in %.1f/s, out %.1f/s\n", chan->GetAvgPackets(FLOW_INCOMING), chan->GetAvgPackets(FLOW_OUTGOING) );
-	Msg( "- choke: in %.2f, out %.2f\n", chan->GetAvgChoke(FLOW_INCOMING), chan->GetAvgChoke(FLOW_OUTGOING) );
-	Msg( "- flow: in %.1f, out %.1f kB/s\n", chan->GetAvgData(FLOW_INCOMING)/1024.0f, chan->GetAvgData(FLOW_OUTGOING)/1024.0f );
-	Msg( "- total: in %.1f, out %.1f MB\n\n", (float)chan->GetTotalData(FLOW_INCOMING)/(1024*1024), (float)chan->GetTotalData(FLOW_OUTGOING)/(1024*1024) );
+	NET_Msg( "NetChannel '%s':\n", chan->GetName() );
+	NET_Msg( "- remote IP: %s %s\n", chan->GetAddress(), chan->IsPlayback()?"(Demo)":"" );
+	NET_Msg( "- online: %s\n", COM_FormatSeconds( chan->GetTimeConnected() ) );
+	NET_Msg( "- reliable: %s\n", chan->HasPendingReliableData()?"pending data":"available" );
+	NET_Msg( "- latency: %.1f, loss %.2f\n", chan->GetAvgLatency(FLOW_OUTGOING), chan->GetAvgLoss(FLOW_INCOMING) );
+	NET_Msg( "- packets: in %.1f/s, out %.1f/s\n", chan->GetAvgPackets(FLOW_INCOMING), chan->GetAvgPackets(FLOW_OUTGOING) );
+	NET_Msg( "- choke: in %.2f, out %.2f\n", chan->GetAvgChoke(FLOW_INCOMING), chan->GetAvgChoke(FLOW_OUTGOING) );
+	NET_Msg( "- flow: in %.1f, out %.1f kB/s\n", chan->GetAvgData(FLOW_INCOMING)/1024.0f, chan->GetAvgData(FLOW_OUTGOING)/1024.0f );
+	NET_Msg( "- total: in %.1f, out %.1f MB\n\n", (float)chan->GetTotalData(FLOW_INCOMING)/(1024*1024), (float)chan->GetTotalData(FLOW_OUTGOING)/(1024*1024) );
 }
 
 CON_COMMAND( net_channels, "Shows net channel info" )

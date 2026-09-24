@@ -626,6 +626,7 @@ public:
 		pTSteamGlobalUserID->m_SteamLocalUserID.Split.High32bits = m_steamid.m_comp.m_unAccountID % 2;
 		pTSteamGlobalUserID->m_SteamLocalUserID.Split.Low32bits = m_steamid.m_comp.m_unAccountID / 2;
 	}
+
 #endif // defined( INCLUDED_STEAM_COMMON_STEAMCOMMON_H )
 
 	//-----------------------------------------------------------------------------
@@ -801,6 +802,7 @@ public:
     // Returns whether the string parsed correctly.
 	bool SetFromStringStrict( const char *pchSteamID, EUniverse eDefaultUniverse );
 	bool SetFromSteam2String( const char *pchSteam2ID, EUniverse eUniverse );
+	const char* RenderAsSteam2String() const;
 
 	inline bool operator==( const CSteamID &val ) const { return m_steamid.m_unAll64Bits == val.m_steamid.m_unAll64Bits; } 
 	inline bool operator!=( const CSteamID &val ) const { return !operator==( val ); }

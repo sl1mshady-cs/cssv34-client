@@ -1670,7 +1670,7 @@ void CStudioHdr::CActivityToSequenceMapping::Initialize( CStudioHdr * __restrict
 				toUpdate->totalWeight += iabs(seqdesc.actweight);
 				if ( !HushAsserts() )
 				{
-					AssertMsg( toUpdate->totalWeight > 0, "toUpdate->totalWeight: %d", toUpdate->totalWeight );
+					AssertMsg( toUpdate->totalWeight > 0, ("toUpdate->totalWeight: %d", toUpdate->totalWeight ));
 				}
 			}
 			else

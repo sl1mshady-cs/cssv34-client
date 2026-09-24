@@ -93,6 +93,8 @@ int MessageBox( HWND hWnd, const char *message, const char *header, unsigned uTy
 
 #define DEFAULT_HL2_GAMEDIR	"hl2"
 
+// A logging channel used during engine initialization
+DEFINE_LOGGING_CHANNEL_NO_TAGS(LOG_EngineInitialization, "EngineInitialization");
 #if defined( USE_SDL )
 extern void* CreateSDLMgr();
 #endif
@@ -147,55 +149,52 @@ public:
 	bool m_bCheckLeaks;
 } g_LeakDump;
 
-//-----------------------------------------------------------------------------
-// Spew function!
-//-----------------------------------------------------------------------------
-SpewRetval_t LauncherDefaultSpewFunc( SpewType_t spewType, char const *pMsg )
+/*
+* Launcher defaul logging listener
+*/
+class CLauncherLoggingListener : public ILoggingListener
 {
-#ifndef _CERT
-#ifdef WIN32
-	OutputDebugStringA( pMsg );
-#else
-	fprintf( stderr, "%s", pMsg );
-#endif
-	
-	switch( spewType )
+public:
+	virtual void Log( const LoggingContext_t *pContext, const tchar *pMessage )
 	{
-	case SPEW_MESSAGE:
-	case SPEW_LOG:
-		return SPEW_CONTINUE;
-
-	case SPEW_WARNING:
-		if ( !stricmp( GetSpewOutputGroup(), "init" ) )
+#if !defined( _CERT ) && !defined( _PS3 )
+#if defined ( WIN32 ) || defined( LINUX )
+		if ( pContext->m_Severity == LS_WARNING && pContext->m_ChannelID == LOG_EngineInitialization )
 		{
-#if defined( WIN32 ) || defined( USE_SDL )
-			::MessageBox( NULL, pMsg, "Warning!", MB_OK | MB_SYSTEMMODAL | MB_ICONERROR );
-#endif
+			::MessageBox( NULL, pMessage, "Warning!", MB_OK | MB_SYSTEMMODAL | MB_ICONERROR );
 		}
-		return SPEW_CONTINUE;
-
-	case SPEW_ASSERT:
-		if ( !ShouldUseNewAssertDialog() )
+		else if ( pContext->m_Severity == LS_ASSERT && !ShouldUseNewAssertDialog() )
 		{
-#if defined( WIN32 ) || defined( USE_SDL )
-			::MessageBox( NULL, pMsg, "Assert!", MB_OK | MB_SYSTEMMODAL | MB_ICONERROR );
-#endif
+			::MessageBox( NULL, pMessage, "Assert!", MB_OK | MB_SYSTEMMODAL | MB_ICONERROR );
 		}
-		return SPEW_DEBUGGER;
-	
-	case SPEW_ERROR:
-	default:
-#if defined( WIN32 ) || defined( USE_SDL )
-		::MessageBox( NULL, pMsg, "Error!", MB_OK | MB_SYSTEMMODAL | MB_ICONERROR );
-#endif
-		_exit( 1 );
-	}
+		else if ( pContext->m_Severity == LS_ERROR )
+		{
+			::MessageBox( NULL, pMessage, "Error!", MB_OK | MB_SYSTEMMODAL | MB_ICONERROR );
+		}
+#elif defined(OSX)
+		CFOptionFlags responseFlags;
+		CFStringRef message;
+		message = CFStringCreateWithCString(NULL, pMessage, CFStringGetSystemEncoding() ) ;
+		
+		if ( pContext->m_Severity == LS_WARNING && pContext->m_ChannelID == LOG_EngineInitialization )
+		{
+			CFUserNotificationDisplayAlert(0, kCFUserNotificationCautionAlertLevel, 0, 0, 0, CFSTR( "Warning" ), message, NULL, NULL, NULL, &responseFlags);
+		}
+		else if ( pContext->m_Severity == LS_ASSERT && !ShouldUseNewAssertDialog() )
+		{
+			CFUserNotificationDisplayAlert(0, kCFUserNotificationNoteAlertLevel, 0, 0, 0, CFSTR( "Assert" ), message, NULL, NULL, NULL, &responseFlags);
+		}
+		else if ( pContext->m_Severity == LS_ERROR )
+		{
+			CFUserNotificationDisplayAlert(0,  kCFUserNotificationStopAlertLevel, 0, 0, 0, CFSTR( "Error" ), message, NULL, NULL, NULL, &responseFlags);
+		}	
+		CFRelease(message);
 #else
-	if ( spewType != SPEW_ERROR)
-		return SPEW_CONTINUE;
-	_exit( 1 );
+#warning "Popup a dialog here"
 #endif
-}
+#endif // CERT
+	}
+};
 
 
 //-----------------------------------------------------------------------------
@@ -1189,6 +1188,7 @@ static const char *BuildCommand()
 	return (const char *)build.Base();
 }
 
+CLauncherLoggingListener g_LauncherLoggingListener;
 extern void InitGL4ES();
 
 //-----------------------------------------------------------------------------
@@ -1252,7 +1252,7 @@ DLL_EXPORT int LauncherMain( int argc, char **argv )
 #endif
 
 	// Hook the debug output stuff.
-	SpewOutputFunc( LauncherDefaultSpewFunc );
+	LoggingSystem_RegisterLoggingListener( &g_LauncherLoggingListener );
 
 	// Quickly check the hardware key, essentially a warning shot.  
 	if ( !Plat_VerifyHardwareKeyPrompt() )

@@ -60,6 +60,8 @@
 #include "eifacev21.h"
 #include "cl_steamauth.h"
 #include "tier0/etwprof.h"
+#include "tier0/logging.h"
+#include "tier2/tier2_logging.h"
 
 #include "vgui_baseui_interface.h"
 #include "tier0/systeminformation.h"
@@ -86,6 +88,36 @@ ConVar mem_max_heapsize_dedicated( "mem_max_heapsize_dedicated", "64", FCVAR_INT
 #define MAXIMUM_WIN_MEMORY			max( (unsigned)(mem_max_heapsize.GetInt()*1024*1024), MINIMUM_WIN_MEMORY )
 #define MAXIMUM_DEDICATED_MEMORY	(unsigned)(mem_max_heapsize_dedicated.GetInt()*1024*1024)
 
+// Common
+DEFINE_LOGGING_CHANNEL_NO_TAGS( LOG_SERVER_LOG, "ServerLog", LCF_DO_NOT_ECHO );
+
+// Client
+DEFINE_LOGGING_CHANNEL_NO_TAGS( LOG_CLIENT, "CL", 0, LS_MESSAGE, Color(150, 150, 255, 255) );
+
+// Server
+DEFINE_LOGGING_CHANNEL_NO_TAGS( LOG_SERVER, "GS", 0, LS_MESSAGE, Color(150, 150, 255, 255) );
+
+// Hardcoded configuration (RuSHeRR)
+#define LOGGING_DISPLAY_LOWERCASE_CHANNEL_NAMES 0
+#define LOGGING_DISPLAY_MODULE_NAMES 0
+
+#ifdef LOGGING_DISPLAY_MODULE_NAMES
+/* ------------------ */
+// ModuleName tags that engine logging listener supports.
+// each module tag must be started from '#', channel supports only one single module tag!
+
+// Current array of moduleName tags
+static const char* EngineLoggingModules[] =
+{
+	"#engine",		//< engine
+	"#filesystem",	//< filesystem_stdio
+	"#gamedll",		//< server dll
+	"#cldll",		//< client dll
+	"#vgui",		//< vgui2/vguimatsurface/vgui_controls
+	"#vstdlib",		//< vstdlib/tier1_convar
+	"#steam"		//< steam_api, steamclient (reserved)
+};
+#endif
 
 char *CheckParm(const char *psz, char **ppszValue = NULL);
 void SeedRandomNumberGenerator( bool random_invariant );
@@ -854,104 +886,145 @@ void GetSpew( char *buf, size_t buflen )
 	*pcur = 0;
 }
 
-ConVar spew_consolelog_to_debugstring( "spew_consolelog_to_debugstring", "0", 0, "Send console log to PLAT_DebugString()" );
-
-SpewRetval_t Sys_SpewFunc( SpewType_t spewType, const char *pMsg )
+class CEngineConsoleLoggingListener : public ILoggingListener
 {
-	bool suppress = g_bInSpew;
-
-	g_bInSpew = true;
-
-	AddSpewRecord( pMsg );
-
-	// Text output shows up on dedicated server profiles, both as consuming CPU
-	// time and causing IPC delays. Sending the messages to ETW will help us
-	// understand why, and save us time when server operators are triggering
-	// excessive spew. Having the output in traces is also generically useful
-	// for understanding slowdowns.
-	ETWMark1I( pMsg, spewType );
-
-	if ( !suppress )
+public:
+	virtual void Log( const LoggingContext_t *pContext, const tchar *pMessage )
 	{
-		// If this is a dedicated server, then we have taken over its spew function, but we still
-		// want its vgui console to show the spew, so pass it into the dedicated server.
-		if ( dedicated )
-			dedicated->Sys_Printf( (char*)pMsg );
-
-		if( spew_consolelog_to_debugstring.GetBool() )
+		if ( ( pContext->m_Flags & LCF_DO_NOT_ECHO ) != 0 )
 		{
-			Plat_DebugString( pMsg );
-		}
-
-		if ( g_bTextMode )
-		{
-			printf( "%s", pMsg );
-		}
-
-		if ((spewType != SPEW_LOG) || (sv.GetMaxClients() == 1))
-		{
-			Color color;
-			switch ( spewType )
+			if ( pContext->m_ChannelID == LOG_SERVER_LOG )
 			{
-#ifndef SWDS
-			case SPEW_WARNING:
-				{
-					color.SetColor( 255, 90, 90, 255 );
-				}
-				break;
-			case SPEW_ASSERT:
-				{
-					color.SetColor( 255, 20, 20, 255 );
-				}
-				break;
-			case SPEW_ERROR:
-				{
-					color.SetColor( 20, 70, 255, 255 );
-				}
-				break;
-#endif
-			default:
-				{
-					color = *GetSpewOutputColor();
-				}
-				break;
+				g_Log.Print( pMessage );
 			}
-			Con_ColorPrintf( color, "%s", pMsg );
-
+			return;
 		}
-		else
+		
+		bool suppress = g_bInSpew ? true : false;
+
+		g_bInSpew = true;
+
+		AddSpewRecord( pMessage );
+
+		if (!suppress)
 		{
-			g_Log.Printf( "%s", pMsg );
+			// If this is a dedicated server, then we have taken over its spew function, but we still
+			// want its vgui console to show the spew, so pass it into the dedicated server.
+			if (dedicated)
+			{
+				// This is not actually a varargs-style printf function; it simply takes a char*
+				dedicated->Sys_Printf((char*)pMessage);		// stupid header has char * instead of const char *
+			}
+
+#ifndef _CERT
+			if (g_bTextMode)
+			{
+				printf("%s", pMessage);
+			}
+#endif
+			const CLoggingSystem::LoggingChannel_t* channel =
+				LoggingSystem_GetChannel(pContext->m_ChannelID);
+
+			// copy channel's name in here.
+			char channelName[32];
+			strcpy(channelName, channel->m_Name);
+
+#if LOGGING_DISPLAY_LOWERCASE_CHANNEL_NAMES
+			char* start = channelName;
+			V_strlower(start);
+#endif
+			char moduleName[32];
+			memset(moduleName, 0, sizeof(moduleName));
+
+#if LOGGING_DISPLAY_MODULE_NAMES
+			// Get the module tag
+			for (int i = 0; i < sizeof(EngineLoggingModules) / sizeof(*EngineLoggingModules); i++)
+			{
+				if (channel->HasTag(EngineLoggingModules[i]))
+				{
+					strcpy(moduleName, EngineLoggingModules[i]);
+					break;
+				}
+			}
+#endif
+
+			Color spewColor = pContext->m_Color;
+			Color channelColor = channel->m_SpewColor;
+
+			// check if the color is unspecified
+			if ((spewColor.GetRawColor() & 0xFFFFFF) == 0)
+			{
+				switch (pContext->m_Severity)
+				{
+#ifndef DEDICATED
+				case LS_MESSAGE:
+#if !defined( _X360 )
+					spewColor.SetColor(255, 255, 255, 255);
+#else
+					spewColor.SetColor(0, 0, 0, 255);
+#endif
+
+					if (channel->HasTag("Console"))
+						spewColor.SetColor(230, 248, 255, 255);
+
+					break;
+				case LS_WARNING:
+					spewColor.SetColor(237, 100, 50, 255);
+					break;
+				case LS_ASSERT:
+					spewColor.SetColor(255, 20, 20, 255);
+					break;
+				case LS_ERROR:
+					spewColor.SetColor(20, 70, 255, 255);
+					break;
+#endif
+				}
+			}
+
+			if (moduleName[0] != 0)
+			{
+				Con_ColorPrintf(channelColor, "%.16s / ", moduleName);
+			}
+
+			// 1=General, 3=Console
+			if (pContext->m_ChannelID > 6)
+			{
+				// check if the color is unspecified
+				if ((channelColor.GetRawColor() & 0xFFFFFF) == 0)
+				{
+					channelColor.SetColor(255, 255, 255, 255);
+				}
+
+				Con_ColorPrintf(channelColor, "[%.16s] ", channelName);
+			}
+
+			// main message
+			Con_ColorPrintf( spewColor, "%s", pMessage );
+		}
+
+		g_bInSpew = false;
+
+		if ( pContext->m_Severity == LS_ERROR )
+		{
+			Sys_Error( "%s", pMessage );
 		}
 	}
+};
 
-	g_bInSpew = false;
-
-	if (spewType == SPEW_ERROR)
-	{
-		Sys_Error( "%s", pMsg );
-		return SPEW_ABORT;
-	}
-	if (spewType == SPEW_ASSERT)
-	{
-		if ( CommandLine()->FindParm( "-noassert" ) == 0 )
-			return SPEW_DEBUGGER;
-		else
-			return SPEW_CONTINUE;
-	}
-	return SPEW_CONTINUE;
-}
+static CEngineConsoleLoggingListener s_EngineLoggingListener;
+static CFileLoggingListener s_FileLoggingListener;
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CFileLoggingListener, IFileLoggingListener, FILELOGGINGLISTENER_INTERFACE_VERSION, s_FileLoggingListener );
 
 void DeveloperChangeCallback( IConVar *pConVar, const char *pOldString, float flOldValue )
 {
 	// Set the "developer" spew group to the value...
 	ConVarRef var( pConVar );
 	int val = var.GetInt();
-	SpewActivate( "developer", val );
 
-	// Activate console spew (spew value 2 == developer console spew)
-	SpewActivate( "console", val ? 2 : 1 );
+	LoggingSystem_SetChannelSpewLevelByTag( "Developer", val >= 1 ? LS_MESSAGE : LS_ERROR );
+	LoggingSystem_SetChannelSpewLevelByTag( "DeveloperVerbose", val >= 2 ? LS_MESSAGE : LS_ERROR );
 }
+
 
 //-----------------------------------------------------------------------------
 // Purpose: factory comglomerator, gets the client, server, and gameui dlls together
@@ -1013,14 +1086,15 @@ int Sys_InitGame( CreateInterfaceFn appSystemFactory, const char* pBaseDir, void
 	
 	FileSystem_SetWhitelistSpewFlags();
 
-	// Activate console spew
+	// Activate console, non-dev spew
 	// Must happen before developer.InstallChangeCallback because that callback may reset it 
-	SpewActivate( "console", 1 );
+	LoggingSystem_SetChannelSpewLevelByTag( "Console", LS_MESSAGE );
+	LoggingSystem_PushLoggingState();
+	LoggingSystem_RegisterLoggingListener( &s_EngineLoggingListener );
+	LoggingSystem_RegisterLoggingListener( &s_FileLoggingListener );
 
 	// Install debug spew output....
 	developer.InstallChangeCallback( DeveloperChangeCallback );
-
-	SpewOutputFunc( Sys_SpewFunc );
 	
 	// Assume failure
 	host_initialized = false;
@@ -1107,7 +1181,7 @@ void Sys_ShutdownGame( void )
 
 	// Remove debug spew output....
 	developer.InstallChangeCallback( 0 );
-	SpewOutputFunc( 0 );
+	LoggingSystem_PopLoggingState();
 }
 
 //

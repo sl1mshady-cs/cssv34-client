@@ -55,13 +55,30 @@
 extern IFileSystem *g_pFileSystem;
 static const char *CacheDirectory = "cache";
 static const char *CacheFilename = "cache/DownloadCache.db";
-Color DownloadColor			(   0, 200, 100, 255 );
+Color DownloadColor			( 180, 200, 180, 255 );
+Color DownloadWarnColor		( 237, 200, 50, 255 );
 Color DownloadErrorColor	( 200, 100, 100, 255 );
 Color DownloadCompleteColor	( 100, 200, 100, 255 );
 
-ConVar download_debug( "download_debug", "0", FCVAR_DONTRECORD );	// For debug printouts
-
 const char k_szDownloadPathID[] = "download";
+
+/*
+* DownloadManager Logging Channel
+*/
+Color DownloadChannelColor(100, 255, 100, 255);
+BEGIN_DEFINE_LOGGING_CHANNEL(LOG_DownloadManager, "downloadmgr", 0, LS_MESSAGE, DownloadChannelColor);
+ADD_LOGGING_CHANNEL_TAG("Developer"); // developer mode (1)
+ADD_LOGGING_CHANNEL_TAG("#engine"); // module tag starts from #
+END_DEFINE_LOGGING_CHANNEL();
+
+// Basic Helpers
+#define DM_Msg(...) Log_Msg(LOG_DownloadManager, DownloadColor, __VA_ARGS__)
+#define DM_Warning(...) Log_Warning(LOG_DownloadManager, DownloadWarnColor, __VA_ARGS__)
+#define DM_Error(...) Log_Warning(LOG_DownloadManager, DownloadErrorColor, __VA_ARGS__)
+#define DM_Complete(...) Log_Msg(LOG_DownloadManager, DownloadCompleteColor, __VA_ARGS__)
+
+// For debug printouts
+ConVar download_debug("download_debug", "0", FCVAR_DONTRECORD);
 
 //--------------------------------------------------------------------------------------------------------------
 // Class Definitions
@@ -261,7 +278,7 @@ static bool DecompressBZipToDisk( const char *outFilename, const char *srcFilena
 				{
 					if ( totalBytes > MAX_FILE_SIZE )
 					{
-						ConDColorMsg( DownloadErrorColor, "DecompressBZipToDisk: '%s' too big (max %i bytes).\n", srcFilename, MAX_FILE_SIZE );
+						DM_Error( "DecompressBZipToDisk: '%s' too big (max %i bytes).\n", srcFilename, MAX_FILE_SIZE );
 						break; // error out
 					}
 				}
@@ -548,7 +565,7 @@ bool CDownloadManager::FileDenied( const char *filename, unsigned int requestID 
 
 	if ( download_debug.GetBool() )
 	{
-		ConDColorMsg( DownloadErrorColor, "Error downloading %s\n", m_activeRequest->absLocalPath );
+		DM_Error( "Error downloading %s\n", m_activeRequest->absLocalPath );
 	}
 
 	UpdateProgressBar();
@@ -573,7 +590,7 @@ bool CDownloadManager::FileReceived( const char *filename, unsigned int requestI
 
 	if ( download_debug.GetBool() )
 	{
-		ConDColorMsg( DownloadCompleteColor, "Download finished!\n" );
+		DM_Complete( "Download finished!\n" );
 	}
 
 	UpdateProgressBar();
@@ -673,7 +690,7 @@ void CDownloadManager::QueueInternal( const char *pBaseURL, const char *pURLPath
 
 	if ( download_debug.GetBool() )
 	{
-		ConDColorMsg( DownloadColor, "Queueing %s%s.\n", rc->baseURL, pGamePath );
+		DM_Msg( "Queueing %s%s.\n", rc->baseURL, pGamePath );
 	}
 
 	// Invoke the callback if appropriate
@@ -717,7 +734,7 @@ void CDownloadManager::Queue( const char *baseURL, const char *urlPath, const ch
 
 	if ( download_debug.GetBool() )
 	{
-		ConDColorMsg( DownloadColor, "Queueing %s%s.\n", baseURL, gamePath );
+		DM_Msg( "Queueing %s%s.\n", baseURL, gamePath );
 	}
 }
 
@@ -729,7 +746,7 @@ void CDownloadManager::Reset()
 	{
 		if ( download_debug.GetBool() )
 		{
-			ConDColorMsg( DownloadColor, "Aborting download of %s\n", m_activeRequest->gamePath );
+			DM_Msg( "Aborting download of %s\n", m_activeRequest->gamePath );
 		}
 
 		if ( m_activeRequest->nBytesTotal && m_activeRequest->nBytesCurrent )
@@ -748,7 +765,7 @@ void CDownloadManager::Reset()
 	{
 		if ( download_debug.GetBool() )
 		{
-			ConDColorMsg( DownloadColor, "Discarding queued download of %s\n", m_queuedRequests[i]->gamePath );
+			DM_Warning( "Discarding queued download of %s\n", m_queuedRequests[i]->gamePath );
 		}
 
 		delete m_queuedRequests[i];
@@ -802,7 +819,7 @@ void CDownloadManager::CheckActiveDownload()
 	case HTTP_DONE:
 		if ( download_debug.GetBool() )
 		{
-			ConDColorMsg( DownloadCompleteColor, "Download finished!\n" );
+			DM_Complete( "Download finished!\n" );
 		}
 
 		UpdateProgressBar();
@@ -825,7 +842,7 @@ void CDownloadManager::CheckActiveDownload()
 	case HTTP_ERROR:
 		if ( download_debug.GetBool() )
 		{
-			ConDColorMsg( DownloadErrorColor, "Error downloading %s%s\n", m_activeRequest->baseURL, m_activeRequest->gamePath );
+			DM_Error( "Error downloading %s%s\n", m_activeRequest->baseURL, m_activeRequest->gamePath );
 		}
 
 		UpdateProgressBar();
@@ -852,7 +869,7 @@ void CDownloadManager::CheckActiveDownload()
 			{
 				if ( download_debug.GetBool() )
 				{
-					ConDColorMsg( DownloadColor, "Downloading %s%s: %3.3d%% - %d of %d bytes\n",
+					DM_Msg( "Downloading %s%s: %3.3d%% - %d of %d bytes\n",
 						m_activeRequest->baseURL, m_activeRequest->gamePath,
 						percent, m_activeRequest->nBytesCurrent, m_activeRequest->nBytesTotal );
 				}
@@ -883,7 +900,7 @@ void CDownloadManager::StartNewDownload()
 		{
 			if ( download_debug.GetBool() )
 			{
-				ConDColorMsg( DownloadColor, "Skipping existing file %s%s.\n", m_activeRequest->baseURL, m_activeRequest->gamePath );
+				DM_Warning( "Skipping existing file %s%s.\n", m_activeRequest->baseURL, m_activeRequest->gamePath );
 			}
 
 			m_activeRequest->shouldStop = true;
@@ -918,7 +935,7 @@ void CDownloadManager::StartNewDownload()
 
 		if ( download_debug.GetBool() )
 		{
-			ConDColorMsg( DownloadColor, "Downloading %s%s.\n", m_activeRequest->baseURL, m_activeRequest->gamePath );
+			DM_Msg( "Downloading %s%s.\n", m_activeRequest->baseURL, m_activeRequest->gamePath );
 		}
 
 		m_lastPercent = 0;
@@ -939,7 +956,7 @@ void CDownloadManager::StartNewDownload()
 
 		if ( download_debug.GetBool() )
 		{
-			ConDColorMsg( DownloadColor, "Downloading %s.\n", m_activeRequest->gamePath );
+			DM_Msg( "Downloading %s.\n", m_activeRequest->gamePath );
 		}
 
 		m_lastPercent = 0;

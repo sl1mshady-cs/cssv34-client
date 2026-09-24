@@ -302,6 +302,9 @@ public:
 	// Eats C++ style comments
 	bool			EatCPPComment();
 
+	// Eats C style comments, and report the number of newlines skipped in the process
+	bool			EatCComment( int *pOutSkippedNewlineCount = NULL );
+
 	// (For text buffers only)
 	// Parse a token from the buffer:
 	// Grab all text that lies between a starting delimiter + ending delimiter

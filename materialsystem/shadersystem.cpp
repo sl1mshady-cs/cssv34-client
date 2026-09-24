@@ -24,6 +24,7 @@
 #include "tier1/KeyValues.h"
 #include "shader_dll_verify.h"
 #include "tier0/vprof.h"
+#include "tier1/tier1_logging.h"
 
 // NOTE: This must be the last file included!
 #include "tier0/memdbgon.h"
@@ -90,10 +91,6 @@ public:
 	virtual void		LoadTexture( IMaterialVar *pTextureVar, const char *pTextureGroupName, int nAdditionalCreationFlags = 0 );
 	virtual void		LoadBumpMap( IMaterialVar *pTextureVar, const char *pTextureGroupName );
 	virtual void		LoadCubeMap( IMaterialVar **ppParams, IMaterialVar *pTextureVar, int nAdditionalCreationFlags = 0 );
-
-	// Used to prevent re-entrant rendering from warning messages
-	void				BufferSpew( SpewType_t spewType, const Color &c, const char *pMsg );
-
 private:
 	struct ShaderDLLInfo_t
 	{
@@ -173,8 +170,10 @@ private:
 	// List of all DLLs containing shaders
 	CUtlVector< ShaderDLLInfo_t > m_ShaderDLLs;
 
-	// Used to prevent re-entrant rendering from warning messages
-	SpewOutputFunc_t m_SaveSpewOutput;
+	// Used to prevent re-entrant rendering from warning messages.
+	CBufferedLoggingListener m_BufferedLoggingListener;
+	// Causes Log_Error() to break into debugger instead of exiting.
+	CNonFatalLoggingResponsePolicy m_NonFatalLoggingResponsePolicy;
 
 	CUtlBuffer m_StoredSpew;
 
@@ -240,8 +239,6 @@ CShaderSystem::CShaderSystem() : m_StoredSpew( 0, 512, 0 ), m_bForceUsingGraphic
 //-----------------------------------------------------------------------------
 void CShaderSystem::Init()
 {
-	m_SaveSpewOutput = NULL;
-	
 	m_bForceUsingGraphicsReturnTrue = false;
 	if ( CommandLine()->FindParm( "-noshaderapi" ) ||
 		 CommandLine()->FindParm( "-makereslists" ) )
@@ -861,74 +858,6 @@ void CShaderSystem::CleanUpDebugMaterials()
 
 
 //-----------------------------------------------------------------------------
-// Deal with buffering of spew while doing shader draw so that we don't get 
-// recursive spew during precache due to fonts not being loaded, etc.
-//-----------------------------------------------------------------------------
-CThreadFastMutex g_StgoredSpewMutex;
-void CShaderSystem::BufferSpew( SpewType_t spewType, const Color &c, const char *pMsg )
-{
-	AUTO_LOCK( g_StgoredSpewMutex );
-	m_StoredSpew.PutInt( spewType );
-	m_StoredSpew.PutChar( c.r() );
-	m_StoredSpew.PutChar( c.g() );
-	m_StoredSpew.PutChar( c.b() );
-	m_StoredSpew.PutChar( c.a() );
-	m_StoredSpew.PutString( pMsg );
-}
-
-void CShaderSystem::PrintBufferedSpew( void )
-{
-	AUTO_LOCK( g_StgoredSpewMutex );
-	while ( m_StoredSpew.GetBytesRemaining() > 0 )
-	{
-		SpewType_t spewType	= (SpewType_t)m_StoredSpew.GetInt();
-		
-		unsigned char r, g, b, a;
-		r = m_StoredSpew.GetChar();
-		g = m_StoredSpew.GetChar();
-		b = m_StoredSpew.GetChar();
-		a = m_StoredSpew.GetChar();
-
-		Color c( r, g, b, a );
-		
-		int nLen = m_StoredSpew.PeekStringLength();
-		if ( nLen )
-		{
-			char *pBuf = (char*)_alloca( nLen );
-			m_StoredSpew.GetStringManualCharCount( pBuf, nLen );
-			ColorSpewMessage( spewType, &c, "%s", pBuf );
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	m_StoredSpew.Clear();
-}
-
-static SpewRetval_t MySpewOutputFunc( SpewType_t spewType, char const *pMsg )
-{
-	AUTO_LOCK( g_StgoredSpewMutex );
-	Color c = *GetSpewOutputColor();
-	s_ShaderSystem.BufferSpew( spewType, c, pMsg );
-
-	switch( spewType )
-	{
-	case SPEW_MESSAGE:
-	case SPEW_WARNING:
-	case SPEW_LOG:
-		return SPEW_CONTINUE;
-
-	case SPEW_ASSERT:
-	case SPEW_ERROR:
-	default:
-		return SPEW_DEBUGGER;
-	}
-}
-
-
-//-----------------------------------------------------------------------------
 // Deals with shader draw
 //-----------------------------------------------------------------------------
 void CShaderSystem::PrepForShaderDraw( IShader *pShader,
@@ -940,9 +869,9 @@ void CShaderSystem::PrepForShaderDraw( IShader *pShader,
 	// 360 sidesteps the other negative affect that *all* buffered spew redirects as warning text
 	if ( IsPC() || !IsX360() )
 	{
-		Assert( !m_SaveSpewOutput );
-		m_SaveSpewOutput = GetSpewOutputFunc();
-		SpewOutputFunc( MySpewOutputFunc );
+		LoggingSystem_PushLoggingState( true );
+		LoggingSystem_RegisterLoggingListener( &m_BufferedLoggingListener );
+		LoggingSystem_SetLoggingResponsePolicy( &m_NonFatalLoggingResponsePolicy );
 	}
 
 	m_pRenderState = pRenderState;
@@ -954,9 +883,8 @@ void CShaderSystem::DoneWithShaderDraw()
 {
 	if ( IsPC() || !IsX360() )
 	{
-		SpewOutputFunc( m_SaveSpewOutput );
-		PrintBufferedSpew();
-		m_SaveSpewOutput = NULL;
+		LoggingSystem_PopLoggingState( true );
+		m_BufferedLoggingListener.EmitBufferedSpew();
 	}
 
 	m_pRenderState = NULL;

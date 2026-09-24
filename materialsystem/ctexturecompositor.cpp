@@ -1570,7 +1570,11 @@ void CTextureCompositor::Error( bool _retry, const char* _debugDevMsg, ... )
 
 	va_list args;
 	va_start( args, _debugDevMsg );
-	WarningV( _debugDevMsg, args );
+
+	char msg[4096];
+	vsprintf(msg, _debugDevMsg, args);
+
+	Warning(msg);
 	va_end( args );
 }
 

@@ -32,6 +32,8 @@ bool con_debuglogmapprefixed = false;
 
 CThreadFastMutex g_AsyncNotifyTextMutex;
 
+DEFINE_LOGGING_CHANNEL_NO_TAGS( LOG_CONSOLE, "Console" );
+
 static ConVar con_timestamp( "con_timestamp", "0", 0, "Prefix console.log entries with timestamps" );
 
 // In order to avoid excessive opening and closing of the console log file
@@ -286,7 +288,283 @@ void Con_Clear_f( void )
 	EngineVGui()->ClearConsole();
 	Con_ClearNotify();
 }
-						
+
+static void LogFunction_PrintUsage()
+{
+	Log_Msg( LOG_CONSOLE, 
+		"Log Function Help: \n"
+		"    log_level <channel specifiers> <level>\n"
+		"    log_color <channel specifiers> <hex color>\n"
+		"    log_flags <channel specifiers> <+/-flag>\n"
+		"All functions are case insensitive.\n"
+		"\n"
+		"A channel specifier is either:\n"
+		"1) tag specifiers: +/-tag1 +/-tag2 ...      // Narrows down to channels with & without given tags.\n"
+		"2) channel names: name1 name2 ...           // Lists channels by name.\n"
+		"\n"
+		"level: all, warning, error, off             // Spews anything at or above the specified level.\n"
+		"                                            // 'off' turns all spew off, 'all' turns all spew on.\n"
+		"hex color: RRGGBBAA                         // A hexadecimal color value in the order RGBA.\n"
+		"flag: <+/->DoNotEcho                        // Enable/disable a flag to turn off echoing to the console.\n"
+		"      <+/->ConsoleOnly                      // Enable/disable a flag to send text only to the console.\n"
+		"e.g.\n"
+		"    log_level +console -developer warning   // Sets minimum spew level of channels with the tag\n"
+		"                                            // 'console' but without the tag 'developer' to 'warning'.\n"
+		"\n"
+		"    log_color renderdebug bsp FFC08040      // Sets the 'renderdebug' and 'bsp' channels to the RGBA color (64, 128, 192, 255).\n"
+		"\n"
+		"    log_flags +developer +donotecho         // Turns on the LCF_DO_NOT_ECHO flag for all channels with the 'developer' tag.\n"
+		"\n" );
+};
+
+typedef bool (*LogFunctionActionFunc)( const CLoggingSystem::LoggingChannel_t *pChannel, const char *pParameter );
+
+static void Con_LogFunctionHelper( const CCommand &args, LogFunctionActionFunc callbackFunction )
+{
+	int nArgs = args.ArgC();
+	if ( nArgs < 3 )
+	{
+		LogFunction_PrintUsage();
+		return;
+	}
+
+	const char *pParameter = args.ArgV()[nArgs - 1];
+
+	struct ChannelSpecifier_t
+	{
+		const char *m_pSpecifier; // Points to tag or channel name
+		bool m_bIsTag; // True for a tag specifier, false for a channel name
+		bool m_bInclude; // If bIsTag is true, then bInclude is true for '+' and false for '-'.
+	};
+
+	const int nMaxSpecifiers = 16;
+	int nSpecifierCount = nArgs - 2;
+	if ( nSpecifierCount > nMaxSpecifiers )
+	{
+		Log_Warning( LOG_CONSOLE, "Too many channel specifiers (max: %d).\n", nMaxSpecifiers );
+		LogFunction_PrintUsage();
+		return;
+	}
+
+	ChannelSpecifier_t channelSpecifier[nMaxSpecifiers];
+	for ( int nArg = 1; nArg < ( nArgs - 1 ); ++ nArg )
+	{
+		const char *pSpecifier = args.ArgV()[nArg];
+		Assert( pSpecifier[0] != '\0' );
+
+		if ( pSpecifier[0] == '+' )
+		{
+			channelSpecifier[nArg - 1].m_pSpecifier = pSpecifier + 1;
+			channelSpecifier[nArg - 1].m_bIsTag = true;
+			channelSpecifier[nArg - 1].m_bInclude = true;
+		}
+		else if ( pSpecifier[0] == '-' )
+		{
+			channelSpecifier[nArg - 1].m_pSpecifier = pSpecifier + 1;
+			channelSpecifier[nArg - 1].m_bIsTag = true;
+			channelSpecifier[nArg - 1].m_bInclude = false;
+		}
+		else
+		{
+			channelSpecifier[nArg - 1].m_pSpecifier = pSpecifier;
+			channelSpecifier[nArg - 1].m_bIsTag = false;
+		}
+		if ( nArg > 1 )
+		{
+			if ( channelSpecifier[nArg - 1].m_bIsTag != channelSpecifier[nArg - 2].m_bIsTag )
+			{
+				Log_Warning( LOG_CONSOLE, "Cannot mix and match tag specifiers with channel name specifiers.\n" );
+				LogFunction_PrintUsage();
+				return;
+			}
+		}
+	}
+
+	bool bUsingTags = channelSpecifier[0].m_bIsTag;
+	for ( LoggingChannelID_t channelID = LoggingSystem_GetFirstChannelID(); channelID != INVALID_LOGGING_CHANNEL_ID; channelID = LoggingSystem_GetNextChannelID( channelID ) )
+	{
+		const CLoggingSystem::LoggingChannel_t *pLoggingChannel = LoggingSystem_GetChannel( channelID );
+		int nSpecifier;
+		for ( nSpecifier = 0; nSpecifier < nSpecifierCount; ++ nSpecifier )
+		{
+			if ( bUsingTags )
+			{
+				bool bHasTag = pLoggingChannel->HasTag( channelSpecifier[nSpecifier].m_pSpecifier );
+				if ( channelSpecifier[nSpecifier].m_bInclude != bHasTag )
+				{
+					// Channel has a prohibited tag or channel lacks a required tag
+					break;
+				}
+			}
+			else
+			{
+				if ( Q_stricmp( channelSpecifier[nSpecifier].m_pSpecifier, pLoggingChannel->m_Name ) == 0 )
+				{
+					// Found the channel
+					break;
+				}
+			}
+		}
+		bool bReachedEnd = ( nSpecifier == nSpecifierCount );
+		// If using tags, reaching the end means to include this channel.
+		// If using channel names, reaching the end means no match was found.
+		if ( bReachedEnd == bUsingTags )
+		{	
+			if ( !callbackFunction( pLoggingChannel, pParameter ) )
+			{
+				LogFunction_PrintUsage();
+				return;
+			}
+		}
+	}
+}
+
+static bool Con_LogLevelCallback( const CLoggingSystem::LoggingChannel_t *pChannel, const char *pParameter )
+{
+	LoggingSeverity_t minSeverity;
+	if ( Q_stricmp( pParameter, "all" ) == 0 )
+	{
+		minSeverity = LS_MESSAGE;
+	}
+	else if ( Q_stricmp( pParameter, "warning" ) == 0 )
+	{
+		minSeverity = LS_WARNING;
+	}
+	else if ( Q_stricmp( pParameter, "error" ) == 0 )
+	{
+		minSeverity = LS_ERROR;
+	}
+	else if ( Q_stricmp( pParameter, "off" ) == 0 )
+	{
+		minSeverity = LS_HIGHEST_SEVERITY;
+	}
+	else
+	{
+		Log_Warning( LOG_CONSOLE, "Unrecognized severity: %s.\n", pParameter );
+		return false;
+	}
+
+	Log_Msg( LOG_CONSOLE, "Setting channel '%s' minimum spew level to '%s'.\n", pChannel->m_Name, pParameter );
+	LoggingSystem_SetChannelSpewLevel( pChannel->m_ID, minSeverity );
+	return true;
+}
+
+static bool Con_LogColorCallback( const CLoggingSystem::LoggingChannel_t *pChannel, const char *pParameter )
+{
+	int color;
+	Q_hextobinary( pParameter, 8, ( byte * )&color, sizeof( color ) );
+	Log_Msg( LOG_CONSOLE, "Setting channel '%s' color to %08X.\n", pChannel->m_Name, SwapDWord( color ) );
+	LoggingSystem_SetChannelColor( pChannel->m_ID, color );
+	return true;
+}
+
+static bool Con_LogFlagsCallback( const CLoggingSystem::LoggingChannel_t *pChannel, const char *pParameter )
+{
+	bool bEnable;
+	if ( pParameter[0] == '+' )
+	{
+		bEnable = true;
+	}
+	else if ( pParameter[0] == '-' )
+	{
+		bEnable = false;
+	}
+	else
+	{
+		Log_Warning( LOG_CONSOLE, "First character of flag specifier must be + or -.\n" );
+		return false;
+	}
+
+	const char *pFlag = pParameter + 1;
+	LoggingChannelFlags_t flag;
+	if ( Q_stricmp( pFlag, "donotecho" ) == 0 )
+	{
+		flag = LCF_DO_NOT_ECHO;
+	}
+	else if ( Q_stricmp( pFlag, "consoleonly" ) == 0 )
+	{
+		flag = LCF_CONSOLE_ONLY;
+	}
+	else
+	{
+		Log_Warning( LOG_CONSOLE, "Unrecognized flag: %s.\n", pFlag );
+		return false;
+	}
+
+	LoggingChannelFlags_t currentFlags = LoggingSystem_GetChannelFlags( pChannel->m_ID );
+	if ( bEnable )
+	{
+		currentFlags = ( LoggingChannelFlags_t )( ( int )currentFlags | flag );
+	}
+	else
+	{
+		currentFlags = ( LoggingChannelFlags_t )( ( int )currentFlags & ( ~flag ) );
+	}
+	
+	Log_Msg( LOG_CONSOLE, "Enabling flag '%s' on channel '%s'.\n", pFlag, pChannel->m_Name );
+	LoggingSystem_SetChannelFlags( pChannel->m_ID, currentFlags );
+	return true;
+}
+
+void Con_LogLevel_f( const CCommand &args )
+{
+	Con_LogFunctionHelper( args, Con_LogLevelCallback );
+}
+
+void Con_LogColor_f( const CCommand &args )
+{
+	Con_LogFunctionHelper( args, Con_LogColorCallback );
+}
+
+void Con_LogFlags_f( const CCommand &args )
+{
+	Con_LogFunctionHelper( args, Con_LogFlagsCallback );
+}
+
+void Con_LogDumpChannels_f()
+{
+	Log_Msg( LOG_CONSOLE, "%-4s    %-32s    %-10s    %-10s    %-32s    %-32s\n", "ID", "Channel Name", "Severity", "Color", "Flags", "Tags" );
+	Log_Msg( LOG_CONSOLE, "----------------------------------------------------------------------------------------------------------------------------------------------------\n" );
+
+	int nChannelCount = LoggingSystem_GetChannelCount();
+	for ( int i = 0; i < nChannelCount; ++ i )
+	{
+		const CLoggingSystem::LoggingChannel_t *pChannel = LoggingSystem_GetChannel( i );
+		
+		const char *pSeverity;
+		if ( pChannel->m_MinimumSeverity >= LS_HIGHEST_SEVERITY ) pSeverity = "off";
+		else if ( pChannel->m_MinimumSeverity >= LS_ERROR ) pSeverity = "error";
+		else if ( pChannel->m_MinimumSeverity >= LS_WARNING ) pSeverity = "warning";
+		else pSeverity = "all";
+		
+		Log_Msg( LOG_CONSOLE, "%-4d    %-32s    %-10s    0x%08X    ", i, pChannel->m_Name, pSeverity, SwapDWord( *( int *)&pChannel->m_SpewColor ) );
+		
+		const int nMaxLen = 2048;
+		char buf[nMaxLen];
+		buf[0] = '\0';
+		if ( pChannel->m_Flags & LCF_CONSOLE_ONLY )
+		{
+			Q_strncat( buf, "[ConsoleOnly]", nMaxLen );
+		}
+		if ( pChannel->m_Flags & LCF_DO_NOT_ECHO )
+		{
+			Q_strncat( buf, "[DoNotEcho]", nMaxLen );
+		}
+		Log_Msg( LOG_CONSOLE, "%-32s    ", buf );
+			
+		buf[0] = '\0';
+		CLoggingSystem::LoggingTag_t *pTag = pChannel->m_pFirstTag;
+		while ( pTag != NULL )
+		{
+			Q_strncat( buf, "[", nMaxLen );
+			Q_strncat( buf, pTag->m_pTagName, nMaxLen );
+			Q_strncat( buf, "]", nMaxLen );
+			pTag = pTag->m_pNextTag;
+		}
+		Log_Msg( LOG_CONSOLE, "%-32s\n", buf );
+	}
+}
+
 /*
 ================
 Con_ClearNotify
@@ -529,7 +807,7 @@ void Con_ColorPrint( const Color& clr, char const *msg )
 		g_bInColorPrint = true;
 
 		// also echo to debugging console
-		if ( Plat_IsInDebugSession() && !con_trace.GetInt() && !spew_consolelog_to_debugstring.GetBool() )
+		if ( Plat_IsInDebugSession() && !con_trace.GetInt() )
 		{
 			Sys_OutputDebugString(msg);
 		}
