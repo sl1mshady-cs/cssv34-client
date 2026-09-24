@@ -1,10 +1,10 @@
+#include "callback_system.h"
 #include "steammatchmakingservers.h"
 
-static CSteamMatchMakingServers s_steammatchmakingservers;
-CSteamMatchMakingServers* g_pSteamMatchMakingServers = &s_steammatchmakingservers;
-
-CSteamMatchMakingServers::CSteamMatchMakingServers()
+CSteamMatchMakingServers::CSteamMatchMakingServers(class SteamCallbacks* callbacks)
 {
+	this->callbacks = callbacks;
+
 	m_eActiveType = eInvalidServer;
 
 	for (int i = 0; i < 6; i++)
@@ -267,6 +267,11 @@ void CSteamMatchMakingServers::RunFrame()
 {
 	if (m_eActiveType != eInvalidServer) 
 		m_pServerList[m_eActiveType]->RunFrame();
+}
+
+void CSteamMatchMakingServers::RunCallbacks()
+{
+	// todo
 }
 
 EServerType CSteamMatchMakingServers::GetActiveType()

@@ -2,17 +2,17 @@
 #include "tier0/dbg.h"
 
 // Constructor, open the logfile
-CLoggingSystem::CLoggingSystem(char* strFile)
+CLoggingFile::CLoggingFile(char* strFile)
 {
 	strcpy(m_szFileName, strFile);
 	m_pLogFile = fopen(m_szFileName, "w");
 
 	if (!m_pLogFile)
-		Warning("CLoggingSystem ERROR: failed opening target file %s\n", m_szFileName);
+		Warning("CLoggingFile ERROR: failed opening target file %s\n", m_szFileName);
 }
 
 // Destructor, close if logfile is opened
-CLoggingSystem::~CLoggingSystem()
+CLoggingFile::~CLoggingFile()
 {
 	if (m_pLogFile)
 	{
@@ -21,7 +21,7 @@ CLoggingSystem::~CLoggingSystem()
 }
 
 // Write log info into the logfile, with printf like parameters support
-void CLoggingSystem::Write(const char* cszFormat, ...)
+void CLoggingFile::Write(const char* cszFormat, ...)
 {
 	std::lock_guard<std::mutex> lock(m_LogMutex);
 
@@ -55,7 +55,7 @@ void CLoggingSystem::Write(const char* cszFormat, ...)
 }
 
 // Clear out the logfile
-void CLoggingSystem::Clear()
+void CLoggingFile::Clear()
 {
 	m_pLogFile = fopen(m_szFileName, "w");
 	if (!m_pLogFile)

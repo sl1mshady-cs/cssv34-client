@@ -2,15 +2,6 @@
 
 extern CSteamMatchMakingServers* g_pSteamMatchMakingServers;
 
-static CSteamMatchMaking s_steammatchmaking;
-CSteamMatchMaking* g_pSteamMatchMaking = &s_steammatchmaking;
-
-CSteamMatchMaking* GSteamMatchMaking()
-{
-	static CSteamMatchMaking g_SteamMatchMaking;
-	return &g_SteamMatchMaking;
-}
-
 CSteamMatchMaking::CSteamMatchMaking()
 {
 	// voided

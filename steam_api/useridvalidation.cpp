@@ -4,7 +4,7 @@
 #include "logging.h"
 #include "useridvalidation.h"
 
-extern CLoggingSystem* Logger;
+extern CLoggingFile* Logger;
 extern bool g_bLogging;
 
 extern CSteamID g_uSteamID; 
@@ -105,7 +105,7 @@ void LogStats(bool bConnecting, bool bDisconnecting, TRevUserValidationHandle* h
 /*
 * SteamGetEncryptedUserIDTicket (simplified)
 */
-S_API ESteamError S_CALLTYPE SteamGetEncryptedUserIDTicket(void* buf, unsigned int buflen, unsigned int* ticketlen)
+ESteamError S_CALLTYPE SteamGetEncryptedUserIDTicket(void* buf, unsigned int buflen, unsigned int* ticketlen)
 {
 	*ticketlen == 0;
 
@@ -135,7 +135,7 @@ S_API ESteamError S_CALLTYPE SteamGetEncryptedUserIDTicket(void* buf, unsigned i
 /*
 * First step of verification (checks basics like ticketlen and clienttype)
 */
-S_API ESteamError S_CALLTYPE SteamStartValidatingUserIDTicket(void* ticket, unsigned int ticketlen, unsigned int clientip, TRevUserValidationHandle** recvHandle)
+void S_CALLTYPE SteamStartValidatingUserIDTicket(void* ticket, unsigned int ticketlen, unsigned int clientip, TRevUserValidationHandle** recvHandle)
 {
 	TRevUserValidationHandle* hRevHandle = new TRevUserValidationHandle();
 	memset(hRevHandle, 0, sizeof(TRevUserValidationHandle));
@@ -154,10 +154,10 @@ S_API ESteamError S_CALLTYPE SteamStartValidatingUserIDTicket(void* ticket, unsi
 		hRevHandle->eClientType = eClientRevEmu2;
 
 		if (pTicket[2] == REVTICKET_SIGNATURE)
-			hRevHandle->eReturnCode = eSteamErrorNone;
+			hRevHandle->eReturnCode = eAuthStatusOK;
 		else
 			// Corrupted ticket
-			hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+			hRevHandle->eReturnCode = eAuthStatus_CorruptedTicket;
 	}
 	else if (ticketlen == 10)
 	{
@@ -165,10 +165,10 @@ S_API ESteamError S_CALLTYPE SteamStartValidatingUserIDTicket(void* ticket, unsi
 		hRevHandle->eClientType = eClientLegacyRev;
 
 		if (pTicket[0] == 0xFFFF)
-			hRevHandle->eReturnCode = eSteamErrorNone;
+			hRevHandle->eReturnCode = eAuthStatusOK;
 		else
 			// Corrupted ticket
-			hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+			hRevHandle->eReturnCode = eAuthStatus_CorruptedTicket;
 	}
 	else if (ticketlen == 768)
 	{
@@ -176,27 +176,25 @@ S_API ESteamError S_CALLTYPE SteamStartValidatingUserIDTicket(void* ticket, unsi
 		hRevHandle->eClientType = eClientSteamEmu;
 
 		if (pTicket[20] == -1)
-			hRevHandle->eReturnCode = eSteamErrorNone;
+			hRevHandle->eReturnCode = eAuthStatusOK;
 		else
 			// Corrupted ticket
-			hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+			hRevHandle->eReturnCode = eAuthStatus_CorruptedTicket;
 	}
 	else
 	{
 		// Unknown client
 		hRevHandle->eClientType = eClientUnknown;
-		hRevHandle->eReturnCode = eSteamErrorNone;
+		hRevHandle->eReturnCode = eAuthStatusOK;
 	}
 
 	*recvHandle = hRevHandle;
-
-	return eSteamErrorNotFinishedProcessing;
 }
 
 /*
 * Second step of verification and configuration
 */
-S_API ESteamError S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(TRevUserValidationHandle** recvHandle, void* ticket, int ticketlen)
+bool S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(TRevUserValidationHandle** recvHandle, void* ticket, int ticketlen)
 {
 	if (!ticketlen || ticketlen < 10)
 		return eSteamErrorInvalidUserIDTicket;
@@ -206,7 +204,7 @@ S_API ESteamError S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(TRevUserV
 	int* pTicket = (int*)ticket;
 
 	if (!hRevHandle || !pRevTicket)
-		return eSteamErrorInvalidUserIDTicket;
+		return false;
 
 	// If client is RevEmu one, the eClientRevEmu2 is set by default
 	if (hRevHandle->eClientType >= eClientRevEmu2)
@@ -221,36 +219,37 @@ S_API ESteamError S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(TRevUserV
 
 		// ClientMod check (uses revemu2013, fuck that for now)
 		if (pRevTicket->version >= 85) {
-			hRevHandle->eReturnCode = eSteamErrorInvalidUserIDTicket;
+			sprintf(hRevHandle->szDetails, "invalid version 85 in RevEmu ticket");
+			hRevHandle->eReturnCode = eAuthStatus_TicketVersionRejected;
 			hRevHandle->eClientType = eClientUnknown;
-			return eSteamErrorInvalidUserIDTicket;
+			return false;
 		}
 
 		// verify hash
-		//int hash = JSHash(pRevTicket->hwid, 16 * sizeof(char));
+		uint32 hash = JSHash(pRevTicket->hwid, strlen(pRevTicket->hwid));
 
-		//if (hash != pRevTicket->hash) {
-		//	hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
-		//	return eSteamErrorCorruptEncryptedUserIDTicket;
-		//}
+		if (hash != pRevTicket->hash) {
+			sprintf(hRevHandle->szDetails, "%u != %u", hash, pRevTicket->hash);
+			hRevHandle->eReturnCode = eAuthStatus_TicketCorruptHWID;
+		}
 	}
 
 	// check SteamGameServer policy
 	if (!g_bAllowLegacyRev && hRevHandle->eClientType == eClientLegacyRev)
-		return eSteamErrorInvalidUserIDTicket;
+		hRevHandle->eReturnCode = eAuthStatus_TicketRejected;
 
 	if (!g_bAllowRevEmu2 && hRevHandle->eClientType == eClientRevEmu2)
-		return eSteamErrorInvalidUserIDTicket;
+		hRevHandle->eReturnCode = eAuthStatus_TicketRejected;
 
 	if (!g_bAllowRevEmu3 && hRevHandle->eClientType == eClientRevEmu3)
-		return eSteamErrorInvalidUserIDTicket;
+		hRevHandle->eReturnCode = eAuthStatus_TicketRejected;
 
 	if (!g_bAllowNonRev && hRevHandle->eClientType == eClientUnknown)
-		return eSteamErrorInvalidUserIDTicket;
+		hRevHandle->eReturnCode = eAuthStatus_TicketRejected;
 
-	// Check if the ticket is already corrupted
-	if (hRevHandle->eReturnCode == eSteamErrorCorruptEncryptedUserIDTicket)
-		return hRevHandle->eReturnCode;
+	// Check if above verification steps failed
+	if (hRevHandle->eReturnCode != eAuthStatusOK)
+		return false;
 
 	// convert 64bit steamid into uint32 array (view CSteamID structure for more info)
 	auto steamID = (uint32*)&pRevTicket->steamID;
@@ -268,13 +267,15 @@ S_API ESteamError S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(TRevUserV
 
 	case eClientRevEmu2: {
 		if (pRevTicket->hash != 20) {
-			hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+			sprintf(hRevHandle->szDetails, "%u != %u", pRevTicket->hash, 20);
+			hRevHandle->eReturnCode = eAuthStatus_TicketCorruptHASH;
 			break;
 		}
 
 		if (pRevTicket->steamID == 0 || steamID[0] == 0)
 		{
-			hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+			sprintf(hRevHandle->szDetails, "steamID == 0");
+			hRevHandle->eReturnCode = eAuthStatus_TicketCorruptSTEAMID;
 			break;
 		}
 
@@ -282,7 +283,8 @@ S_API ESteamError S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(TRevUserV
 		hRevHandle->uSteamID.FullSet(pRevTicket->steamID, k_EUniversePublic, k_EAccountTypeIndividual);
 		
 		if (!hRevHandle->uSteamID.IsValid()) {
-			hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+			sprintf(hRevHandle->szDetails, "invalid CSteamID object");
+			hRevHandle->eReturnCode = eAuthStatus_TicketCorruptSTEAMID;
 		}
 
 		break;
@@ -290,14 +292,16 @@ S_API ESteamError S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(TRevUserV
 
 	case eClientRevEmu3: {
 		if ( pRevTicket->hash != (steamID[0] / 2) ) {
-			hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+			sprintf(hRevHandle->szDetails, "%u != %u", pRevTicket->hash, (steamID[0] / 2));
+			hRevHandle->eReturnCode = eAuthStatus_TicketCorruptHASH;
 			break;
 		}
 
 		hRevHandle->uSteamID.SetFromUint64(pRevTicket->steamID);
 
 		if (!hRevHandle->uSteamID.IsValid()) {
-			hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+			sprintf(hRevHandle->szDetails, "invalid CSteamID object");
+			hRevHandle->eReturnCode = eAuthStatus_TicketCorruptSTEAMID;
 		}
 
 		break;
@@ -305,14 +309,16 @@ S_API ESteamError S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(TRevUserV
 
 	case eClientRevEmu4: {
 		if ( pRevTicket->hash != (steamID[0] / 2) ) {
-			hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+			sprintf(hRevHandle->szDetails, "%u != %u", pRevTicket->hash, (steamID[0] / 2));
+			hRevHandle->eReturnCode = eAuthStatus_TicketCorruptHASH;
 			break;
 		}
 
 		hRevHandle->uSteamID.SetFromUint64(pRevTicket->steamID);
 
 		if (!hRevHandle->uSteamID.IsValid()) {
-			hRevHandle->eReturnCode = eSteamErrorCorruptEncryptedUserIDTicket;
+			sprintf(hRevHandle->szDetails, "invalid CSteamID object");
+			hRevHandle->eReturnCode = eAuthStatus_TicketCorruptSTEAMID;
 		}
 
 		break;
@@ -347,9 +353,13 @@ S_API ESteamError S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(TRevUserV
 		break;
 	}
 	default:
-		hRevHandle->eReturnCode = eSteamErrorInvalidUserIDTicket;
+		sprintf(hRevHandle->szDetails, "invalid eClientType");
+		hRevHandle->eReturnCode = eAuthStatus_TicketRejected;
 		break;
 	}
 
-	return hRevHandle->eReturnCode;
+	if (hRevHandle->eReturnCode != eAuthStatusOK)
+		return false;
+
+	return true;
 }

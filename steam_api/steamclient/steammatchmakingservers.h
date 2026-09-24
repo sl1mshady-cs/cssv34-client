@@ -16,7 +16,7 @@ struct ListRequest
 class CSteamMatchMakingServers : public ISteamMatchmakingServers
 {
 public:
-	CSteamMatchMakingServers();
+	CSteamMatchMakingServers(class SteamCallbacks* callbacks);
 	~CSteamMatchMakingServers();
 
 	virtual HServerListRequest RequestInternetServerList( AppId_t iApp, ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse );
@@ -63,6 +63,12 @@ public:
 	virtual EServerType GetActiveType();
 	virtual HServerListRequest GetCurrentRequest();
 	virtual void RunFrame();
+
+public:
+	// steamcallbacks
+	void RunCallbacks();
+
+	class SteamCallbacks* callbacks;
 
 private:
 	EServerType m_eActiveType;

@@ -1,23 +1,29 @@
+#include "callback_system.h"
 #include "steamuser.h"
 #include "useridvalidation.h"
 #include "logging.h"
 #include "tier0/dbg.h"
 
-extern CLoggingSystem* Logger;
+extern CLoggingFile* Logger;
 extern CSteamID g_uSteamID;
-static CSteamUser s_steamuser;
-CSteamUser* g_pSteamUser = &s_steamuser;
 
 static HAuthTicket g_hAuthTicket = k_HAuthTicketInvalid;
 
 // Constructor
-CSteamUser::CSteamUser()
+CSteamUser::CSteamUser(class SteamCallbacks* callbacks)
 {
+	this->callbacks = callbacks;
 }
 
 // Destructor
 CSteamUser::~CSteamUser()
 {
+}
+
+// steamcallbacks
+void CSteamUser::RunCallbacks()
+{
+
 }
 
 // returns the HSteamUser this interface represents

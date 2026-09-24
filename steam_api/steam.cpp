@@ -24,7 +24,7 @@ char g_chLang[20];
 char g_pchServerBrowser[255];
 char g_chMasterServer[255] = "78.154.103.37:10232";
 bool g_bLogging = true;
-CLoggingSystem* Logger;
+CLoggingFile* Logger;
 
 CSteamID g_uSteamID;
 char g_szHostID[128];
@@ -140,7 +140,7 @@ std::string getSystemLanguage()
 /*
 * Initialization
 */
-int S_CALLTYPE steamclient_startup()
+int S_CALLTYPE steam_startup()
 {
 	if (!bSteamStartup)
 		bSteamStartup = TRUE;
@@ -176,7 +176,7 @@ int S_CALLTYPE steamclient_startup()
 	strcat(szLoggingDir, "\\rev-client.log");
 	V_FixSlashes(szLoggingDir);
 
-	Logger = new CLoggingSystem(szLoggingDir);
+	Logger = new CLoggingFile(szLoggingDir);
 	Logger->Write("Startup\n");
 	Logger->Write("Logged on as %s: %s <%s>\n", g_chName, g_uSteamID.Render(), GetUserIDString(g_uSteamID));
 	return 1;
@@ -185,7 +185,7 @@ int S_CALLTYPE steamclient_startup()
 /*
 * Shutdown
 */
-int S_CALLTYPE steamclient_shutdown()
+int S_CALLTYPE steam_shutdown()
 {
 	if (!bSteamStartup)
 		return 0;

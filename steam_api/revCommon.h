@@ -9,7 +9,11 @@
 #define STEAM_API_EXPORTS
 #endif
 
-// standard io
+// stl
+#include <mutex>
+#include <chrono>
+
+// stdio
 #include <cstdio>
 #include <cstdlib>
 #include <cstddef>
@@ -62,5 +66,19 @@ inline uint32 JSHash(const char* data, int size)
 	}
 	return hash;
 }
+
+inline bool check_timedout(std::chrono::high_resolution_clock::time_point old, double timeout,
+	std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now()) // in seconds
+{
+	if (timeout == 0.0) return true;
+
+	if (std::chrono::duration_cast<std::chrono::duration<double>>(now - old).count() > timeout) {
+		return true;
+	}
+
+	return false;
+}
+
+extern std::recursive_mutex global_mutex;
 
 #endif // _REVCOMMON_H

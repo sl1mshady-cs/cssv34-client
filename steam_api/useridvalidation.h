@@ -18,6 +18,17 @@ enum ERevClientType
 	eClientUnknown
 };
 
+enum EAuthStatus
+{
+	eAuthStatusOK = 0,
+	eAuthStatus_CorruptedTicket,
+	eAuthStatus_TicketRejected,
+	eAuthStatus_TicketVersionRejected,
+	eAuthStatus_TicketCorruptHWID,
+	eAuthStatus_TicketCorruptSTEAMID,
+	eAuthStatus_TicketCorruptHASH
+};
+
 /*
 * Validation handle used for validating rev clients
 */
@@ -26,7 +37,10 @@ struct TRevUserValidationHandle
 	ERevClientType	eClientType;
 	CSteamID		uSteamID;
 	unsigned int	uClientIP;
-	ESteamError		eReturnCode;
+	EAuthStatus		eReturnCode;
+
+	// contains details for eReturnCode
+	char			szDetails[1024];
 };
 
 const char* GetUserIDString(const CSteamID steamid);
@@ -34,18 +48,18 @@ const char* GetClientTypeString(ERevClientType type);
 
 void LogStats(bool bConnecting, bool bDisconnecting, TRevUserValidationHandle* handle);
 
-S_API ESteamError S_CALLTYPE SteamGetEncryptedUserIDTicket(
+ESteamError S_CALLTYPE SteamGetEncryptedUserIDTicket(
 	void* buf,
 	unsigned int buflen,
 	unsigned int* ticketlen);
 
-S_API ESteamError S_CALLTYPE SteamStartValidatingUserIDTicket(
+void S_CALLTYPE SteamStartValidatingUserIDTicket(
 	void* ticket,
 	unsigned int ticketlen,
 	unsigned int clientip,
 	TRevUserValidationHandle** recvHandle);
 
-S_API ESteamError S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(
+bool S_CALLTYPE SteamProcessOngoingUserIDTicketValidation(
 	TRevUserValidationHandle** recvHandle,
 	void* ticket,
 	int ticketlen

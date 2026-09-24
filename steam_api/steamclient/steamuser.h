@@ -9,7 +9,7 @@
 class CSteamUser : public ISteamUser
 {
 public:
-	CSteamUser();
+	CSteamUser(class SteamCallbacks* callbacks);
 	~CSteamUser();
 	// returns the HSteamUser this interface represents
 	// this is only used internally by the API, and by a few select interfaces that support multi-user
@@ -94,6 +94,12 @@ public:
 	virtual int GetGameBadgeLevel(int nSeries, bool bFoil) { return 0; }
 	virtual int GetPlayerSteamLevel() { return 0; }
 	virtual SteamAPICall_t RequestStoreAuthURL(const char* pchRedirectURL) { return 0; }
+
+public:
+	// steamcallbacks
+	void RunCallbacks();
+
+	class SteamCallbacks* callbacks;
 };
 
 extern CSteamUser* g_pSteamUser;

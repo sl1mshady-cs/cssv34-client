@@ -8,11 +8,11 @@
 #include <mutex>
 #include "revCommon.h"
 
-class CLoggingSystem
+class CLoggingFile
 {
 public:
-	CLoggingSystem(char* strFile);
-	~CLoggingSystem();
+	CLoggingFile(char* strFile);
+	~CLoggingFile();
 
 	// write log
 	void Write(const char* pszFormat, ...);

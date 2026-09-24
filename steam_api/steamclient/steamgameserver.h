@@ -1,6 +1,6 @@
 #pragma once
 
-#include "revcommon.h"
+#include "revCommon.h"
 #include "steam/isteamgameserver.h"
 #include "steam/isteamgameserverstats.h"
 
@@ -11,7 +11,7 @@ class CSteamGameServer : public ISteamGameServer
 {
 public:
 
-	CSteamGameServer();
+	CSteamGameServer(class SteamCallbacks* callbacks);
 	~CSteamGameServer();
 
 	//
@@ -232,8 +232,14 @@ public:
 	virtual SteamAPICall_t ComputeNewPlayerCompatibility( CSteamID steamIDNewPlayer );
 
 public:
-	// custom functions, implemented by RuSHeRR
+	// steamcallbacks
 	void RunCallbacks();
+
+	class SteamCallbacks* callbacks;
+	bool call_servers_connected;
+	bool call_servers_disconnected;
+	bool call_ticket_validation;
+	
 private:
 	// pending request:
 	uint32 pr_unClientIP;
@@ -242,6 +248,13 @@ private:
 
 	// gameserver steamid
 	CSteamID m_uSteamID;
+
+	std::chrono::high_resolution_clock::time_point logon_time;
+	std::chrono::high_resolution_clock::time_point logoff_time;
+
+	ValidateAuthTicketResponse_t validation_response_data{};
+	std::chrono::high_resolution_clock::time_point validation_time;
+	bool logged_in;
 };
 
 extern CSteamGameServer* g_pSteamGameServer;

@@ -203,6 +203,8 @@ struct SteamAPICallCompleted_t
 {
 	enum { k_iCallback = k_iSteamUtilsCallbacks + 3 };
 	SteamAPICall_t m_hAsyncCall;
+	int m_iCallback;
+	uint32 m_cubParam;
 };
 
 

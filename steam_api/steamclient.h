@@ -40,18 +40,15 @@ struct interface_stub_t {
 };
 
 /*
-* SteamClient interface. Fully inlined
+* SteamClient interface. Almost fully inlined
 */
 class CSteamClient : public ISteamClient
 {
 public:
-	CSteamClient() {
-		m_nullInterface = new interface_stub_t();
-	}
+	CSteamClient();
+	~CSteamClient();
 
-	~CSteamClient() {
-		delete m_nullInterface;
-	}
+	bool IsInitialized() { return m_bInitialized; }
 
 	virtual HSteamPipe CreateSteamPipe() { return 0; }
 	virtual bool BReleaseSteamPipe(HSteamPipe hSteamPipe) { return false; }
@@ -70,11 +67,11 @@ public:
 	virtual void SetLocalIPBinding(uint32 unIP, uint16 usPort) {}
 	virtual ISteamFriends* GetISteamFriends(HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char* pchVersion) 
 	{
-		return (ISteamFriends*)m_nullInterface;
+		return (ISteamFriends*)m_interfaceStub;
 	}
 	virtual ISteamUtils* GetISteamUtils(HSteamPipe hSteamPipe, const char* pchVersion) 
 	{ 
-		return (ISteamUtils * )m_nullInterface; 
+		return (ISteamUtils * )m_interfaceStub;
 	}
 	virtual ISteamMatchmaking* GetISteamMatchmaking(HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char* pchVersion) 
 	{
@@ -86,15 +83,15 @@ public:
 	}
 	virtual void* GetISteamGenericInterface(HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char* pchVersion) 
 	{
-		return m_nullInterface;
+		return m_interfaceStub;
 	}
 	virtual ISteamUserStats* GetISteamUserStats(HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char* pchVersion) 
 	{
-		return (ISteamUserStats*)m_nullInterface;
+		return (ISteamUserStats*)m_interfaceStub;
 	}
 	virtual ISteamGameServerStats* GetISteamGameServerStats(HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char* pchVersion) 
 	{
-		return (ISteamGameServerStats*)m_nullInterface;
+		return (ISteamGameServerStats*)m_interfaceStub;
 	}
 	virtual ISteamApps* GetISteamApps(HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char* pchVersion) 
 	{
@@ -103,6 +100,7 @@ public:
 
 	//
 	// Starting from now we just return 0 instead of stub
+	// we dont need that interfaces actually
 	//
 
 	virtual ISteamNetworking* GetISteamNetworking(HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char* pchVersion) 
@@ -180,6 +178,29 @@ public:
 	{
 		return 0;
 	}
+
+public:
+	/* callback system */
+
+	class SteamCallResults* callback_results_server{}, *callback_results_client{};
+	class SteamCallbacks* callbacks_server{}, *callbacks_client{};
+
+	class RunEveryRunCB* run_every_runcb{}; // idk wtf is that, i just randomly pasted this from goldberg
+
+	// register/unregister asynchronous callback
+	void RegisterCallback( CCallbackBase* pCallback, int iCallback );
+	void UnregisterCallback( CCallbackBase *pCallback );
+
+	// register/unregister asynchronous callresult
+	void RegisterCallResult( CCallbackBase* pCallback, SteamAPICall_t hAPICall );
+	void UnregisterCallResult( CCallbackBase* pCallback, SteamAPICall_t hAPICall );
+
+	// run all callbacks & callresults
+	void RunCallbacks( bool runClientCB, bool runGameServerCB );
+
+	const char* m_pszVersion;
+
 private:
-	void* m_nullInterface;
+	bool m_bInitialized;
+	interface_stub_t* m_interfaceStub;
 };

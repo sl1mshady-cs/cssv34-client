@@ -63,8 +63,7 @@ void ServerRefreshThreads_Cleanup()
 
 		if (!thread->is_alive->load())
 		{
-			if (thread->t.joinable())
-				thread->t.join();
+			thread->Join();
 
 			it = g_vecServerRefreshThreads.erase(it);
 			continue;
@@ -113,8 +112,7 @@ void ServerRefreshThreads_Stop(std::thread::id threadID)
 		true,
 		std::memory_order_release);
 
-	if (thread->t.joinable())
-		thread->t.join();
+	thread->Join();
 }
 
 //--------------------------------------------------------------------------

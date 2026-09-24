@@ -1,9 +1,6 @@
 #include "revCommon.h"
 #include "SteamApps.h"
 
-static CSteamApps s_steamapps;
-CSteamApps* g_pSteamApps = &s_steamapps;
-
 extern char g_chLang[20];
 extern CSteamID g_uSteamID;
 

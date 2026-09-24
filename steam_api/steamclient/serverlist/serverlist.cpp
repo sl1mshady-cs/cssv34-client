@@ -5,7 +5,7 @@
 #include "logging.h"
 
 // Steam.cpp definitions and variables
-extern CLoggingSystem* Logger;
+extern CLoggingFile* Logger;
 extern bool g_bLogging;
 extern char g_pchServerBrowser[MAX_PATH];
 extern char g_chMasterServer[MAX_PATH];

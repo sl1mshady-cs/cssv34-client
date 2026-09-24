@@ -1,14 +1,63 @@
+#include "callback_system.h"
+#include "logging.h"
 #include "steamgameserver.h"
 #include "useridvalidation.h"
 #include "murmur32.h"
+#define GS_ID_HASHING_KEY "__REV_ANONONYMOUS_GAME_SERVER__"
+#define GS_ID_SEED 0x60783A
+
+// anything lower than that can only be achieved via spoofing
+#define MIN_ALLOWED_ACCOUNT_ID 3072
 
 extern CSteamID g_uSteamID;
+extern CLoggingFile* Logger;
 
-static CSteamGameServer s_steamgameserver;
-CSteamGameServer* g_pSteamGameServer = &s_steamgameserver;
-
-CSteamGameServer::CSteamGameServer()
+void LogErrors(TRevUserValidationHandle* recvHandle)
 {
+	const char* authStatus = 0;
+
+	switch (recvHandle->eReturnCode)
+	{
+	case eAuthStatusOK:
+	{
+		return;
+	}
+	case eAuthStatus_CorruptedTicket:
+	{
+		authStatus = "eAuthStatus_CorruptedTicket";
+		break;
+	}
+	case eAuthStatus_TicketRejected:
+	{
+		authStatus = "eAuthStatus_TicketRejected";
+		break;
+	}
+	case eAuthStatus_TicketCorruptHWID:
+	{
+		authStatus = "eAuthStatus_TicketCorruptHWID";
+		break;
+	}
+	case eAuthStatus_TicketCorruptSTEAMID:
+	{
+		authStatus = "eAuthStatus_TicketCorruptSTEAMID";
+		break;
+	}
+	case eAuthStatus_TicketCorruptHASH:
+	{
+		authStatus = "eAuthStatus_TicketCorruptHASH";
+		break;
+	}
+	default:
+		break;
+	}
+
+	Logger->Write("AuthSystem: %s, %s\n", authStatus, recvHandle->szDetails);
+}
+
+CSteamGameServer::CSteamGameServer(class SteamCallbacks* callbacks)
+{
+	this->callbacks = callbacks;
+
 	pr_unClientIP = 0;
 	pr_pSteamID = 0;
 	pr_hValidationHandle = 0;
@@ -21,9 +70,35 @@ CSteamGameServer::~CSteamGameServer()
 }
 
 
-// custom functions, implemented by RuSHeRR
-void CSteamGameServer::RunCallbacks() {
+// steamcallbacks
+void CSteamGameServer::RunCallbacks() 
+{
+	if (call_servers_connected && check_timedout(logon_time, 0.1)) 
+	{
+		call_servers_connected = false;
+		logged_in = true;
 
+		SteamServersConnected_t data{};
+		callbacks->AddCallbackResult(data.k_iCallback, &data, sizeof(data), 0.0);
+	}
+
+	if (call_servers_disconnected && check_timedout(logon_time, 0.1))
+	{
+		call_servers_disconnected = false;
+		logged_in = false;
+
+		SteamServersDisconnected_t data{};
+		data.m_eResult = k_EResultOK;
+		callbacks->AddCallbackResult(data.k_iCallback, &data, sizeof(data), 0.0);
+	}
+
+	if (call_ticket_validation && check_timedout(validation_time, 0.1))
+	{
+		call_ticket_validation = false;
+
+		callbacks->AddCallbackResult(validation_response_data.k_iCallback, &validation_response_data, 
+			sizeof(ValidateAuthTicketResponse_t));
+	}
 }
 
 //
@@ -73,23 +148,39 @@ void CSteamGameServer::LogOn(const char* pszToken) {
 /// but this is no longer the case.
 void CSteamGameServer::LogOnAnonymous() {
 	m_uSteamID.CreateBlankAnonLogon(k_EUniversePublic);
-	//m_uSteamID.SetAccountID(g_uSteamID.GetAccountID() + 3);
-	byte key[32] = "__REV_ANONONYMOUS_GAME_SERVER__";
-	uint32 accountID = murmur3_32(key, sizeof(key), rand());
+
+	byte key[32] = GS_ID_HASHING_KEY;
+
+	// Server has 256 steam id variations
+	uint32 accountID = murmur3_32(key, sizeof(key), GS_ID_SEED + (uint32)Plat_FloatTime());
 	m_uSteamID.SetAccountID(accountID);
+
+	call_servers_connected = true;
+	call_servers_disconnected = false;
+
+	logon_time = std::chrono::high_resolution_clock::now();
 }
 
 /// Begin process of logging game server out of steam
 void CSteamGameServer::LogOff() {
 	m_uSteamID.Clear();
+
+	call_servers_connected = false;
+	call_servers_disconnected = true;
+
+	logoff_time = std::chrono::high_resolution_clock::now();
 }
 
 // status functions
 bool CSteamGameServer::BLoggedOn() {
-	return m_uSteamID.BAnonGameServerAccount();
+
+	return (logged_in && (m_uSteamID.GetAccountID() != 0));
 }
 
 bool CSteamGameServer::BSecure() {
+	if (!BLoggedOn())
+		return false;
+
 	return true;
 }
 
@@ -184,15 +275,31 @@ bool CSteamGameServer::SendUserConnectAndAuthenticate(uint32 unIPClient, const v
 
 	TRevUserValidationHandle* handle = nullptr;
 	SteamStartValidatingUserIDTicket((void*)pvAuthBlob, cubAuthBlobSize, unIPClient, &handle);
-	ESteamError err =
+	bool status =
 		SteamProcessOngoingUserIDTicketValidation(&handle, (void*)pvAuthBlob, cubAuthBlobSize);
 
 	pSteamIDUser->SetFromUint64(handle->uSteamID.ConvertToUint64());
 
 	LogStats(true, false, handle);
 
-	if (err == eSteamErrorCorruptEncryptedUserIDTicket || err == eSteamErrorInvalidUserIDTicket)
+	if (!status)
+	{
+		LogErrors(handle);
 		return false;
+	}
+
+	call_ticket_validation = true;
+	memset(&validation_response_data, 0, sizeof(validation_response_data));
+
+	validation_response_data.m_OwnerSteamID = handle->uSteamID;
+	validation_response_data.m_SteamID = handle->uSteamID;
+
+	if (handle->uSteamID.GetAccountID() < MIN_ALLOWED_ACCOUNT_ID)
+		validation_response_data.m_eAuthSessionResponse = k_EAuthSessionResponseVACBanned;
+	else
+		validation_response_data.m_eAuthSessionResponse = k_EAuthSessionResponseOK;
+
+	validation_time = std::chrono::high_resolution_clock::now();
 
 	return true;
 }
@@ -239,21 +346,39 @@ EBeginAuthSessionResult CSteamGameServer::BeginAuthSession(const void* pAuthTick
 	{
 		TRevUserValidationHandle* handle = nullptr;
 		SteamStartValidatingUserIDTicket((void*)pAuthTicket, cbAuthTicket, pr_unClientIP, &handle);
-		ESteamError err = 
+		bool status = 
 			SteamProcessOngoingUserIDTicketValidation(&handle, (void*)pAuthTicket, cbAuthTicket);
 
 		LogStats(true, false, handle);
 
-		if (err == eSteamErrorCorruptEncryptedUserIDTicket || err == eSteamErrorInvalidUserIDTicket)
+		if (!status)
+		{
+			LogErrors(handle);
 			return k_EBeginAuthSessionResultInvalidTicket;
+		}
 
 		pr_pSteamID->SetFromUint64(handle->uSteamID.ConvertToUint64());
 
 		//pr_hValidationHandle = handle;
 		pr_pSteamID = 0;
 		pr_unClientIP = 0;
+
+		call_ticket_validation = true;
+		memset(&validation_response_data, 0, sizeof(validation_response_data));
+
+		validation_response_data.m_OwnerSteamID = handle->uSteamID;
+		validation_response_data.m_SteamID = handle->uSteamID;
+
+		if (handle->uSteamID.GetAccountID() < MIN_ALLOWED_ACCOUNT_ID)
+			validation_response_data.m_eAuthSessionResponse = k_EAuthSessionResponseVACBanned;
+		else
+			validation_response_data.m_eAuthSessionResponse = k_EAuthSessionResponseOK;
+
+		validation_time = std::chrono::high_resolution_clock::now();
+
 		return k_EBeginAuthSessionResultOK;
 	}
+
 
 	// i did a little gimmick so now SendUserConnectAndAuthenticate MUST BE called before any authsession calls
 	// why? because we need to manually set client's SteamID from the ticket one.
