@@ -44,6 +44,8 @@ struct interface_stub_t {
 */
 class CSteamClient : public ISteamClient
 {
+	friend class CAuthSystem;
+
 public:
 	CSteamClient();
 	~CSteamClient();
@@ -204,3 +206,5 @@ private:
 	bool m_bInitialized;
 	interface_stub_t* m_interfaceStub;
 };
+
+extern CSteamClient* g_pSteamClient;

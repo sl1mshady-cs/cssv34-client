@@ -238,22 +238,14 @@ public:
 	class SteamCallbacks* callbacks;
 	bool call_servers_connected;
 	bool call_servers_disconnected;
-	bool call_ticket_validation;
 	
 private:
-	// pending request:
-	uint32 pr_unClientIP;
-	CSteamID* pr_pSteamID;
-	void* pr_hValidationHandle;
-
 	// gameserver steamid
 	CSteamID m_uSteamID;
 
 	std::chrono::high_resolution_clock::time_point logon_time;
 	std::chrono::high_resolution_clock::time_point logoff_time;
 
-	ValidateAuthTicketResponse_t validation_response_data{};
-	std::chrono::high_resolution_clock::time_point validation_time;
 	bool logged_in;
 };
 

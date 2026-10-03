@@ -7,6 +7,8 @@
 
 #define VERSION_SAFE_STEAM_API_INTERFACES
 
+#include "convar.h"
+#include "interface.h"
 #include "revCommon.h"
 #include "steamclient.h"
 #include "logging.h"
@@ -49,6 +51,14 @@ S_API bool S_CALLTYPE SteamAPI_Init()
 	// check if already initialized
 	if (g_flLastInitTime != 0.0f)
 		return true;
+
+	if (!g_pCVar)
+	{
+		CreateInterfaceFn vstdlibFactory = Sys_GetFactory("vstdlib.dll");
+		g_pCVar = (ICvar*)vstdlibFactory(CVAR_INTERFACE_VERSION, nullptr);
+	}
+
+	ConVar_Register();
 
 	g_pSteamClient = CreateClientInterface(STEAMCLIENT_INTERFACE_VERSION);
 	

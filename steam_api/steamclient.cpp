@@ -1,4 +1,5 @@
 #include "callback_system.h"
+#include "auth.h"
 #include "steamclient.h"
 #include "logging.h"
 
@@ -487,6 +488,8 @@ void CSteamClient::RunCallbacks(bool runClientCB, bool runGameserverCB)
     PRINT_DEBUG("begin ------------------------------------------------------");
     std::lock_guard<std::recursive_mutex> lock(global_mutex);
     cb_run_active = true;
+
+    auth::system()->RunCallbacks();
 
     // PRINT_DEBUG("steam_matchmaking_servers *********");
     g_pSteamMatchMakingServers->RunCallbacks();

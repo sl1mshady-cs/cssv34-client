@@ -72,7 +72,7 @@ static void MsgAndLog( const char *fmt, ... )
 	// Does Log always print to the console?
 	//if ( !engine->IsDedicatedServer() )
 	//	Msg("%s", s_szTempMsgBuf );
-	Log("%s", s_szTempMsgBuf );
+	Log_Msg(LOG_SERVER, "%s", s_szTempMsgBuf );
 }
 
 static void WarningAndLog( const char *fmt, ... )
@@ -82,8 +82,8 @@ static void WarningAndLog( const char *fmt, ... )
 	V_vsprintf_safe( s_szTempMsgBuf, fmt, ap );
 
 	// Does Log always print to the console?
-	Warning("%s", s_szTempMsgBuf );
-	Log("%s", s_szTempMsgBuf );
+	Log_Warning(LOG_SERVER, "%s", s_szTempMsgBuf );
+	Log_Msg(LOG_SERVER, "%s", s_szTempMsgBuf );
 }
 
 
@@ -598,7 +598,7 @@ void CSteam3Server::OnValidateAuthTicketResponse( ValidateAuthTicketResponse_t *
 		char msg[ 512 ];
 		sprintf( msg, "\"%s<%i><%s><>\" STEAM USERID validated\n", client->GetClientName(), client->GetUserID(), client->GetNetworkIDString() );
 
-		DevMsg( "%s", msg );
+		Log_Msg(LOG_SERVER, "%s", msg );
 		g_Log.Printf( "%s", msg );
 
 		g_pServerPluginHandler->NetworkIDValidated( client->GetClientName(), client->GetNetworkIDString() );

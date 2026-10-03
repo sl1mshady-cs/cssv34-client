@@ -149,7 +149,7 @@ void CSocket::Close()
 {
     if (m_hSocket != INVALID_SOCKET)
     {
-        ConColorMsg(SocketDebugColor2, "Closed socket %i\n", m_hSocket);
+        //ConColorMsg(SocketDebugColor2, "Closed socket %i\n", m_hSocket);
 
         closesocket(m_hSocket);
         m_hSocket = INVALID_SOCKET;

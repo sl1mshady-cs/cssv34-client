@@ -512,7 +512,7 @@ IClient *CBaseServer::ConnectClient ( netadr_t &adr, int protocol, int challenge
 		if ( pSteamGameServer && authProtocol == PROTOCOL_STEAM )
 			pSteamGameServer->SendUserDisconnect( client->m_SteamID ); 
 
-		RejectConnection( adr, clientChallenge, "#GameUI_ServerRejectBanned" );
+		RejectConnection( adr, clientChallenge, "You have been banned from this server.\n" );
 		return NULL;
 	}
 
@@ -965,7 +965,8 @@ void CBaseServer::ReplyChallenge(netadr_t &adr, int clientChallenge )
 #if !defined( NO_STEAM ) //#ifndef _XBOX
 	if ( authprotocol == PROTOCOL_STEAM )
 	{
-		msg.WriteShort( 0 ); //  steam2 encryption key not there anymore
+		msg.WriteShort( 1 ); //  steam2 encryption key not there anymore
+		msg.WriteByte( 0 );
 		CSteamID steamID = Steam3Server().GetGSSteamID();
 		uint64 unSteamID = steamID.ConvertToUint64();
 		msg.WriteBytes( &unSteamID, sizeof(unSteamID) );

@@ -11,9 +11,8 @@
 #endif
 ////////////////////////////////
 
-#include "revCommon.h"
-#include "useridvalidation.h"
-#include "logging.h"
+#include "auth.h"
+#include "./logging.h"
 #include "tier0/dbg.h"
 
 ////////////////////////////////////////////////////////////////
@@ -175,10 +174,10 @@ int S_CALLTYPE steam_startup()
 	strcpy(szLoggingDir, szCurrentDir);
 	strcat(szLoggingDir, "\\rev-client.log");
 	V_FixSlashes(szLoggingDir);
-
+    
 	Logger = new CLoggingFile(szLoggingDir);
 	Logger->Write("Startup\n");
-	Logger->Write("Logged on as %s: %s <%s>\n", g_chName, g_uSteamID.Render(), GetUserIDString(g_uSteamID));
+	Logger->Write("Logged on as %s: %s <%s>\n", g_chName, g_uSteamID.Render(), g_uSteamID.RenderAsSteam2String());
 	return 1;
 }
 

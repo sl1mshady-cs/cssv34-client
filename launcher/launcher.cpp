@@ -929,7 +929,7 @@ bool GrabSourceMutex()
 	if ( IsPC() )
 	{
 		// don't allow more than one instance to run
-		g_hMutex = ::CreateMutex(NULL, FALSE, TEXT("hl2_singleton_mutex"));
+		g_hMutex = ::CreateMutex(NULL, FALSE, TEXT("hl2_singleton_mutex_2"));
 
 		unsigned int waitResult = ::WaitForSingleObject(g_hMutex, 0);
 

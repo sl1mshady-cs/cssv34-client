@@ -1639,7 +1639,7 @@ const char *GetUserIDString( const USERID_t& id )
 			}
 			else
 			{
-				V_sprintf_safe( idstr, "%s", id.steamid.Render() );
+				V_sprintf_safe( idstr, "%s", id.steamid.RenderAsSteam2String() );
 			}
 		}
 		break;		

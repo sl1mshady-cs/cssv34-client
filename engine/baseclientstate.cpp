@@ -903,19 +903,24 @@ bool CBaseClientState::ProcessConnectionlessPacket( netpacket_t *packet )
 							// Blow it off if we are not connected.
 							if ( m_nSignonState == SIGNONSTATE_CHALLENGE )
 							{
+								char keyData[ STEAM_KEYSIZE ];
 								int challenge = msg.ReadLong();
 								int authprotocol = msg.ReadLong();
+								int keysize = 0;
 								uint64 unGSSteamID = 0;
 								bool bGSSecure = false;
-#if 0
+
 								if ( authprotocol == PROTOCOL_STEAM )
 								{
-									if ( msg.ReadShort() != 0 )
+									keysize = msg.ReadShort();
+									if ( keysize <= 0 || keysize > sizeof(keyData) )
 									{
 										Msg( "Invalid Steam key size.\n" );
 										Disconnect( "Invalid Steam key size", true );
 										return false;
 									}
+
+									msg.ReadBytes(keyData, keysize);
 									if ( msg.GetNumBytesLeft() > sizeof(unGSSteamID) ) 
 									{
 										if ( !msg.ReadBytes( &unGSSteamID, sizeof(unGSSteamID) ) )
@@ -927,15 +932,8 @@ bool CBaseClientState::ProcessConnectionlessPacket( netpacket_t *packet )
 
 										bGSSecure = ( msg.ReadByte() == 1 );
 									}
-									// The host can disable access to secure servers if you load unsigned code (mods, plugins, hacks)
-									if ( bGSSecure && !Host_IsSecureServerAllowed() )
-									{
-										COM_ExplainDisconnection( true, "#GameUI_ServerInsecure" );
-										Disconnect( "#GameUI_ServerInsecure", true );
-										return false;
-									}
 								}
-#endif
+
 								SendConnectPacket( challenge, authprotocol, unGSSteamID, bGSSecure );
 							}
 							break;

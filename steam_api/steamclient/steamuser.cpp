@@ -1,13 +1,13 @@
 #include "callback_system.h"
 #include "steamuser.h"
-#include "useridvalidation.h"
+#include "auth.h"
 #include "logging.h"
 #include "tier0/dbg.h"
 
 extern CLoggingFile* Logger;
 extern CSteamID g_uSteamID;
 
-static HAuthTicket g_hAuthTicket = k_HAuthTicketInvalid;
+DECLARE_LOGGING_CHANNEL(LOG_REV);
 
 // Constructor
 CSteamUser::CSteamUser(class SteamCallbacks* callbacks)
@@ -23,7 +23,6 @@ CSteamUser::~CSteamUser()
 // steamcallbacks
 void CSteamUser::RunCallbacks()
 {
-
 }
 
 // returns the HSteamUser this interface represents
@@ -62,63 +61,33 @@ CSteamID CSteamUser::GetSteamID(void)
 int CSteamUser::InitiateGameConnection(void* pAuthBlob, int cbMaxAuthBlob, CSteamID steamIDGameServer, uint32 unIPServer, uint16 usPortServer, bool bSecure)
 {
 	uint32 len;
-	GetAuthSessionTicket(pAuthBlob, cbMaxAuthBlob, &len);
+	auth::system()->GetAuthTicket(pAuthBlob, cbMaxAuthBlob, &len);
 	return (int)len;
 }
 
 // Retrieve ticket to be sent to the entity who wishes to authenticate you. 
 // pcbTicket retrieves the length of the actual ticket.
-HAuthTicket CSteamUser::GetAuthSessionTicket(void* pTicket, int cbMaxTicket, uint32* pcbTicket) {
-	ESteamError status = SteamGetEncryptedUserIDTicket(pTicket, 2048, pcbTicket);
-
-	switch (status)
-	{
-
-	case eSteamErrorBadArg: {
-		Logger->Write("Invalid pTicket in CSteamUser::GetAuthSessionTicket\n");
-		Warning("Invalid pTicket in CSteamUser::GetAuthSessionTicket\n");
-		return 0;
-	}
-	case eSteamErrorLoginFailed: {
-		Logger->Write("SteamUser Logon failed\n");
-		Warning("SteamUser Logon failed\n");
-		return 0;
-	}
-	case eSteamErrorNone: {
-		break;
-	}
-	default:
-		return 0;
-
-	}
-
-	// write some debug logs
-	Logger->Write("CSteamUser::GetAuthSessionTicket: ticketlen %u, steamID <%s> %s\n", *pcbTicket, GetUserIDString(g_uSteamID), g_uSteamID.Render());
-
-	g_hAuthTicket++;
-
-	if (g_hAuthTicket == 0xFFFFFFFE)
-		g_hAuthTicket = 1;
-
-	return g_hAuthTicket;
+HAuthTicket CSteamUser::GetAuthSessionTicket(void* pTicket, int cbMaxTicket, uint32* pcbTicket) 
+{
+	auth::system()->GetAuthTicket(pTicket, cbMaxTicket, pcbTicket);
+	return 46;
 }
 
 // Authenticate ticket from entity steamID to be sure it is valid and isnt reused
 // Registers for callbacks if the entity goes offline or cancels the ticket ( see ValidateAuthTicketResponse_t callback and EAuthSessionResponse )
-EBeginAuthSessionResult CSteamUser::BeginAuthSession(const void* pAuthTicket, int cbAuthTicket, CSteamID steamID) {
-	return k_EBeginAuthSessionResultOK;
+EBeginAuthSessionResult CSteamUser::BeginAuthSession(const void* pAuthTicket, int cbAuthTicket, CSteamID steamID) 
+{
+	return auth::system()->BeginAuth(pAuthTicket, cbAuthTicket, 0, &steamID);
 }
 
 // Stop tracking started by BeginAuthSession - called when no longer playing game with this entity
-void CSteamUser::EndAuthSession(CSteamID steamID) {
-
+void CSteamUser::EndAuthSession(CSteamID steamID) 
+{
+	auth::system()->EndAuth(0, steamID);
 }
 
 // Cancel auth ticket from GetAuthSessionTicket, called when no longer playing game with the entity you gave the ticket to
-void CSteamUser::CancelAuthTicket(HAuthTicket hAuthTicket) {
-	if (g_hAuthTicket != hAuthTicket)
-		return;
+void CSteamUser::CancelAuthTicket(HAuthTicket hAuthTicket) 
+{
 
-	if (g_hAuthTicket > 0)
-		g_hAuthTicket--;
 }

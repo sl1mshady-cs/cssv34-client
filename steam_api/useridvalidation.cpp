@@ -17,6 +17,8 @@ bool g_bAllowRevEmu2 = true;
 bool g_bAllowRevEmu3 = true;
 bool g_bAllowSteamEmu = false;
 
+DEFINE_LOGGING_CHANNEL_NO_TAGS(LOG_REV, "revEmu", 0, LS_MESSAGE, Color(250, 161, 92, 255));
+
 /*
 * Convert SteamID to readable format
 */
@@ -93,7 +95,7 @@ void LogStats(bool bConnecting, bool bDisconnecting, TRevUserValidationHandle* h
 	localtime_r(&raw_time, &local_tm);
 #endif
 
-	Msg( "%04d/%02d/%02d %02d:%02d:%02d // RevEmu Stats: <%s><%s> <%s> %s\n",
+	Log_Msg( LOG_REV, "%04d/%02d/%02d %02d:%02d:%02d // Stats: <%s><%s> <%s> %s\n",
 		local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday,
 		local_tm.tm_hour, local_tm.tm_min, local_tm.tm_sec, 
 		steamID,

@@ -1,8 +1,9 @@
 #include "callback_system.h"
 #include "logging.h"
 #include "steamgameserver.h"
-#include "useridvalidation.h"
+#include "auth.h"
 #include "murmur32.h"
+
 #define GS_ID_HASHING_KEY "__REV_ANONONYMOUS_GAME_SERVER__"
 #define GS_ID_SEED 0x60783A
 
@@ -12,55 +13,9 @@
 extern CSteamID g_uSteamID;
 extern CLoggingFile* Logger;
 
-void LogErrors(TRevUserValidationHandle* recvHandle)
-{
-	const char* authStatus = 0;
-
-	switch (recvHandle->eReturnCode)
-	{
-	case eAuthStatusOK:
-	{
-		return;
-	}
-	case eAuthStatus_CorruptedTicket:
-	{
-		authStatus = "eAuthStatus_CorruptedTicket";
-		break;
-	}
-	case eAuthStatus_TicketRejected:
-	{
-		authStatus = "eAuthStatus_TicketRejected";
-		break;
-	}
-	case eAuthStatus_TicketCorruptHWID:
-	{
-		authStatus = "eAuthStatus_TicketCorruptHWID";
-		break;
-	}
-	case eAuthStatus_TicketCorruptSTEAMID:
-	{
-		authStatus = "eAuthStatus_TicketCorruptSTEAMID";
-		break;
-	}
-	case eAuthStatus_TicketCorruptHASH:
-	{
-		authStatus = "eAuthStatus_TicketCorruptHASH";
-		break;
-	}
-	default:
-		break;
-	}
-
-	Logger->Write("AuthSystem: %s, %s\n", authStatus, recvHandle->szDetails);
-}
-
 CSteamGameServer::CSteamGameServer(class SteamCallbacks* callbacks)
 {
 	this->callbacks = callbacks;
-
-	pr_unClientIP = 0;
-	pr_pSteamID = 0;
-	pr_hValidationHandle = 0;
 	m_uSteamID = k_steamIDNil;
 }
 
@@ -90,14 +45,6 @@ void CSteamGameServer::RunCallbacks()
 		SteamServersDisconnected_t data{};
 		data.m_eResult = k_EResultOK;
 		callbacks->AddCallbackResult(data.k_iCallback, &data, sizeof(data), 0.0);
-	}
-
-	if (call_ticket_validation && check_timedout(validation_time, 0.1))
-	{
-		call_ticket_validation = false;
-
-		callbacks->AddCallbackResult(validation_response_data.k_iCallback, &validation_response_data, 
-			sizeof(ValidateAuthTicketResponse_t));
 	}
 }
 
@@ -262,46 +209,12 @@ void CSteamGameServer::SetRegion(const char* pszRegion) {}
 // Return Value: returns true if the users ticket passes basic checks. pSteamIDUser will contain the Steam ID of this user. pSteamIDUser must NOT be NULL
 // If the call succeeds then you should expect a GSClientApprove_t or GSClientDeny_t callback which will tell you whether authentication
 // for the user has succeeded or failed (the steamid in the callback will match the one returned by this call)
-bool CSteamGameServer::SendUserConnectAndAuthenticate(uint32 unIPClient, const void* pvAuthBlob, uint32 cubAuthBlobSize, CSteamID* pSteamIDUser) {
+bool CSteamGameServer::SendUserConnectAndAuthenticate(uint32 unIPClient, const void* pvAuthBlob, uint32 cubAuthBlobSize, CSteamID* pSteamIDUser) 
+{
 	if (!pSteamIDUser)
 		return false;
 
-	// BeginAuthSession compatibility
-	pr_unClientIP = unIPClient;
-	pr_pSteamID = pSteamIDUser;
-
-	// Initialize with default values (k_steamIDNotInitYetGS)
-	pSteamIDUser->Set(1, k_EUniversePublic, k_EAccountTypeIndividual);
-
-	TRevUserValidationHandle* handle = nullptr;
-	SteamStartValidatingUserIDTicket((void*)pvAuthBlob, cubAuthBlobSize, unIPClient, &handle);
-	bool status =
-		SteamProcessOngoingUserIDTicketValidation(&handle, (void*)pvAuthBlob, cubAuthBlobSize);
-
-	pSteamIDUser->SetFromUint64(handle->uSteamID.ConvertToUint64());
-
-	LogStats(true, false, handle);
-
-	if (!status)
-	{
-		LogErrors(handle);
-		return false;
-	}
-
-	call_ticket_validation = true;
-	memset(&validation_response_data, 0, sizeof(validation_response_data));
-
-	validation_response_data.m_OwnerSteamID = handle->uSteamID;
-	validation_response_data.m_SteamID = handle->uSteamID;
-
-	if (handle->uSteamID.GetAccountID() < MIN_ALLOWED_ACCOUNT_ID)
-		validation_response_data.m_eAuthSessionResponse = k_EAuthSessionResponseVACBanned;
-	else
-		validation_response_data.m_eAuthSessionResponse = k_EAuthSessionResponseOK;
-
-	validation_time = std::chrono::high_resolution_clock::now();
-
-	return true;
+	return (auth::system()->BeginAuth(pvAuthBlob, cubAuthBlobSize, unIPClient, pSteamIDUser) == k_EBeginAuthSessionResultOK);
 }
 
 // Creates a fake user (ie, a bot) which will be listed as playing on the server, but skips validation.  
@@ -315,8 +228,9 @@ CSteamID CSteamGameServer::CreateUnauthenticatedUserConnection() {
 // Should be called whenever a user leaves our game server, this lets Steam internally
 // track which users are currently on which servers for the purposes of preventing a single
 // account being logged into multiple servers, showing who is currently on a server, etc.
-void CSteamGameServer::SendUserDisconnect(CSteamID steamIDUser) {
-
+void CSteamGameServer::SendUserDisconnect(CSteamID steamIDUser) 
+{
+	auth::system()->EndAuth(0, steamIDUser);
 }
 
 // Update the data to be displayed in the server browser and matchmaking interfaces for a user
@@ -333,64 +247,29 @@ bool CSteamGameServer::BUpdateUserData(CSteamID steamIDUser, const char* pchPlay
 
 // Retrieve ticket to be sent to the entity who wishes to authenticate you ( using BeginAuthSession API ). 
 // pcbTicket retrieves the length of the actual ticket.
-HAuthTicket CSteamGameServer::GetAuthSessionTicket(void* pTicket, int cbMaxTicket, uint32* pcbTicket) {
-	memset(pTicket, 1, 152);
-	*pcbTicket = 152;
+HAuthTicket CSteamGameServer::GetAuthSessionTicket(void* pTicket, int cbMaxTicket, uint32* pcbTicket) 
+{
+	auth::system()->GetAuthTicket(pTicket, cbMaxTicket, pcbTicket);
 	return 47;
 }
 
 // Authenticate ticket ( from GetAuthSessionTicket ) from entity steamID to be sure it is valid and isnt reused
 // Registers for callbacks if the entity goes offline or cancels the ticket ( see ValidateAuthTicketResponse_t callback and EAuthSessionResponse )
-EBeginAuthSessionResult CSteamGameServer::BeginAuthSession(const void* pAuthTicket, int cbAuthTicket, CSteamID steamID) {
-	if (pr_pSteamID != 0)
-	{
-		TRevUserValidationHandle* handle = nullptr;
-		SteamStartValidatingUserIDTicket((void*)pAuthTicket, cbAuthTicket, pr_unClientIP, &handle);
-		bool status = 
-			SteamProcessOngoingUserIDTicketValidation(&handle, (void*)pAuthTicket, cbAuthTicket);
-
-		LogStats(true, false, handle);
-
-		if (!status)
-		{
-			LogErrors(handle);
-			return k_EBeginAuthSessionResultInvalidTicket;
-		}
-
-		pr_pSteamID->SetFromUint64(handle->uSteamID.ConvertToUint64());
-
-		//pr_hValidationHandle = handle;
-		pr_pSteamID = 0;
-		pr_unClientIP = 0;
-
-		call_ticket_validation = true;
-		memset(&validation_response_data, 0, sizeof(validation_response_data));
-
-		validation_response_data.m_OwnerSteamID = handle->uSteamID;
-		validation_response_data.m_SteamID = handle->uSteamID;
-
-		if (handle->uSteamID.GetAccountID() < MIN_ALLOWED_ACCOUNT_ID)
-			validation_response_data.m_eAuthSessionResponse = k_EAuthSessionResponseVACBanned;
-		else
-			validation_response_data.m_eAuthSessionResponse = k_EAuthSessionResponseOK;
-
-		validation_time = std::chrono::high_resolution_clock::now();
-
-		return k_EBeginAuthSessionResultOK;
-	}
-
-
-	// i did a little gimmick so now SendUserConnectAndAuthenticate MUST BE called before any authsession calls
-	// why? because we need to manually set client's SteamID from the ticket one.
-	// if we didn't get SendUserConnectAndAuthenticate called, return InvalidTicket
-	return k_EBeginAuthSessionResultInvalidTicket;
+EBeginAuthSessionResult CSteamGameServer::BeginAuthSession(const void* pAuthTicket, int cbAuthTicket, CSteamID steamID) 
+{
+	return auth::system()->BeginAuth(pAuthTicket, cbAuthTicket, 0, &steamID);
 }
 
 // Stop tracking started by BeginAuthSession - called when no longer playing game with this entity
-void CSteamGameServer::EndAuthSession(CSteamID steamID) {}
+void CSteamGameServer::EndAuthSession(CSteamID steamID) 
+{
+	auth::system()->EndAuth(0, steamID);
+}
 
 // Cancel auth ticket from GetAuthSessionTicket, called when no longer playing game with the entity you gave the ticket to
-void CSteamGameServer::CancelAuthTicket(HAuthTicket hAuthTicket) {}
+void CSteamGameServer::CancelAuthTicket(HAuthTicket hAuthTicket) 
+{
+}
 
 // After receiving a user's authentication data, and passing it to SendUserConnectAndAuthenticate, use this function
 // to determine if the user owns downloadable content specified by the provided AppID.

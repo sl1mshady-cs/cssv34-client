@@ -114,7 +114,6 @@ projects={
 		'unittests/tier3test',
 		'unittests/mathlibtest',
 		'utils/unittest'
-<<<<<<< HEAD
 	],
 	'dedicated': [
 		'appframework',
@@ -149,8 +148,6 @@ projects={
 		'vstdlib',
 		'vtf',
 		'steam_api'
-=======
->>>>>>> master
 	]
 }
 

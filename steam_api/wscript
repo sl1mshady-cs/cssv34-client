@@ -17,6 +17,7 @@ def configure(conf):
 
 def build(bld):
 	source = [
+		'auth.cpp',
 		'steam_api.cpp',
 		'steam.cpp',
 		'steamclient.cpp',
@@ -25,7 +26,6 @@ def build(bld):
 		'murmur32.cpp',
 		'vdf.cpp',
 		'logging.cpp',
-		'useridvalidation.cpp',
 		'steamclient/gs_clientmsghandler.cpp',
 		'steamclient/steamapps.cpp',
 		'steamclient/steammatchmaking.cpp',
