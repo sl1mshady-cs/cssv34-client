@@ -27,8 +27,8 @@ public:
     };
     
     void remove(T *elem){
-	register T *e = elem;
-	register T *h;
+	T *e = elem;
+	T *h;
 	IVP_ASSERT(e->next != (T*)-1);
 	if ((h = e->prev)){
 	    h->next = e->next;
@@ -64,8 +64,8 @@ public:
     };
     
     void remove_first(){
-	register T *e = elem;
-	register T *h;
+	T *e = elem;
+	T *h;
 	first = e->next;
 	if (h = e->next){
 	    h->prev = e->prev;

@@ -13,12 +13,13 @@
 #include "tier0/memdbgon.h"
 
 C_CSRootPanel *g_pCSRootPanel = NULL;
-
+extern bool g_bVGUIDisabled;
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void VGUI_CreateClientDLLRootPanel( void )
 {
+	if (g_bVGUIDisabled) return;
 	g_pCSRootPanel = new C_CSRootPanel( enginevgui->GetPanel( PANEL_CLIENTDLL ) );
 }
 
@@ -27,6 +28,7 @@ void VGUI_CreateClientDLLRootPanel( void )
 //-----------------------------------------------------------------------------
 void VGUI_DestroyClientDLLRootPanel( void )
 {
+	if (g_bVGUIDisabled) return;
 	delete g_pCSRootPanel;
 	g_pCSRootPanel = NULL;
 }
@@ -37,5 +39,6 @@ void VGUI_DestroyClientDLLRootPanel( void )
 //-----------------------------------------------------------------------------
 vgui::VPANEL VGui_GetClientDLLRootPanel( void )
 {
+	if (g_bVGUIDisabled) return 0;
 	return g_pCSRootPanel->GetVPanel();
 }

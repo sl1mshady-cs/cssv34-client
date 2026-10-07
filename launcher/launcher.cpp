@@ -679,6 +679,7 @@ bool CSourceAppSystemGroup::Create()
 		// NOTE: This has to occur before vgui2.dll so it replaces vgui2's surface implementation
 		{ "vguimatsurface" DLL_EXT_STRING,	VGUI_SURFACE_INTERFACE_VERSION },
 		{ "vgui2" DLL_EXT_STRING,			VGUI_IVGUI_INTERFACE_VERSION },
+
 		{ "engine" DLL_EXT_STRING,			VENGINE_LAUNCHER_API_VERSION },
 
 		{ "", "" }							// Required to terminate the list

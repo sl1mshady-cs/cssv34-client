@@ -996,7 +996,12 @@ void CDownloadManager::UpdateProgressBar()
 	}
 
 #ifndef DEDICATED
+
+	char filenameBuf2[256];
+	snprintf(filenameBuf2, 256, "Downloading %s", m_activeRequest->gamePath);
+
 	_snwprintf( filenameBuf, 256, L"Downloading %hs", m_activeRequest->gamePath );
+	g_ClientDLL->UpdateProgressBar(progress, filenameBuf2);
 	EngineVGui()->UpdateCustomProgressBar( progress, filenameBuf );
 #endif
 }

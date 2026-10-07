@@ -791,6 +791,11 @@ public:
 	virtual bool IsConnectedUserInfoChangeAllowed( IConVar *pCvar ) = 0;
 
 	virtual void IN_TouchEvent( int type, int fingerId, int x, int y ) = 0;
+
+	// added for new UI
+	virtual void OnLevelLoadFinish(const char* msg) = 0;
+	virtual void OnLevelLoadStart() = 0;
+	virtual void UpdateProgressBar(float progress, const char* desc) = 0;
 };
 
 #define CLIENT_DLL_INTERFACE_VERSION		"VClient017"

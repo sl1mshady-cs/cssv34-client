@@ -1,0 +1,60 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from waflib import Utils
+import os
+
+top = '.'
+PROJECT_NAME = 'plutovg'
+
+def options(opt):
+	# stub
+	return
+
+def configure(conf):
+	conf.define('PLUTOVG_BUILD_STATIC', 1)
+
+def build(bld):
+    source = [
+        "plutovg-blend.c",
+        "plutovg-canvas.c",
+        "plutovg-font.c",
+        "plutovg-ft-math.c",
+        "plutovg-ft-raster.c",
+        "plutovg-ft-stroker.c",
+        "plutovg-matrix.c",
+        "plutovg-paint.c",
+        "plutovg-path.c",
+        "plutovg-rasterize.c",
+        "plutovg-surface.c",
+    ]
+
+    includes = [
+        '../include'
+    ]
+
+    defines = []
+
+    cflags = []
+    if bld.env.CC_NAME == 'msvc':
+        cflags.append('/TC')
+
+    libs = []
+
+    if bld.env.DEST_OS == 'android':
+        libs += ['ANDROID_SUPPORT']
+
+    install_path = bld.env.LIBDIR
+
+    bld.stlib(
+        source    = source,
+        target    = PROJECT_NAME,
+        name      = PROJECT_NAME,
+        features  = 'c',
+        includes  = includes,
+        defines   = defines,
+        use       = libs,
+        cflags    = cflags,
+        subsystem = bld.env.MSVC_SUBSYSTEM,
+        idx       = bld.get_taskgen_count()
+    )

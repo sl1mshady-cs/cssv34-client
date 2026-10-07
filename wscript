@@ -82,6 +82,9 @@ projects={
 		'tier1',
 		'tier2',
 		'tier3',
+		'rmlui_utils',
+		'thirdparty/plutovg/source',
+		'thirdparty/lua',
 		'vgui2/matsys_controls',
 		'vgui2/src',
 		'vgui2/vgui_controls',
@@ -410,13 +413,12 @@ def check_deps(conf):
 		conf.check(lib='z', uselib_store='ZLIB', define_name='HAVE_ZLIB')
 		if conf.env.DEST_CPU != 'aarch64':
 			conf.check(lib='unwind', uselib_store='UNWIND')
-			conf.check(lib='crypto', uselib_store='CRYPTO')
-			conf.check(lib='ssl', uselib_store='SSL')
 		conf.check(lib='android_support', uselib_store='ANDROID_SUPPORT')
 		conf.check(lib='opus', uselib_store='OPUS')
 		conf.check(lib='speex', uselib_store='SPEEX')
 
 	if conf.env.DEST_OS == 'win32':
+		conf.check(lib='freetype2', uselib_store='FT2')
 		conf.check(lib='libz', uselib_store='ZLIB', define_name='USE_ZLIB')
 		# conf.check(lib='nvtc', uselib_store='NVTC')
 		# conf.check(lib='ati_compress_mt_vc10', uselib_store='ATI_COMPRESS_MT_VC10')
@@ -542,7 +544,6 @@ def configure(conf):
 	else:
 		cflags += [
 			'/I'+os.path.abspath('.')+'/thirdparty/SDL',
-			'/arch:SSE',
 			'/GF',
 			'/Gy',
 			'/fp:fast',
@@ -552,6 +553,9 @@ def configure(conf):
 			'/TP',
 			'/EHsc'
 		]
+
+		if conf.options.TARGET32:
+			cflags += ['/arch:SSE']
 
 		if conf.options.BUILD_TYPE == 'debug':
 			linkflags += [
@@ -573,13 +577,17 @@ def configure(conf):
 
 		linkflags += [
 			'/LIBPATH:'+os.path.abspath('.')+'/lib/win32/'+conf.env.DEST_CPU+'/',
-			'/LIBPATH:'+os.path.abspath('.')+'/dx9sdk/lib/'+conf.env.DEST_CPU+'/'
+			'/LIBPATH:'+os.path.abspath('.')+'/dx9sdk/lib/'+conf.env.DEST_CPU+'/',
+			'/LIBPATH:'+os.path.abspath('.')+'/common/RmlUi/Bin-Dynamic/Release/',
+			'/LIBPATH:'+os.path.abspath('.')+'/common/RmlUi/Dependencies/Bin-Dynamic/lib/'
 		]
 
 	# And here C++ flags starts to be treated separately
 	cxxflags = list(cflags)
 	if conf.env.DEST_OS != 'win32':
-		cxxflags += ['-std=c++11','-fpermissive']
+		cxxflags += ['-std=c++17','-fpermissive']
+	else:
+		cxxflags += ['/std:c++17']
 
 	if conf.env.COMPILER_CC == 'gcc':
 		conf.define('COMPILER_GCC', 1)

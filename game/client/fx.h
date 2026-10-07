@@ -50,6 +50,7 @@ void FX_PlayerTracer( Vector& start, Vector& end );
 void FX_BulletPass( Vector& start, Vector& end );
 void FX_MetalSpark( const Vector &position, const Vector &direction, const Vector &surfaceNormal, int iScale = 1 );
 void FX_MetalScrape( Vector &position, Vector &normal );
+void FX_Sparks_S( const Vector & position, const Vector & surfaceNormal, int iScale );
 void FX_Sparks( const Vector &pos, int nMagnitude, int nTrailLength, const Vector &vecDir, float flWidth, float flMinSpeed, float flMaxSpeed, char *pSparkMaterial = NULL );
 void FX_ElectricSpark( const Vector &pos, int nMagnitude, int nTrailLength, const Vector *vecDir );
 void FX_BugBlood( Vector &pos, Vector &dir, Vector &vWorldMins, Vector &vWorldMaxs );

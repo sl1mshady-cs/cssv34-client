@@ -20,12 +20,12 @@ import os
 import sys
 
 ANDROID_NDK_ENVVARS = ['ANDROID_NDK_HOME', 'ANDROID_NDK']
-ANDROID_NDK_SUPPORTED = [10, 19, 20]
+ANDROID_NDK_SUPPORTED = [10, 19, 20, 27]
 ANDROID_NDK_HARDFP_MAX = 11 # latest version that supports hardfp
 ANDROID_NDK_GCC_MAX = 17 # latest NDK that ships with GCC
 ANDROID_NDK_UNIFIED_SYSROOT_MIN = 15
 ANDROID_NDK_SYSROOT_FLAG_MAX = 19 # latest NDK that need --sysroot flag
-ANDROID_NDK_API_MIN = { 10: 3, 19: 16, 20: 16 } # minimal API level ndk revision supports
+ANDROID_NDK_API_MIN = { 10: 3, 19: 16, 20: 16, 27: 21 } # minimal API level ndk revision supports
 ANDROID_64BIT_API_MIN = 21 # minimal API level that supports 64-bit targets
 
 # This class does support ONLY r10e and r19c/r20 NDK
@@ -79,7 +79,9 @@ class Android:
 				self.arch = 'armeabi-v7a' # Only armeabi-v7a have hard float ABI
 				self.is_hardfloat = True
 			else:
-				ctx.fatal('NDK does not support hardfloat ABI')
+				self.arch = 'armeabi-v7a'
+				self.is_hardfloat = True
+				Logs.warn('NDK r%d does not have armeabi-v7a-hard ABI, using armeabi-v7a' % self.ndk_rev)
 
 		if self.api < ANDROID_NDK_API_MIN[self.ndk_rev]:
 			self.api = ANDROID_NDK_API_MIN[self.ndk_rev]
@@ -188,12 +190,29 @@ class Android:
 
 	def gen_toolchain_path(self):
 		if self.is_clang():
-			triplet = '%s%d-' % (self.ndk_triplet(llvm_toolchain = True), self.api)
+			host = self.gen_host_toolchain()
+			base = os.path.join(self.ndk_home, 'toolchains', 'llvm', 'prebuilt', host, 'bin')
+
+			if self.is_arm():
+				triplet = 'armv7a-linux-androideabi%d-' % self.api
+			elif self.is_arm64():
+				triplet = 'aarch64-linux-android%d-' % self.api
+			elif self.is_x86():
+				triplet = 'i686-linux-android%d-' % self.api
+			elif self.is_amd64():
+				triplet = 'x86_64-linux-android%d-' % self.api
+			else:
+				triplet = self.ndk_triplet() + '%d-' % self.api
+
+			return os.path.join(base, triplet)
 		else:
 			triplet = self.ndk_triplet() + '-'
-		return os.path.join(self.gen_gcc_toolchain_path(), 'bin', triplet)
+			return os.path.join(self.gen_gcc_toolchain_path(), 'bin', triplet)
 
 	def gen_binutils_path(self):
+		if self.is_clang():
+			host = self.gen_host_toolchain()
+			return os.path.join(self.ndk_home, 'toolchains', 'llvm', 'prebuilt', host, 'bin')
 		return os.path.join(self.gen_gcc_toolchain_path(), self.ndk_triplet(), 'bin')
 
 	def cc(self):
@@ -209,14 +228,13 @@ class Android:
 	def strip(self):
 		if self.is_host():
 			return 'llvm-strip'
+		if self.is_clang():
+			host = self.gen_host_toolchain()
+			return os.path.join(self.ndk_home, 'toolchains', 'llvm', 'prebuilt', host, 'bin', 'llvm-strip')
 		return os.path.join(self.gen_binutils_path(), 'strip')
 
 	def system_stl(self):
-		# TODO: proper STL support
-		return [
-			#os.path.abspath(os.path.join(self.ndk_home, 'sources', 'cxx-stl', 'system', 'include')),
-			os.path.abspath(os.path.join(self.ndk_home, 'sources', 'android', 'support', 'include'))
-		]
+		return []
 
 	def libsysroot(self):
 		arch = self.arch
@@ -229,6 +247,9 @@ class Android:
 		return os.path.abspath(os.path.join(self.ndk_home, path))
 
 	def sysroot(self):
+		if self.is_clang():
+			host = self.gen_host_toolchain()
+			return os.path.abspath(os.path.join(self.ndk_home, 'toolchains', 'llvm', 'prebuilt', host, 'sysroot'))
 		if self.ndk_rev >= ANDROID_NDK_UNIFIED_SYSROOT_MIN:
 			return os.path.abspath(os.path.join(self.ndk_home, 'sysroot'))
 		else:
@@ -237,7 +258,11 @@ class Android:
 	def cflags(self, cxx = False):
 		cflags = []
 
-		if self.ndk_rev <= ANDROID_NDK_SYSROOT_FLAG_MAX:
+		if self.is_clang():
+			if cxx:
+				cflags += ['-nostdinc++']
+				cflags += ['-isystem', os.path.join(self.sysroot(), 'usr', 'include', 'c++', 'v1')]
+		elif self.ndk_rev <= ANDROID_NDK_SYSROOT_FLAG_MAX:
 			cflags += ['--sysroot=%s' % (self.sysroot())]
 		else:
 			if self.is_host():
@@ -302,8 +327,6 @@ class Android:
 		if not self.is_clang():
 			ldflags += ['-lgcc']
 
-		if self.is_clang() or self.is_host():
-			ldflags += ['-stdlib=libstdc++']
 		if self.is_arm():
 			if self.arch == 'armeabi-v7a':
 				ldflags += ['-march=armv7-a']
@@ -320,7 +343,7 @@ class Android:
 def options(opt):
 	android = opt.add_option_group('Android options')
 	android.add_option('--android', action='store', dest='ANDROID_OPTS', default=None,
-		help='enable building for android, format: --android=<arch>,<toolchain>,<api>, example: --android=armeabi-v7a-hard,4.9,21')
+		help='enable building for android, format: --android=<arch>,<toolchain>,<api>, example: --android=aarch64,clang,21')
 
 def configure(conf):
 	if conf.options.ANDROID_OPTS:
@@ -334,9 +357,6 @@ def configure(conf):
 			conf.fatal('Unknown arch: %s. Supported: %r' % (values[0], ', '.join(valid_archs)))
 
 
-		stlarch = values[0]
-		if values[0] == 'aarch64': stlarch = 'arm64-v8a'
-
 		conf.android = android = Android(conf, values[0], values[1], int(values[2]))
 		conf.environ['CC'] = android.cc()
 		conf.environ['CXX'] = android.cxx()
@@ -345,13 +365,6 @@ def configure(conf):
 		conf.env.CXXFLAGS += android.cflags(True)
 		conf.env.LINKFLAGS += android.linkflags()
 		conf.env.LDFLAGS += android.ldflags()
-		conf.env.INCLUDES += [
-			os.path.abspath(os.path.join(android.ndk_home, 'sources', 'cxx-stl', 'gnu-libstdc++', '4.9', 'include')),
-			os.path.abspath(os.path.join(android.ndk_home, 'sources', 'cxx-stl', 'gnu-libstdc++', '4.9', 'libs', stlarch, 'include'))
-		]
-		conf.env.STLIBPATH += [os.path.abspath(os.path.join(android.ndk_home, 'sources','cxx-stl','gnu-libstdc++','4.9','libs',stlarch))]
-		if android.ndk_rev < 18:
-			conf.env.LDFLAGS += ['-lgnustl_static']
 
 		conf.env.HAVE_M = True
 		if android.is_hardfp():

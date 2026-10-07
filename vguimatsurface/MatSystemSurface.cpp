@@ -777,7 +777,7 @@ void CMatSystemSurface::RunFrame()
 
 	if ( m_bAppDrivesInput )
 		return;
-
+	
 	// Generate all input messages
 	int nEventCount = g_pInputSystem->GetEventCount();
 	const InputEvent_t* pEvents = g_pInputSystem->GetEventData( );

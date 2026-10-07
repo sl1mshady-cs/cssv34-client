@@ -554,6 +554,7 @@ void CL_ReadPackets ( bool bFinalTick )
 		COM_ExplainDisconnection( false, "Lost connection to server.");
 		if ( IsPC() )
 		{
+			g_ClientDLL->OnLevelLoadFinish(gszExtendedDisconnectReason);
 			EngineVGui()->ShowErrorMessage();
 		}
 

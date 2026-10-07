@@ -335,6 +335,10 @@ void PerformCustomEffects( const Vector &vecOrigin, trace_t &tr, const Vector &s
 	{
 		FX_AntlionImpact( vecOrigin, &tr );
 	}
+	else if ( iMaterial == CHAR_TEX_PLASTIC )
+	{
+		FX_DebrisFlecks( vecOrigin, &tr, iMaterial, iScale, bNoFlecks );
+	}
 	else if ( ( iMaterial == CHAR_TEX_METAL ) || ( iMaterial == CHAR_TEX_VENT ) )
 	{
 		Vector	reflect;
@@ -346,6 +350,7 @@ void PerformCustomEffects( const Vector &vecOrigin, trace_t &tr, const Vector &s
 		reflect[2] += random->RandomFloat( -0.2f, 0.2f );
 
 		FX_MetalSpark( vecOrigin, reflect, tr.plane.normal, iScale );
+		FX_Sparks_S(vecOrigin, tr.plane.normal, iScale);
 	}
 	else if ( iMaterial == CHAR_TEX_COMPUTER )
 	{

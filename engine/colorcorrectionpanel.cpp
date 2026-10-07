@@ -44,6 +44,7 @@ using namespace vgui;
 
 const int g_nPreviewImageWidth  = 128;
 const int g_nPreviewImageHeight =  96;
+extern bool g_bVGUIDisabled;
 
 ConVar mat_colorcorrection( "mat_colorcorrection", "0", FCVAR_ARCHIVE );
 ConVar mat_colcorrection_disableentities( "mat_colcorrection_disableentities", "0" );
@@ -5084,6 +5085,7 @@ private:
 //-----------------------------------------------------------------------------
 CColorCorrectionUIPanel::CColorCorrectionUIPanel( vgui::Panel *parent ) : BaseClass( parent, "ColorCorrectionUIPanel" )
 {
+	if (g_bVGUIDisabled) return;
 	if ( !colorcorrection )
 	{
 		m_pOperationListPanel = NULL;
@@ -5130,6 +5132,7 @@ CColorCorrectionUIPanel::CColorCorrectionUIPanel( vgui::Panel *parent ) : BaseCl
 
 CColorCorrectionUIPanel::~CColorCorrectionUIPanel()
 {
+	if (g_bVGUIDisabled) return;
 	colorcorrection->RemoveLookup( m_CCHandle );
 }
 
@@ -5139,11 +5142,13 @@ CColorCorrectionUIPanel::~CColorCorrectionUIPanel()
 //-----------------------------------------------------------------------------
 void CColorCorrectionUIPanel::Init()
 {
+	if (g_bVGUIDisabled) return;
 	m_pOperationListPanel->Init();
 }
 
 void CColorCorrectionUIPanel::Shutdown()
 {
+	if (g_bVGUIDisabled) return;
 	if ( m_pOperationListPanel )
 	{
 		m_pOperationListPanel->Shutdown();
@@ -5155,6 +5160,7 @@ void CColorCorrectionUIPanel::Shutdown()
 //-----------------------------------------------------------------------------
 void CColorCorrectionUIPanel::UpdateColorCorrection( )
 {
+	if (g_bVGUIDisabled) return;
 	if( !m_bEnable )
 		return;
 
@@ -5167,11 +5173,13 @@ void CColorCorrectionUIPanel::UpdateColorCorrection( )
 //-----------------------------------------------------------------------------
 void CColorCorrectionUIPanel::Activate()
 {
+	if (g_bVGUIDisabled) return;
 	BaseClass::Activate();
 }
 
 void CColorCorrectionUIPanel::OnCommand( char const *command )
 {
+	if (g_bVGUIDisabled) return;
 	BaseClass::OnCommand( command );
 
 	if( !Q_stricmp( "EnableColorCorrection", command ) )
@@ -5192,6 +5200,7 @@ void CColorCorrectionUIPanel::OnCommand( char const *command )
 
 void CColorCorrectionUIPanel::OnThink( )
 {
+	if (g_bVGUIDisabled) return;
 	BaseClass::OnThink();
 
 	if( m_bForceReset )
@@ -5307,6 +5316,8 @@ IColorCorrectionTools *colorcorrectiontools = &g_ColorCorrectionTools;
 
 void CColorCorrectionTools::Init( void )
 {
+	if (g_bVGUIDisabled) return;
+
 	if ( g_pColorCorrectionUI )
 	{
 		g_pColorCorrectionUI->Init();
@@ -5317,6 +5328,8 @@ void CColorCorrectionTools::Init( void )
 
 void CColorCorrectionTools::Shutdown( void )
 {
+	if (g_bVGUIDisabled) return;
+
 	if ( g_pColorCorrectionUI )
 	{
 		g_pColorCorrectionUI->Shutdown();
@@ -5327,6 +5340,8 @@ void CColorCorrectionTools::Shutdown( void )
 
 void CColorCorrectionTools::InstallColorCorrectionUI( vgui::Panel *parent )
 {
+	if (g_bVGUIDisabled) return;
+
 	if ( g_pColorCorrectionUI )
 		return;
 
@@ -5341,6 +5356,8 @@ bool CColorCorrectionTools::ShouldPause() const
 
 void CColorCorrectionTools::GrabPreColorCorrectedFrame( int x, int y, int width, int height )
 {
+	if (g_bVGUIDisabled) return;
+
 	if ( !g_pColorCorrectionUI->IsVisible() )
 		return;
 

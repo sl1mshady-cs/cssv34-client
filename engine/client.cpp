@@ -345,6 +345,7 @@ bool CClientState::SetSignonState ( int state, int count )
 			if ( m_nMaxClients > 1 )
 			{
 				// start progress bar immediately for multiplayer level transitions
+				g_ClientDLL->OnLevelLoadStart(); // show progressbar
 				EngineVGui()->EnabledProgressBarForNextLoad();
 			}
 			SCR_BeginLoadingPlaque();

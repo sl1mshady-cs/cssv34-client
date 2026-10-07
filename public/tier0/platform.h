@@ -1971,7 +1971,7 @@ int	_V_stricmp_NegativeForUnequal	  ( const char *s1, const char *s2 );
 #endif
 
 // Use ValidateAlignment to sanity-check alignment usage when allocating arrays of an aligned type
-#define ALIGN_ASSERT( pred ) { COMPILE_TIME_ASSERT( pred ); }
+#define ALIGN_ASSERT( pred ) { PLAT_COMPILE_TIME_ASSERT( pred ); }
 template< class T, int ALIGN >
 inline void ValidateAlignmentExplicit(void)
 {

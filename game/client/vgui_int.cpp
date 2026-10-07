@@ -46,6 +46,8 @@ vgui::IInputInternal *g_InputInternal = NULL;
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+bool g_bVGUIDisabled = false;
+
 void GetVGUICursorPos( int& x, int& y )
 {
 	vgui::input()->GetCursorPos(x, y);
@@ -119,6 +121,7 @@ static CHudTextureHandleProperty textureHandleConverter;
 
 static void VGui_VideoMode_AdjustForModeChange( void )
 {
+	if (g_bVGUIDisabled) return;
 	// Kill all our panels. We need to do this in case any of them
 	//	have pointers to objects (eg: iborders) that will get freed
 	//	when schemes get destroyed and recreated (eg: mode change).
@@ -154,6 +157,8 @@ static void VGui_VideoMode_AdjustForModeChange( void )
 
 static void VGui_OneTimeInit()
 {
+	if (g_bVGUIDisabled) return;
+
 	static bool initialized = false;
 	if ( initialized )
 		return;
@@ -167,6 +172,9 @@ static void VGui_OneTimeInit()
 
 bool VGui_Startup( CreateInterfaceFn appSystemFactory )
 {
+	g_bVGUIDisabled = !!CommandLine()->FindParm("-novgui");
+	if (g_bVGUIDisabled) return true;
+
 	if ( !vgui::VGui_InitInterfacesList( "CLIENT", &appSystemFactory, 1 ) )
 		return false;
 
@@ -198,6 +206,8 @@ bool VGui_Startup( CreateInterfaceFn appSystemFactory )
 //-----------------------------------------------------------------------------
 void VGui_CreateGlobalPanels( void )
 {
+	if (g_bVGUIDisabled) return;
+
 	VPANEL gameToolParent = enginevgui->GetPanel( PANEL_CLIENTDLL_TOOLS );
 	VPANEL toolParent = enginevgui->GetPanel( PANEL_TOOLS );
 #if defined( TRACK_BLOCKING_IO )
@@ -229,6 +239,7 @@ void VGui_CreateGlobalPanels( void )
 
 void VGui_Shutdown()
 {
+	if (g_bVGUIDisabled) return;
 	VGUI_DestroyClientDLLRootPanel();
 
 #ifndef _X360
@@ -264,6 +275,8 @@ static ConVar cl_showpausedimage( "cl_showpausedimage", "1", 0, "Show the 'Pause
 //-----------------------------------------------------------------------------
 void VGui_PreRender()
 {
+	if (g_bVGUIDisabled) return;
+
 	VPROF( "VGui_PreRender" );
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
 
@@ -304,6 +317,13 @@ CON_COMMAND( cl_panelanimation, "Shows panel animation variables: <panelname | b
 
 void GetHudSize( int& w, int &h )
 {
+	if (g_bVGUIDisabled)
+	{
+		w = 640;
+		h = 480;
+		return;
+	}
+
 	vgui::surface()->GetScreenSize( w, h );
 
 	VPANEL hudParent = enginevgui->GetPanel( PANEL_CLIENTDLL );

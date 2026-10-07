@@ -143,7 +143,7 @@ inline IVP_DOUBLE IVP_U_Float_Point::quad_distance_to(const IVP_U_Float_Point *p
     a *=a; b*= b; c*=c;
     return a+b+c;
 #else
-    register float ret;
+    float ret;
 	asm __volatile__("
 	lqc2    vf4,0x0(%1)
 	lqc2    vf5,0x0(%2)
@@ -224,7 +224,7 @@ inline IVP_DOUBLE IVP_U_Float_Point::dot_product(const IVP_U_Float_Point *v2) co
 #if 1
         return( k[0]*v2->k[0] + k[1]*v2->k[1] + k[2]*v2->k[2] );
 #else
-	register float ret;
+	float ret;
 	asm __volatile__("
 	lqc2    vf4,0x0(%1)
 	lqc2    vf5,0x0(%2)

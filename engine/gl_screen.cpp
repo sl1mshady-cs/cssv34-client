@@ -31,6 +31,7 @@
 #include "replay_internal.h"
 #endif
 #include "tier0/vprof.h"
+#include <rmlui_wrapper.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -45,12 +46,53 @@ bool		scr_disabled_for_loading;
 bool		scr_drawloading;
 int			scr_nextdrawtick;		// A hack to let things settle on reload/reconnect
 
+CSysModule* rmluimodule = nullptr;
+IRmlUI* rmlui = nullptr;
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void SCR_Init (void)
 {
+	rmluimodule = nullptr;
+	rmlui = nullptr;
 	scr_initialized = true;
+
+	rmluimodule = Sys_LoadModule("rmlui_utils" DLL_EXT_STRING);
+	if (!rmluimodule)
+	{
+		Warning("[RmlUi] Library load failed\n");
+		rmlui = nullptr;
+		return;
+	}
+
+	CreateInterfaceFn rmlfactory = Sys_GetFactory(rmluimodule);
+	if (!rmlfactory)
+	{
+		Warning("[RmlUi] Failed to find factory\n");
+		Sys_UnloadModule(rmluimodule);
+		rmluimodule = nullptr;
+		rmlui = nullptr;
+		return;
+	}
+
+	rmlui = (IRmlUI*)rmlfactory(RMLUI_INTERFACE_VERSION, nullptr);
+	if (!rmlui)
+	{
+		Warning("[RmlUi] Failed to get interface\n");
+		Sys_UnloadModule(rmluimodule);
+		rmluimodule = nullptr;
+		rmlui = nullptr;
+		return;
+	}
+
+	if (!rmlui->Initialize(&g_AppSystemFactory, 1))
+	{
+		Warning("RmlUi init failed\n");
+		Sys_UnloadModule(rmluimodule);
+		rmluimodule = nullptr;
+		rmlui = nullptr;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -58,6 +100,13 @@ void SCR_Init (void)
 //-----------------------------------------------------------------------------
 void SCR_Shutdown( void )
 {
+	if (rmlui)
+		rmlui->Shutdown();
+
+	if (rmluimodule) {
+		Sys_UnloadModule(rmluimodule);
+		rmluimodule = nullptr;
+	}
 	scr_initialized = false;
 }
 
@@ -93,6 +142,7 @@ void SCR_BeginLoadingPlaque( void )
 		}
 
 		// let the UI know we're starting loading
+		g_ClientDLL->OnLevelLoadStart();
 		EngineVGui()->OnLevelLoadingStarted();
 
 		// Don't run any more simulation on the client!!!
@@ -120,6 +170,7 @@ void SCR_EndLoadingPlaque( void )
 	if ( scr_drawloading )
 	{
 		// let the UI know we're finished
+		g_ClientDLL->OnLevelLoadFinish(nullptr);
 		EngineVGui()->OnLevelLoadingFinished();
 		S_OnLoadScreen( false );
 	}
@@ -127,6 +178,7 @@ void SCR_EndLoadingPlaque( void )
 	{
 		if ( IsPC() )
 		{
+			g_ClientDLL->OnLevelLoadFinish(gszExtendedDisconnectReason);
 			EngineVGui()->ShowErrorMessage();
 		}
 	}
@@ -273,12 +325,12 @@ void SCR_UpdateScreen( void )
 	cl.UpdateAreaBits_BackwardsCompatible();
 	
 	Shader_BeginRendering();
-				
+
 	// Draw world, etc.
 	V_RenderView();
 
-	CL_TakeSnapshotAndSwap();	   
-	
+	CL_TakeSnapshotAndSwap();
+
 #if defined( REPLAY_ENABLED )
 	if ( g_pReplay )
 	{

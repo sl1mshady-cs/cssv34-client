@@ -1,4 +1,4 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: 
 //
@@ -32,14 +32,13 @@ public:
 
 	virtual void PrimaryAttack();
 	virtual void SecondaryAttack();
-	virtual bool Deploy();
 
- 	virtual float GetInaccuracy() const;
+	virtual float GetInaccuracy() const;
 
 	virtual void ItemPostFrame();
 
 	void FamasFire( float flSpread, bool bFireBurst );
-	void FireRemaining();
+	void FireRemaining( int &shotsFired, float &shootTime );
 	
 	virtual CSWeaponID GetWeaponID( void ) const		{ return WEAPON_FAMAS; }
 
@@ -47,49 +46,33 @@ private:
 	
 	CWeaponFamas( const CWeaponFamas & );
 	CNetworkVar( bool, m_bBurstMode );
-	CNetworkVar( int, m_iBurstShotsRemaining );	
-	float	m_fNextBurstShot;			// time to shoot the next bullet in burst fire mode
+	float	m_flFamasShoot;			// time to shoot the remaining bullets of the famas burst fire
+	int		m_iFamasShotsFired;		// used to keep track of the shots fired during the Famas burst fire mode....
+	float	m_fBurstSpread;			// used to keep track of current spread factor so that all bullets in spread use same spread
 };
 
 IMPLEMENT_NETWORKCLASS_ALIASED( WeaponFamas, DT_WeaponFamas )
 
 BEGIN_NETWORK_TABLE( CWeaponFamas, DT_WeaponFamas )
 	#ifdef CLIENT_DLL
-		RecvPropBool( RECVINFO( m_bBurstMode ) ),
+		RecvPropBool( RECVINFO( m_bBurstMode ) )
 	#else
-		SendPropBool( SENDINFO( m_bBurstMode ) ),
+		SendPropBool( SENDINFO( m_bBurstMode ) )
 	#endif
 END_NETWORK_TABLE()
 
-#if defined(CLIENT_DLL)
 BEGIN_PREDICTION_DATA( CWeaponFamas )
-DEFINE_PRED_FIELD( m_iBurstShotsRemaining, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
-DEFINE_PRED_FIELD( m_fNextBurstShot, FIELD_FLOAT, 0 ),
 END_PREDICTION_DATA()
-#endif
 
 LINK_ENTITY_TO_CLASS( weapon_famas, CWeaponFamas );
 PRECACHE_WEAPON_REGISTER( weapon_famas );
 
-
-const float kFamasBurstCycleTime = 0.075f;
 
 
 CWeaponFamas::CWeaponFamas()
 {
 	m_bBurstMode = false;
 }
-
-
-bool CWeaponFamas::Deploy( )
-{
-	m_iBurstShotsRemaining = 0;
-	m_fNextBurstShot = 0.0f;
-	m_flAccuracy = 0.9f;
-
-	return BaseClass::Deploy();
-}
-
 
 // Secondary attack could be three-round burst mode
 void CWeaponFamas::SecondaryAttack()
@@ -102,61 +85,52 @@ void CWeaponFamas::SecondaryAttack()
 	{
 		ClientPrint( pPlayer, HUD_PRINTCENTER, "#Switch_To_FullAuto" );
 		m_bBurstMode = false;
-		//m_weaponMode = Primary_Mode;
 	}
 	else
 	{
 		ClientPrint( pPlayer, HUD_PRINTCENTER, "#Switch_To_BurstFire" );
 		m_bBurstMode = true;
-		//m_weaponMode = Secondary_Mode;
 	}
 	m_flNextSecondaryAttack = gpGlobals->curtime + 0.3;
 }
 
-float CWeaponFamas::GetInaccuracy() const
+void CWeaponFamas::PrimaryAttack()
 {
-	if ( weapon_accuracy_model.GetInt() == 1 )
+	CCSPlayer *pPlayer = GetPlayerOwner();
+	if ( !pPlayer )
+		return;
+
+	// don't fire underwater
+	if (pPlayer->GetWaterLevel() == 3)
 	{
-		float fAutoPenalty = m_bBurstMode ? 0.0f : 0.01f;
-
-		CCSPlayer *pPlayer = GetPlayerOwner();
-		if ( !pPlayer )
-			return 0.0f;
-	
-		if ( !FBitSet( pPlayer->GetFlags(), FL_ONGROUND ) )	// if player is in air
-			return 0.03f + 0.3f * m_flAccuracy + fAutoPenalty;
-	
-		else if ( pPlayer->GetAbsVelocity().Length2D() > 140 )	// if player is moving
-			return 0.03f + 0.07f * m_flAccuracy + fAutoPenalty;
-		/* new code */
-		else
-			return 0.02f * m_flAccuracy + fAutoPenalty;
+		PlayEmptySound( );
+		m_flNextPrimaryAttack = gpGlobals->curtime + 0.15;
+		return;
 	}
+	
+	if ( !FBitSet( pPlayer->GetFlags(), FL_ONGROUND ) )	// if player is in air
+		FamasFire( 0.03f + 0.3f * m_flAccuracy, m_bBurstMode );
+	
+	else if ( pPlayer->GetAbsVelocity().Length2D() > 140 )	// if player is moving
+		FamasFire( 0.03f + 0.07f * m_flAccuracy, m_bBurstMode );
+	/* new code */
 	else
-		return BaseClass::GetInaccuracy();
+		FamasFire( 0.02f * m_flAccuracy, m_bBurstMode );
 }
-
-
-void CWeaponFamas::ItemPostFrame()
-{
-	if ( m_iBurstShotsRemaining > 0 && gpGlobals->curtime >= m_fNextBurstShot )
-		FireRemaining();
-
-	BaseClass::ItemPostFrame();
-}
-
 
 
 // GOOSEMAN : FireRemaining used by Glock18
-void CWeaponFamas::FireRemaining()
+void CWeaponFamas::FireRemaining( int &shotsFired, float &shootTime )
 {
+	float nexttime = 0.1;
+
 	m_iClip1--;
 
 	if (m_iClip1 < 0)
 	{
 		m_iClip1 = 0;
-		m_iBurstShotsRemaining = 0;
-		m_fNextBurstShot = 0.0f;
+		shotsFired = 3;
+		shootTime = 0.0f;
 		return;
 	}
 
@@ -173,53 +147,73 @@ void CWeaponFamas::FireRemaining()
 		Secondary_Mode,
 		CBaseEntity::GetPredictionRandomSeed() & 255,
 		GetInaccuracy(),
-		GetSpread(),
-		m_fNextBurstShot);
+		m_fBurstSpread );
 	
+
 	SendWeaponAnim( ACT_VM_PRIMARYATTACK );
 
 	pPlayer->DoMuzzleFlash();
 	pPlayer->SetAnimation( PLAYER_ATTACK1 );
 
-	pPlayer->m_iShotsFired++;
+	shotsFired++;
 
-	--m_iBurstShotsRemaining;
-	if ( m_iBurstShotsRemaining > 0 )
-		m_fNextBurstShot += kFamasBurstCycleTime;
+	if (shotsFired != 3)
+		shootTime = gpGlobals->curtime + nexttime;
 	else
-		m_fNextBurstShot = 0.0f;
-
-	// update accuracy
-	m_fAccuracyPenalty += GetCSWpnData().m_fInaccuracyImpulseFire[Secondary_Mode];
+		shootTime = 0.0;
 }
 
 
-void CWeaponFamas::PrimaryAttack()
+float CWeaponFamas::GetInaccuracy() const
+{
+	if (weapon_accuracy_model.GetInt() == 1)
+	{
+		float fAutoPenalty = m_bBurstMode ? 0.0f : 0.01f;
+
+		CCSPlayer* pPlayer = GetPlayerOwner();
+		if (!pPlayer)
+			return 0.0f;
+
+		if (!FBitSet(pPlayer->GetFlags(), FL_ONGROUND))	// if player is in air
+			return 0.03f + 0.3f * m_flAccuracy + fAutoPenalty;
+
+		else if (pPlayer->GetAbsVelocity().Length2D() > 140)	// if player is moving
+			return 0.03f + 0.07f * m_flAccuracy + fAutoPenalty;
+		/* new code */
+		else
+			return 0.02f * m_flAccuracy + fAutoPenalty;
+	}
+	else
+		return BaseClass::GetInaccuracy();
+}
+
+
+void CWeaponFamas::ItemPostFrame()
+{
+	if (m_flFamasShoot != 0.0 && m_flFamasShoot < gpGlobals->curtime )
+		FireRemaining(m_iFamasShotsFired, m_flFamasShoot );
+
+	BaseClass::ItemPostFrame();
+}
+
+
+void CWeaponFamas::FamasFire( float flSpread , bool bFireBurst )
 {
 	CCSPlayer *pPlayer = GetPlayerOwner();
-	if ( !pPlayer )
-		return;
-
-	// don't fire underwater
-	if (pPlayer->GetWaterLevel() == 3)
-	{
-		PlayEmptySound( );
-		m_flNextPrimaryAttack = gpGlobals->curtime + 0.15;
-		return;
-	}
-
-	pPlayer = GetPlayerOwner();
 	if ( !pPlayer )
 		return;
 
 	float flCycleTime = GetCSWpnData().m_flCycleTime;
 
 	// change a few things if we're in burst mode
-	if ( m_bBurstMode )
+	if (bFireBurst)
 	{
+		m_iFamasShotsFired = 0;
 		flCycleTime = 0.55f;
-		m_iBurstShotsRemaining = 2;
-		m_fNextBurstShot = gpGlobals->curtime + kFamasBurstCycleTime;
+	}
+	else
+	{
+		flSpread += 0.01;
 	}
 
 	if ( !CSBaseGunFire( flCycleTime, Primary_Mode ) )
@@ -236,6 +230,14 @@ void CWeaponFamas::PrimaryAttack()
 	
 	else
 		pPlayer->KickBack ( 0.625, 0.375, 0.25, 0.0125, 3.5, 2.25, 8 );
+
+	if (bFireBurst)
+	{
+		// Fire off the next two rounds
+		m_flFamasShoot = gpGlobals->curtime + 0.05;	// 0.1
+		m_fBurstSpread = flSpread;
+		m_iFamasShotsFired++;
+	}
 }
 
 

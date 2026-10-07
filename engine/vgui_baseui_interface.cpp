@@ -94,6 +94,7 @@
 #include "vgui_DebugSystemPanel.h"
 #include "toolframework/itoolframework.h"
 #include "filesystem/IQueuedLoader.h"
+#include "rmlui_wrapper.h"
 
 #if defined( _X360 )
 #include "xbox/xbox_win32stubs.h"
@@ -113,6 +114,7 @@ extern HWND *pmainwindow;
 #endif
 
 extern IVEngineClient *engineClient;
+extern IRmlUI* rmlui;
 extern bool g_bTextMode;
 static int g_syncReportLevel = -1;
 
@@ -272,6 +274,8 @@ public:
 	bool DrawTitleSafeOverlay( void );
 	bool DrawFocusPanelList( void );
 };
+
+bool g_bVGUIDisabled = false;
 
 //-----------------------------------------------------------------------------
 //
@@ -568,29 +572,8 @@ bool CEngineVGui::SetVGUIDirectories()
 //-----------------------------------------------------------------------------
 void CEngineVGui::Init()
 {
-	// Initialize RmlUi
-	//int window_width = videomode->GetModeUIWidth();
-	//int window_height = videomode->GetModeUIHeight();
-
-	//if (!Backend::Initialize("Source Engine", window_width, window_height, true))
-	//{
-	//	return;
-	//}
-
-	//Rml::SetSystemInterface(Backend::GetSystemInterface());
-	//Rml::SetRenderInterface(Backend::GetRenderInterface());
-
-	//Rml::Initialise();
-
-	//g_pRmlContext = Rml::CreateContext("main", Rml::Vector2i(window_width, window_height));
-	//if (!g_pRmlContext)
-	//{
-	//	Rml::Shutdown();
-	//	Backend::Shutdown();
-	//	return;
-	//}
-	
-	//Rml::Debugger::Initialise(g_pRmlContext);
+	g_bVGUIDisabled = !!CommandLine()->FindParm("-novgui");
+	if (g_bVGUIDisabled) return;
 
 	COM_TimestampedLog( "Loading gameui.dll" );
 
@@ -863,6 +846,7 @@ void CEngineVGui::Init()
 
 void CEngineVGui::PostInit()
 {
+	if (g_bVGUIDisabled) return;
 	staticGameUIFuncs->PostInit();
 #if defined( _X360 )
 	g_pMatSystemSurface->ClearTemporaryFontCache();
@@ -874,6 +858,7 @@ void CEngineVGui::PostInit()
 //-----------------------------------------------------------------------------
 void CEngineVGui::Connect()
 {
+	if (g_bVGUIDisabled) return;
 	m_pInputInternal = (vgui::IInputInternal *)g_GameSystemFactory( VGUI_INPUTINTERNAL_INTERFACE_VERSION,  NULL );
 	staticGameUIFuncs->Connect( g_GameSystemFactory );
 
@@ -927,6 +912,7 @@ void CEngineVGui::DestroyVProfPanels( )
 //-----------------------------------------------------------------------------
 bool CEngineVGui::IsInitialized() const
 {
+	if (g_bVGUIDisabled) return true;
 	return staticPanel != NULL;
 }
 
@@ -936,9 +922,7 @@ extern bool g_bUsingLegacyAppSystems;
 //-----------------------------------------------------------------------------
 void CEngineVGui::Shutdown()
 {
-	//Rml::Shutdown();
-	//Backend::Shutdown();
-
+	if (g_bVGUIDisabled) return;
 	if ( IsPC() && CL_IsHL2Demo() ) // if they are playing the demo then open the storefront on shutdown
 	{
 		vgui::system()->ShellExecute("open", "steam://store_demo/220");
@@ -1005,6 +989,8 @@ void CEngineVGui::Shutdown()
 //-----------------------------------------------------------------------------
 inline vgui::Panel *CEngineVGui::GetRootPanel( VGuiPanel_t type )
 {
+	if (g_bVGUIDisabled) return NULL;
+
 	if ( sv.IsDedicated() )
 	{
 		return NULL;
@@ -1030,6 +1016,8 @@ inline vgui::Panel *CEngineVGui::GetRootPanel( VGuiPanel_t type )
 
 vgui::VPANEL CEngineVGui::GetPanel( VGuiPanel_t type )
 {
+	if (!GetRootPanel(type)) return 0;
+
 	return GetRootPanel( type )->GetVPanel();
 }
 
@@ -1038,6 +1026,7 @@ vgui::VPANEL CEngineVGui::GetPanel( VGuiPanel_t type )
 //-----------------------------------------------------------------------------
 void CEngineVGui::SetEngineVisible( bool state )
 {
+	if (g_bVGUIDisabled) return;
 	if ( staticClientDLLPanel )
 	{
 		staticClientDLLPanel->SetVisible( state );
@@ -1050,6 +1039,7 @@ void CEngineVGui::SetEngineVisible( bool state )
 //-----------------------------------------------------------------------------
 bool CEngineVGui::ShouldPause()
 {
+	if (g_bVGUIDisabled) return false;
 	if ( IsPC() )
 	{
 		return bugreporter->ShouldPause() || perftools->ShouldPause();
@@ -1062,6 +1052,7 @@ bool CEngineVGui::ShouldPause()
 //-----------------------------------------------------------------------------
 void CEngineVGui::ConfirmQuit()
 {
+	if (g_bVGUIDisabled) return;
 	ActivateGameUI();
 	staticGameUIFuncs->OnConfirmQuit();
 }
@@ -1071,6 +1062,8 @@ void CEngineVGui::ConfirmQuit()
 //-----------------------------------------------------------------------------
 void CEngineVGui::ActivateGameUI()
 {
+	if (g_bVGUIDisabled) return;
+
 	if ( m_bNotAllowedToShowGameUI )
 		return;
 
@@ -1107,6 +1100,8 @@ void CEngineVGui::ActivateGameUI()
 //-----------------------------------------------------------------------------
 bool CEngineVGui::HideGameUI()
 {
+	if (g_bVGUIDisabled) return true;
+
 	if ( m_bNotAllowedToHideGameUI )
 		return false;
 
@@ -1151,6 +1146,8 @@ bool CEngineVGui::HideGameUI()
 //-----------------------------------------------------------------------------
 void CEngineVGui::HideConsole()
 {
+	if (g_bVGUIDisabled) return;
+
 	if ( IsX360() )
 		return;
 
@@ -1165,6 +1162,8 @@ void CEngineVGui::HideConsole()
 //-----------------------------------------------------------------------------
 void CEngineVGui::ShowConsole()
 {
+	if (g_bVGUIDisabled) return;
+
 	if ( IsX360() )
 		return;
 
@@ -1181,6 +1180,8 @@ void CEngineVGui::ShowConsole()
 //-----------------------------------------------------------------------------
 bool CEngineVGui::IsConsoleVisible()
 {
+	if (g_bVGUIDisabled) return false;
+
 	if ( IsPC() )
 	{
 		return IsGameUIVisible() && staticGameConsole && staticGameConsole->IsConsoleVisible();
@@ -1197,6 +1198,8 @@ bool CEngineVGui::IsConsoleVisible()
 //-----------------------------------------------------------------------------
 void CEngineVGui::ClearConsole()
 {
+	if (g_bVGUIDisabled) return;
+
 	if ( staticGameConsole )
 	{
 		staticGameConsole->Clear();
@@ -1208,6 +1211,8 @@ void CEngineVGui::ClearConsole()
 //-----------------------------------------------------------------------------
 bool CEngineVGui::IsGameUIVisible() 
 {
+	if (g_bVGUIDisabled) return false;
+
 	return staticGameUIPanel && staticGameUIPanel->IsVisible();
 }
 
@@ -1292,6 +1297,8 @@ LoadingProgressDescription_t &GetProgressDescription(int eProgress)
 //-----------------------------------------------------------------------------
 void CEngineVGui::OnLevelLoadingStarted()
 {
+	if (g_bVGUIDisabled) return;
+
 	if (!staticGameUIFuncs)
 		return;
 
@@ -1346,6 +1353,8 @@ void CEngineVGui::OnLevelLoadingStarted()
 //-----------------------------------------------------------------------------
 void CEngineVGui::OnLevelLoadingFinished()
 {
+	if (g_bVGUIDisabled) return;
+
 	if (!staticGameUIFuncs)
 		return;
 
@@ -1424,6 +1433,8 @@ void CEngineVGui::OnLevelLoadingFinished()
 //-----------------------------------------------------------------------------
 void CEngineVGui::ShowErrorMessage()
 {
+	if (g_bVGUIDisabled) return;
+
 	if (!staticGameUIFuncs || !gfExtendedError)
 		return;
 
@@ -1495,14 +1506,18 @@ void CEngineVGui::UpdateProgressBar(LevelLoadingProgress_e progress)
 	// isolated from the normal progress descriptions
 	flPerc = flPerc * ( 1.0f - m_ProgressBias ) + m_ProgressBias;
 
+	g_ClientDLL->UpdateProgressBar(flPerc, desc.pszDesc);
+
+	m_eLastProgressPoint = progress;
+
+	if (g_bVGUIDisabled) return;
+
 	if ( staticGameUIFuncs->UpdateProgressBar( flPerc, desc.pszDesc ) )
 	{
 		// re-render vgui on screen
 		extern void V_RenderVGuiOnly();
 		V_RenderVGuiOnly();
 	}
-
-	m_eLastProgressPoint = progress;
 }
 
 //-----------------------------------------------------------------------------
@@ -1510,6 +1525,8 @@ void CEngineVGui::UpdateProgressBar(LevelLoadingProgress_e progress)
 //-----------------------------------------------------------------------------
 void CEngineVGui::UpdateCustomProgressBar( float progress, const wchar_t *desc )
 {
+	if (g_bVGUIDisabled) return;
+
 	if (!staticGameUIFuncs)
 		return;
 
@@ -1526,6 +1543,8 @@ void CEngineVGui::UpdateCustomProgressBar( float progress, const wchar_t *desc )
 
 void CEngineVGui::StartCustomProgress()
 {
+	if (g_bVGUIDisabled) return;
+
 	if (!staticGameUIFuncs)
 		return;
 
@@ -1536,6 +1555,8 @@ void CEngineVGui::StartCustomProgress()
 
 void CEngineVGui::FinishCustomProgress()
 {
+	if (g_bVGUIDisabled) return;
+
 	if (!staticGameUIFuncs)
 		return;
 
@@ -1550,6 +1571,8 @@ void CEngineVGui::SetProgressBias( float bias )
 
 void CEngineVGui::UpdateProgressBar( float progress )
 {
+	if (g_bVGUIDisabled) return;
+
 	if ( !staticGameUIFuncs )
 		return;
 
@@ -1567,6 +1590,8 @@ void CEngineVGui::UpdateProgressBar( float progress )
 //-----------------------------------------------------------------------------
 void CEngineVGui::UpdateButtonState( const InputEvent_t &event )
 {
+	if (g_bVGUIDisabled) return;
+
 	m_pInputInternal->UpdateButtonState( event );
 }
 
@@ -1576,6 +1601,8 @@ void CEngineVGui::UpdateButtonState( const InputEvent_t &event )
 //-----------------------------------------------------------------------------
 bool CEngineVGui::Key_Event( const InputEvent_t &event )
 {
+	if (g_bVGUIDisabled) return true;
+
 	bool bDown = event.m_nType != IE_ButtonReleased;
 	ButtonCode_t code = (ButtonCode_t)event.m_nData;
 
@@ -1651,6 +1678,8 @@ bool CEngineVGui::Key_Event( const InputEvent_t &event )
 
 void CEngineVGui::Simulate()
 {
+	if (g_bVGUIDisabled) return;
+
 	toolframework->VGui_PreSimulateAllTools();
 
 	if ( staticPanel )
@@ -1701,14 +1730,6 @@ void CEngineVGui::Simulate()
 		VGui_ActivateMouse();
 	}
 
-	//Backend::ProcessEvents(g_pRmlContext);
-
-	//g_pRmlContext->Update();
-
-	//Backend::BeginFrame();
-	//g_pRmlContext->Render();
-	//Backend::PresentFrame();
-
 //	if ( !vgui::ivgui()->IsRunning() )
 //		Cbuf_AddText( "quit\n" );
 	
@@ -1727,6 +1748,11 @@ void CEngineVGui::BackwardCompatibility_Paint()
 void CEngineVGui::Paint( PaintMode_t mode )
 {
 	VPROF_BUDGET( "CEngineVGui::Paint", VPROF_BUDGETGROUP_OTHER_VGUI );
+
+	if (rmlui)
+		rmlui->Draw();
+
+	if (g_bVGUIDisabled) return;
 
 	if ( !staticPanel )
 		return;
@@ -1816,11 +1842,13 @@ void CEngineVGui::Paint( PaintMode_t mode )
 
 bool CEngineVGui::IsDebugSystemVisible( void )
 {
+	if (g_bVGUIDisabled) return false;
 	return staticDebugSystemPanel ? staticDebugSystemPanel->IsVisible() : false;
 }
 
 void CEngineVGui::HideDebugSystem( void )
 {
+	if (g_bVGUIDisabled) return;
 	if ( staticDebugSystemPanel )
 	{
 		staticDebugSystemPanel->SetVisible( false );
@@ -1831,6 +1859,8 @@ void CEngineVGui::HideDebugSystem( void )
 
 void CEngineVGui::ToggleDebugSystemUI( const CCommand &args )
 {
+	if (g_bVGUIDisabled) return;
+
 	if ( !staticDebugSystemPanel )
 		return;
 
@@ -1861,6 +1891,8 @@ void CEngineVGui::ToggleDebugSystemUI( const CCommand &args )
 
 bool CEngineVGui::IsShiftKeyDown( void )
 {
+	if (g_bVGUIDisabled) return false;
+
 	if ( !vgui::input() )
 		return false;
 
@@ -1869,6 +1901,8 @@ bool CEngineVGui::IsShiftKeyDown( void )
 
 bool CEngineVGui::IsAltKeyDown( void )
 {
+	if (g_bVGUIDisabled) return false;
+
 	if ( !vgui::input() )
 		return false;
 
@@ -1877,6 +1911,8 @@ bool CEngineVGui::IsAltKeyDown( void )
 
 bool CEngineVGui::IsCtrlKeyDown( void )
 {
+	if (g_bVGUIDisabled) return false;
+
 	if ( !vgui::input() )
 		return false;
 
@@ -1889,6 +1925,8 @@ bool CEngineVGui::IsCtrlKeyDown( void )
 //-----------------------------------------------------------------------------
 void CEngineVGui::NotifyOfServerConnect(const char *pchGame, int IP, int connectionPort, int queryPort)
 {
+	if (g_bVGUIDisabled) return;
+
 	if (!staticGameUIFuncs)
 		return;
 
@@ -1900,6 +1938,8 @@ void CEngineVGui::NotifyOfServerConnect(const char *pchGame, int IP, int connect
 //-----------------------------------------------------------------------------
 void CEngineVGui::NotifyOfServerDisconnect()
 {
+	if (g_bVGUIDisabled) return;
+
 	if (!staticGameUIFuncs)
 		return;
 
@@ -1912,11 +1952,13 @@ void CEngineVGui::NotifyOfServerDisconnect()
 //-----------------------------------------------------------------------------
 void CEngineVGui::SessionNotification( const int notification, const int param )
 {
+	if (g_bVGUIDisabled) return;
 	staticGameUIFuncs->SessionNotification( notification, param );
 }
 
 void CEngineVGui::SystemNotification( const int notification )
 {
+	if (g_bVGUIDisabled) return;
 	staticGameUIFuncs->SystemNotification( notification );
 }
 
@@ -1925,17 +1967,20 @@ void CEngineVGui::SystemNotification( const int notification )
 //-----------------------------------------------------------------------------
 void CEngineVGui::ShowMessageDialog( const uint nType, vgui::Panel *pOwner )
 {
+	if (g_bVGUIDisabled) return;
 	ActivateGameUI();
 	staticGameUIFuncs->ShowMessageDialog( nType, pOwner );
 }
 
 void CEngineVGui::UpdatePlayerInfo( uint64 nPlayerId, const char *pName, int nTeam, byte cVoiceState, int nPlayersNeeded, bool bHost )
 {
+	if (g_bVGUIDisabled) return;
 	staticGameUIFuncs->UpdatePlayerInfo( nPlayerId, pName, nTeam, cVoiceState, nPlayersNeeded, bHost );
 }
 
 void CEngineVGui::SessionSearchResult( int searchIdx, void *pHostData, XSESSION_SEARCHRESULT *pResult, int ping )
 {
+	if (g_bVGUIDisabled) return;
 	staticGameUIFuncs->SessionSearchResult( searchIdx, pHostData, pResult, ping );
 }
 
@@ -1995,7 +2040,10 @@ void VGui_ActivateMouse()
 		return;
 	}
 	*/
-			
+
+	if (g_bVGUIDisabled) return;
+	//////
+
 	if ( vgui::surface()->IsCursorLocked() && !g_bTextMode )
 	{
 		g_ClientDLL->IN_ActivateMouse ();
@@ -2341,21 +2389,25 @@ void CEngineVGui::DrawMouseFocus( void )
 
 void VGui_SetGameDLLPanelsVisible( bool show )
 {
+	if (g_bVGUIDisabled) return;
 	EngineVGui()->SetGameDLLPanelsVisible( show );
 }
 
 void CEngineVGui::ShowNewGameDialog( int chapter )
 {
+	if (g_bVGUIDisabled) return;
 	staticGameUIFuncs->ShowNewGameDialog( chapter );
 }
 
 void CEngineVGui::OnCreditsFinished( void ) 
 {
+	if (g_bVGUIDisabled) return;
 	staticGameUIFuncs->OnCreditsFinished();
 }
 
 bool CEngineVGui::ValidateStorageDevice(int *pStorageDeviceValidated)
 {
+	if (g_bVGUIDisabled) return false;
 	return staticGameUIFuncs->ValidateStorageDevice( pStorageDeviceValidated );
 }
 

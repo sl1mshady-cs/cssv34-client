@@ -1,0 +1,80 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from waflib import Utils
+import os
+
+top = '.'
+PROJECT_NAME = 'lua'
+
+def options(opt):
+    return
+
+def configure(conf):
+    conf.define('LUA_COMPAT_5_2', 1)
+
+def build(bld):
+    source = [
+        'lapi.c',
+        'lcode.c',
+        'lctype.c',
+        'ldebug.c',
+        'ldo.c',
+        'ldump.c',
+        'lfunc.c',
+        'lgc.c',
+        'llex.c',
+        'lmem.c',
+        'lobject.c',
+        'lopcodes.c',
+        'lparser.c',
+        'lstate.c',
+        'lstring.c',
+        'ltable.c',
+        'ltm.c',
+        'lundump.c',
+        'lvm.c',
+        'lzio.c',
+        'lauxlib.c',
+        'lbaselib.c',
+        'lbitlib.c',
+        'lcorolib.c',
+        'ldblib.c',
+        'liolib.c',
+        'lmathlib.c',
+        'loslib.c',
+        'lstrlib.c',
+        'ltablib.c',
+        'lutf8lib.c',
+        'loadlib.c',
+        'linit.c',
+    ]
+
+    includes = ['.']
+
+    defines = ['LUA_COMPAT_5_2']
+
+    libs = []
+
+    cflags = []
+    if bld.env.CC_NAME == 'msvc':
+        cflags.append('/TC')
+
+    if bld.env.DEST_OS == 'android':
+        libs += ['ANDROID_SUPPORT']
+
+    install_path = bld.env.LIBDIR
+
+    bld.stlib(
+        source       = source,
+        target       = PROJECT_NAME,
+        name         = PROJECT_NAME,
+        features     = 'c',
+        includes     = includes,
+        defines      = defines,
+        use          = libs,
+	cflags       = cflags,
+        install_path = install_path,
+        subsystem    = bld.env.MSVC_SUBSYSTEM,
+        idx          = bld.get_taskgen_count()
+    )

@@ -33,6 +33,7 @@ CLIENTEFFECT_MATERIAL( "effects/fleck_wood2" )
 CLIENTEFFECT_MATERIAL( "effects/blood" )
 CLIENTEFFECT_MATERIAL( "effects/blood2" )
 CLIENTEFFECT_MATERIAL( "sprites/bloodspray" )
+CLIENTEFFECT_MATERIAL( "particle/particle_smokegrenade" )
 CLIENTEFFECT_MATERIAL( "particle/particle_noisesphere" )
 CLIENTEFFECT_REGISTER_END()
 
@@ -1078,152 +1079,119 @@ void FX_DustImpact( const Vector &origin, trace_t *tr, float flScale )
 	// PC version
 	//
 
-	VPROF_BUDGET( "FX_DustImpact", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
-	Vector	offset;
-	float	spread = 0.2f;
-	
-	CSmartPtr<CDustParticle> pSimple = CDustParticle::Create( "dust" );
-	pSimple->SetSortOrigin( origin );
-
-	// Three types of particle, ideally we want 4 of each.
-	float fNumParticles = 4.0f * g_pParticleSystemMgr->ParticleThrottleScaling();
-	int nParticles1 = (int)( 0.50f + fNumParticles );
-	int nParticles2 = (int)( 0.83f + fNumParticles );		// <-- most visible particle type.
-	int nParticles3 = (int)( 0.17f + fNumParticles );
-
-	SimpleParticle	*pParticle;
+	VPROF_BUDGET("FX_DustImpact", VPROF_BUDGETGROUP_PARTICLE_RENDERING);
+	int iScale = (int)flScale;
 
 	Vector	color;
-	float	colorRamp;
-
 	GetColorForSurface( tr, &color );
+	
+	//
+	// Dust trail
+	//
+	Vector	offset = tr->endpos + ( tr->plane.normal * 2.0f );
 
-	// To get a decent spread even when scaling down the number of particles...
-	const static int nParticleIdArray[4] = {3,1,2,0};
+	SimpleParticle newParticle;
 
 	int i;
-	for ( i = 0; i < nParticles1; i++ )
+	for ( i = 0; i < 2; i++ )
 	{
-		int nId = nParticleIdArray[i];
+		newParticle.m_Pos = offset;
 
-		pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), g_Mat_DustPuff[0], origin );
+		newParticle.m_flLifetime	= 0.0f;
+		newParticle.m_flDieTime	= random->RandomFloat( 0.5f, 1.0f );
 
-		if ( pParticle != NULL )
-		{
-			pParticle->m_flLifetime = 0.0f;
-			pParticle->m_flDieTime	= random->RandomFloat( 0.5f, 1.0f );
+		Vector dir;
+		dir[0] = tr->plane.normal[0] + random->RandomFloat( -0.8f, 0.8f );
+		dir[1] = tr->plane.normal[1] + random->RandomFloat( -0.8f, 0.8f );
+		dir[2] = tr->plane.normal[2] + random->RandomFloat( -0.8f, 0.8f );
 
-			pParticle->m_vecVelocity.Random( -spread, spread );
-			pParticle->m_vecVelocity += ( tr->plane.normal * random->RandomFloat( 1.0f, 6.0f ) );
-			
-			VectorNormalize( pParticle->m_vecVelocity );
+		newParticle.m_uchStartSize	= random->RandomInt( 2, 4 ) * iScale;
+		newParticle.m_uchEndSize	= newParticle.m_uchStartSize * 8 * iScale;
 
-			float	fForce = random->RandomFloat( 250, 500 ) * nId;
+		newParticle.m_vecVelocity = dir * random->RandomFloat( 2.0f, 24.0f )*(i+1);
+		newParticle.m_vecVelocity[2] -= random->RandomFloat( 8.0f, 32.0f )*(i+1);
 
-			// scaled
-			pParticle->m_vecVelocity *= fForce * flScale;
-			
-			colorRamp = random->RandomFloat( 0.75f, 1.25f );
+		newParticle.m_uchStartAlpha	= random->RandomInt( 100, 200 );
+		newParticle.m_uchEndAlpha	= 0;
 
-			pParticle->m_uchColor[0]	= MIN( 1.0f, color[0] * colorRamp ) * 255.0f;
-			pParticle->m_uchColor[1]	= MIN( 1.0f, color[1] * colorRamp ) * 255.0f;
-			pParticle->m_uchColor[2]	= MIN( 1.0f, color[2] * colorRamp ) * 255.0f;
-			
-			// scaled
-			pParticle->m_uchStartSize	= ( unsigned char )( flScale * random->RandomInt( 3, 4 ) * (nId+1) );
+		newParticle.m_flRoll			= random->RandomFloat( 0, 360 );
+		newParticle.m_flRollDelta	= random->RandomFloat( -6, 6 );
 
-			// scaled
-			pParticle->m_uchEndSize		= ( unsigned char )( flScale * pParticle->m_uchStartSize * 4 );
-			
-			pParticle->m_uchStartAlpha	= random->RandomInt( 32, 255 );
-			pParticle->m_uchEndAlpha	= 0;
-			
-			pParticle->m_flRoll			= random->RandomInt( 0, 360 );
-			pParticle->m_flRollDelta	= random->RandomFloat( -8.0f, 8.0f );
-		}
-	}			
+		float colorRamp = random->RandomFloat( 0.75f, 1.25f );
 
-	//Dust specs
-	for ( i = 0; i < nParticles2; i++ )
-	{
-		int nId = nParticleIdArray[i];
+		newParticle.m_uchColor[0] = MIN( 1.0f, color[0]*colorRamp ) * 255.0f;
+		newParticle.m_uchColor[1] = MIN( 1.0f, color[1]*colorRamp ) * 255.0f;
+		newParticle.m_uchColor[2] = MIN( 1.0f, color[2]*colorRamp ) * 255.0f;
 
-		pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), g_Mat_BloodPuff[0], origin );
-
-		if ( pParticle != NULL )
-		{
-			pParticle->m_flLifetime = 0.0f;
-			pParticle->m_flDieTime	= random->RandomFloat( 0.25f, 0.75f );
-
-			pParticle->m_vecVelocity.Random( -spread, spread );
-			pParticle->m_vecVelocity += ( tr->plane.normal * random->RandomFloat( 1.0f, 6.0f ) );
-			
-			VectorNormalize( pParticle->m_vecVelocity );
-
-			float	fForce = random->RandomFloat( 250, 500 ) * nId;
-
-			pParticle->m_vecVelocity *= fForce;
-			
-			colorRamp = random->RandomFloat( 0.75f, 1.25f );
-
-			pParticle->m_uchColor[0]	= MIN( 1.0f, color[0] * colorRamp ) * 255.0f;
-			pParticle->m_uchColor[1]	= MIN( 1.0f, color[1] * colorRamp ) * 255.0f;
-			pParticle->m_uchColor[2]	= MIN( 1.0f, color[2] * colorRamp ) * 255.0f;
-			
-			pParticle->m_uchStartSize	= random->RandomInt( 2, 4 ) * (nId+1);
-			pParticle->m_uchEndSize		= pParticle->m_uchStartSize * 2;
-			
-			pParticle->m_uchStartAlpha	= 255;
-			pParticle->m_uchEndAlpha	= 0;
-			
-			pParticle->m_flRoll			= random->RandomInt( 0, 360 );
-			pParticle->m_flRollDelta	= random->RandomFloat( -2.0f, 2.0f );
-		}
+		AddSimpleParticle( &newParticle, g_Mat_DustPuff[0] );
 	}
 
-	//Impact hit
-	for ( i = 0; i < nParticles3; i++ )
+
+	for ( i = 0; i < 4; i++ )
 	{
-		//int nId = nParticleIdArray[i];
+		newParticle.m_Pos = offset;
 
-		pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), g_Mat_DustPuff[0], origin );
+		newParticle.m_flLifetime	= 0.0f;
+		newParticle.m_flDieTime	= random->RandomFloat( 0.25f, 0.5f );
 
-		if ( pParticle != NULL )
-		{
-			offset = origin;
-			offset[0] += random->RandomFloat( -8.0f, 8.0f );
-			offset[1] += random->RandomFloat( -8.0f, 8.0f );
+		Vector dir;
+		dir[0] = tr->plane.normal[0] + random->RandomFloat( -0.8f, 0.8f );
+		dir[1] = tr->plane.normal[1] + random->RandomFloat( -0.8f, 0.8f );
+		dir[2] = tr->plane.normal[2] + random->RandomFloat( -0.8f, 0.8f );
 
-			pParticle->m_flLifetime = 0.0f;
-			pParticle->m_flDieTime	= random->RandomFloat( 0.5f, 1.0f );
+		newParticle.m_uchStartSize	= random->RandomInt( 1, 4 );
+		newParticle.m_uchEndSize	= newParticle.m_uchStartSize * 4;
 
-			spread = 1.0f;
+		newParticle.m_vecVelocity = dir * random->RandomFloat( 8.0f, 32.0f );
+		newParticle.m_vecVelocity[2] -= random->RandomFloat( 8.0f, 64.0f );
 
-			pParticle->m_vecVelocity.Random( -spread, spread );
-			pParticle->m_vecVelocity += tr->plane.normal;
-			
-			VectorNormalize( pParticle->m_vecVelocity );
+		newParticle.m_uchStartAlpha	= 255;
+		newParticle.m_uchEndAlpha	= 0;
 
-			float	fForce = random->RandomFloat( 0, 50 );
+		newParticle.m_flRoll			= random->RandomFloat( 0, 360 );
+		newParticle.m_flRollDelta	= random->RandomFloat( -2.0f, 2.0f );
 
-			pParticle->m_vecVelocity *= fForce;
-			
-			colorRamp = random->RandomFloat( 0.75f, 1.25f );
+		float colorRamp = random->RandomFloat( 0.75f, 1.25f );
 
-			pParticle->m_uchColor[0]	= MIN( 1.0f, color[0] * colorRamp ) * 255.0f;
-			pParticle->m_uchColor[1]	= MIN( 1.0f, color[1] * colorRamp ) * 255.0f;
-			pParticle->m_uchColor[2]	= MIN( 1.0f, color[2] * colorRamp ) * 255.0f;
-			
-			pParticle->m_uchStartSize	= random->RandomInt( 1, 4 );
-			pParticle->m_uchEndSize		= pParticle->m_uchStartSize * 4;
-			
-			pParticle->m_uchStartAlpha	= random->RandomInt( 32, 64 );
-			pParticle->m_uchEndAlpha	= 0;
-			
-			pParticle->m_flRoll			= random->RandomInt( 0, 360 );
-			pParticle->m_flRollDelta	= random->RandomFloat( -16.0f, 16.0f );
-		}
-	}			
+		newParticle.m_uchColor[0] = MIN( 1.0f, color[0]*colorRamp ) * 255.0f;
+		newParticle.m_uchColor[1] = MIN( 1.0f, color[1]*colorRamp ) * 255.0f;
+		newParticle.m_uchColor[2] = MIN( 1.0f, color[2]*colorRamp ) * 255.0f;
+
+		AddSimpleParticle( &newParticle, g_Mat_BloodPuff[0] );
+	}
+
+	//
+	// Bullet hole capper
+	//
+	newParticle.m_Pos = offset;
+
+	newParticle.m_flLifetime	= 0.0f;
+	newParticle.m_flDieTime		= random->RandomFloat( 1.0f, 1.5f );
+
+	Vector dir;
+	dir[0] = tr->plane.normal[0] + random->RandomFloat( -0.8f, 0.8f );
+	dir[1] = tr->plane.normal[1] + random->RandomFloat( -0.8f, 0.8f );
+	dir[2] = tr->plane.normal[2] + random->RandomFloat( -0.8f, 0.8f );
+
+	newParticle.m_uchStartSize	= random->RandomInt( 4, 8 );
+	newParticle.m_uchEndSize	= newParticle.m_uchStartSize * 4.0f;
+
+	newParticle.m_vecVelocity = dir * random->RandomFloat( 2.0f, 24.0f );
+	newParticle.m_vecVelocity[2] = random->RandomFloat( -2.0f, 2.0f );
+
+	newParticle.m_uchStartAlpha	= random->RandomInt( 100, 200 );
+	newParticle.m_uchEndAlpha	= 0;
+
+	newParticle.m_flRoll		= random->RandomFloat( 0, 360 );
+	newParticle.m_flRollDelta	= random->RandomFloat( -4, 4 );
+
+	float colorRamp = random->RandomFloat( 0.5f, 1.25f );
+
+	newParticle.m_uchColor[0] = MIN( 1.0f, color[0]*colorRamp ) * 255.0f;
+	newParticle.m_uchColor[1] = MIN( 1.0f, color[1]*colorRamp ) * 255.0f;
+	newParticle.m_uchColor[2] = MIN( 1.0f, color[2]*colorRamp ) * 255.0f;
+
+	AddSimpleParticle( &newParticle, g_Mat_DustPuff[0] );
 }
 
 #ifdef _XBOX

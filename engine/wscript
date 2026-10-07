@@ -344,6 +344,7 @@ def build(bld):
 
 	includes = [
 		'.',
+		'../common/RmlUi/Include',
 		'../public',
 		'../public/tier0',
 		'../public/tier1',

@@ -1,0 +1,333 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from waflib import Utils
+import os
+
+top = '.'
+PROJECT_NAME = 'rmlui_utils'
+
+CORE_SOURCES = [
+    "Core/BaseXMLParser.cpp",
+    "Core/Box.cpp",
+    "Core/BoxShadowCache.cpp",
+    "Core/CallbackTexture.cpp",
+    "Core/Clock.cpp",
+    "Core/CompiledFilterShader.cpp",
+    "Core/ComputedValues.cpp",
+    "Core/ComputeProperty.cpp",
+    "Core/Context.cpp",
+    "Core/ContextInstancer.cpp",
+    "Core/ContextInstancerDefault.cpp",
+    "Core/ConvolutionFilter.cpp",
+    "Core/Core.cpp",
+    "Core/DataController.cpp",
+    "Core/DataControllerDefault.cpp",
+    "Core/DataExpression.cpp",
+    "Core/DataModel.cpp",
+    "Core/DataModelHandle.cpp",
+    "Core/DataTypeRegister.cpp",
+    "Core/DataVariable.cpp",
+    "Core/DataView.cpp",
+    "Core/DataViewDefault.cpp",
+    "Core/Decorator.cpp",
+    "Core/DecoratorGradient.cpp",
+    "Core/DecoratorNinePatch.cpp",
+    "Core/DecoratorShader.cpp",
+    "Core/DecoratorText.cpp",
+    "Core/DecoratorTiled.cpp",
+    "Core/DecoratorTiledBox.cpp",
+    "Core/DecoratorTiledHorizontal.cpp",
+    "Core/DecoratorTiledImage.cpp",
+    "Core/DecoratorTiledVertical.cpp",
+    "Core/DecoratorUtilities.cpp",
+    "Core/DocumentHeader.cpp",
+    "Core/EffectSpecification.cpp",
+    "Core/Element.cpp",
+    "Core/ElementAnimation.cpp",
+    "Core/ElementBackgroundBorder.cpp",
+    "Core/ElementDefinition.cpp",
+    "Core/ElementDocument.cpp",
+    "Core/ElementEffects.cpp",
+    "Core/ElementHandle.cpp",
+    "Core/ElementInstancer.cpp",
+    "Core/ElementMeta.cpp",
+    "Core/ElementScroll.cpp",
+    "Core/ElementStyle.cpp",
+    "Core/ElementText.cpp",
+    "Core/ElementUtilities.cpp",
+    "Core/Event.cpp",
+    "Core/EventDispatcher.cpp",
+    "Core/EventInstancer.cpp",
+    "Core/EventInstancerDefault.cpp",
+    "Core/EventListenerInstancer.cpp",
+    "Core/EventSpecification.cpp",
+    "Core/Factory.cpp",
+    "Core/FileInterface.cpp",
+    "Core/FileInterfaceDefault.cpp",
+    "Core/Filter.cpp",
+    "Core/FilterBasic.cpp",
+    "Core/FilterBlur.cpp",
+    "Core/FilterDropShadow.cpp",
+    "Core/FontEffect.cpp",
+    "Core/FontEffectBlur.cpp",
+    "Core/FontEffectGlow.cpp",
+    "Core/FontEffectInstancer.cpp",
+    "Core/FontEffectOutline.cpp",
+    "Core/FontEffectShadow.cpp",
+    "Core/FontEngineInterface.cpp",
+    "Core/Geometry.cpp",
+    "Core/GeometryBackgroundBorder.cpp",
+    "Core/GeometryBoxShadow.cpp",
+    "Core/Log.cpp",
+    "Core/LogDefault.cpp",
+    "Core/Math.cpp",
+    "Core/Memory.cpp",
+    "Core/MeshUtilities.cpp",
+    "Core/ObserverPtr.cpp",
+    "Core/Plugin.cpp",
+    "Core/PluginRegistry.cpp",
+    "Core/Profiling.cpp",
+    "Core/PropertiesIteratorView.cpp",
+    "Core/Property.cpp",
+    "Core/PropertyDefinition.cpp",
+    "Core/PropertyDictionary.cpp",
+    "Core/PropertyParserAnimation.cpp",
+    "Core/PropertyParserBoxShadow.cpp",
+    "Core/PropertyParserColorStopList.cpp",
+    "Core/PropertyParserColour.cpp",
+    "Core/PropertyParserDecorator.cpp",
+    "Core/PropertyParserFilter.cpp",
+    "Core/PropertyParserFontEffect.cpp",
+    "Core/PropertyParserKeyword.cpp",
+    "Core/PropertyParserNumber.cpp",
+    "Core/PropertyParserRatio.cpp",
+    "Core/PropertyParserString.cpp",
+    "Core/PropertyParserTransform.cpp",
+    "Core/PropertySpecification.cpp",
+    "Core/RenderInterface.cpp",
+    "Core/RenderInterfaceCompatibility.cpp",
+    "Core/RenderManager.cpp",
+    "Core/RenderManagerAccess.cpp",
+    "Core/ScriptInterface.cpp",
+    "Core/ScrollController.cpp",
+    "Core/Spritesheet.cpp",
+    "Core/Stream.cpp",
+    "Core/StreamFile.cpp",
+    "Core/StreamMemory.cpp",
+    "Core/StringUtilities.cpp",
+    "Core/StyleSheet.cpp",
+    "Core/StyleSheetContainer.cpp",
+    "Core/StyleSheetFactory.cpp",
+    "Core/StyleSheetNode.cpp",
+    "Core/StyleSheetParser.cpp",
+    "Core/StyleSheetSelector.cpp",
+    "Core/StyleSheetSpecification.cpp",
+    "Core/SystemInterface.cpp",
+    "Core/Template.cpp",
+    "Core/TemplateCache.cpp",
+    "Core/Texture.cpp",
+    "Core/TextureDatabase.cpp",
+    "Core/TextureLayout.cpp",
+    "Core/TextureLayoutRectangle.cpp",
+    "Core/TextureLayoutRow.cpp",
+    "Core/TextureLayoutTexture.cpp",
+    "Core/Traits.cpp",
+    "Core/Transform.cpp",
+    "Core/TransformPrimitive.cpp",
+    "Core/TransformState.cpp",
+    "Core/TransformUtilities.cpp",
+    "Core/Tween.cpp",
+    "Core/TypeConverter.cpp",
+    "Core/URL.cpp",
+    "Core/Variant.cpp",
+    "Core/WidgetScroll.cpp",
+    "Core/XMLNodeHandler.cpp",
+    "Core/XMLNodeHandlerBody.cpp",
+    "Core/XMLNodeHandlerDefault.cpp",
+    "Core/XMLNodeHandlerHead.cpp",
+    "Core/XMLNodeHandlerTemplate.cpp",
+    "Core/XMLParser.cpp",
+    "Core/XMLParseTools.cpp",
+]
+
+ELEMENT_SOURCES = [
+    "Core/Elements/ElementForm.cpp",
+    "Core/Elements/ElementFormControl.cpp",
+    "Core/Elements/ElementFormControlInput.cpp",
+    "Core/Elements/ElementFormControlSelect.cpp",
+    "Core/Elements/ElementFormControlTextArea.cpp",
+    "Core/Elements/ElementImage.cpp",
+    "Core/Elements/ElementLabel.cpp",
+    "Core/Elements/ElementProgress.cpp",
+    "Core/Elements/ElementTabSet.cpp",
+    "Core/Elements/ElementTextSelection.cpp",
+    "Core/Elements/InputType.cpp",
+    "Core/Elements/InputTypeButton.cpp",
+    "Core/Elements/InputTypeCheckbox.cpp",
+    "Core/Elements/InputTypeRadio.cpp",
+    "Core/Elements/InputTypeRange.cpp",
+    "Core/Elements/InputTypeSubmit.cpp",
+    "Core/Elements/InputTypeText.cpp",
+    "Core/Elements/WidgetDropDown.cpp",
+    "Core/Elements/WidgetSlider.cpp",
+    "Core/Elements/WidgetTextInput.cpp",
+    "Core/Elements/WidgetTextInputMultiLine.cpp",
+    "Core/Elements/WidgetTextInputSingleLine.cpp",
+    "Core/Elements/WidgetTextInputSingleLinePassword.cpp",
+    "Core/Elements/XMLNodeHandlerSelect.cpp",
+    "Core/Elements/XMLNodeHandlerTabSet.cpp",
+    "Core/Elements/XMLNodeHandlerTextArea.cpp",
+]
+
+LAYOUT_SOURCES = [
+    "Core/Layout/BlockContainer.cpp",
+    "Core/Layout/BlockFormattingContext.cpp",
+    "Core/Layout/ContainerBox.cpp",
+    "Core/Layout/FlexFormattingContext.cpp",
+    "Core/Layout/FloatedBoxSpace.cpp",
+    "Core/Layout/FormattingContext.cpp",
+    "Core/Layout/InlineBox.cpp",
+    "Core/Layout/InlineContainer.cpp",
+    "Core/Layout/InlineLevelBox.cpp",
+    "Core/Layout/LayoutBox.cpp",
+    "Core/Layout/LayoutDetails.cpp",
+    "Core/Layout/LayoutEngine.cpp",
+    "Core/Layout/LayoutPools.cpp",
+    "Core/Layout/LineBox.cpp",
+    "Core/Layout/ReplacedFormattingContext.cpp",
+    "Core/Layout/TableFormattingContext.cpp",
+    "Core/Layout/TableFormattingDetails.cpp",
+]
+
+FONT_SOURCES = [
+    "Core/FontEngineDefault/FontEngineInterfaceDefault.cpp",
+    "Core/FontEngineDefault/FontFace.cpp",
+    "Core/FontEngineDefault/FontFaceHandleDefault.cpp",
+    "Core/FontEngineDefault/FontFaceLayer.cpp",
+    "Core/FontEngineDefault/FontFamily.cpp",
+    "Core/FontEngineDefault/FontProvider.cpp",
+    "Core/FontEngineDefault/FreeTypeInterface.cpp",
+]
+
+SVG_SOURCES = [
+    "SVG/DecoratorSVG.cpp",
+    "SVG/ElementSVG.cpp",
+    "SVG/SVGCache.cpp",
+    "SVG/SVGPlugin.cpp",
+    "SVG/XMLNodeHandlerSVG.cpp",
+
+    "../thirdparty/lunasvg/source/graphics.cpp",
+    "../thirdparty/lunasvg/source/lunasvg.cpp",
+    "../thirdparty/lunasvg/source/svgelement.cpp",
+    "../thirdparty/lunasvg/source/svggeometryelement.cpp",
+    "../thirdparty/lunasvg/source/svglayoutstate.cpp",
+    "../thirdparty/lunasvg/source/svgpaintelement.cpp",
+    "../thirdparty/lunasvg/source/svgparser.cpp",
+    "../thirdparty/lunasvg/source/svgproperty.cpp",
+    "../thirdparty/lunasvg/source/svgrenderstate.cpp",
+    "../thirdparty/lunasvg/source/svgtextelement.cpp",
+]
+
+LUA_SOURCES = [
+    "Lua/Colourb.cpp",
+    "Lua/Colourf.cpp",
+    "Lua/Context.cpp",
+    "Lua/ContextDocumentsProxy.cpp",
+    "Lua/Document.cpp",
+    "Lua/Element.cpp",
+    "Lua/ElementAttributesProxy.cpp",
+    "Lua/ElementChildNodesProxy.cpp",
+    "Lua/ElementInstancer.cpp",
+    "Lua/ElementStyleProxy.cpp",
+    "Lua/ElementText.cpp",
+    "Lua/Event.cpp",
+    "Lua/EventParametersProxy.cpp",
+    "Lua/GlobalLuaFunctions.cpp",
+    "Lua/Interpreter.cpp",
+    "Lua/Log.cpp",
+    "Lua/Lua.cpp",
+    "Lua/LuaDataModel.cpp",
+    "Lua/LuaDocument.cpp",
+    "Lua/LuaDocumentElementInstancer.cpp",
+    "Lua/LuaElementInstancer.cpp",
+    "Lua/LuaEventListener.cpp",
+    "Lua/LuaEventListenerInstancer.cpp",
+    "Lua/LuaPlugin.cpp",
+    "Lua/LuaType.cpp",
+    "Lua/RmlUi.cpp",
+    "Lua/RmlUiContextsProxy.cpp",
+    "Lua/Utilities.cpp",
+    "Lua/Vector2f.cpp",
+    "Lua/Vector2i.cpp",
+
+    "Lua/Elements/ElementForm.cpp",
+    "Lua/Elements/ElementFormControl.cpp",
+    "Lua/Elements/ElementFormControlInput.cpp",
+    "Lua/Elements/ElementFormControlSelect.cpp",
+    "Lua/Elements/ElementFormControlTextArea.cpp",
+    "Lua/Elements/ElementTabSet.cpp",
+    "Lua/Elements/SelectOptionsProxy.cpp",
+]
+
+def options(opt):
+	# stub
+	return
+
+def configure(conf):
+	#conf.define('_WINDOWS',1)
+	#conf.define('PROTECTED_THINGS_ENABLE',1)
+	conf.define('RMLUI_STATIC_LIB', 1)
+	conf.define('RMLUI_FONT_ENGINE', 'freetype')
+	conf.define('RMLUI_FONT_ENGINE_FREETYPE', 1)
+	conf.define('RMLUI_SVG_PLUGIN', 1)
+	conf.define('RMLUI_LUA_BINDINGS', 1)
+	conf.define('LUNASVG_BUILD_STATIC', 1)
+	conf.define('PLUTOVG_BUILD_STATIC', 1)
+
+def build(bld):
+    source = [
+        'rmlui_fileinterface.cpp',
+        'rmlui_systeminterface.cpp',
+        'rmlui_renderinterface.cpp',
+        'rmlui_main.cpp'
+    ]
+
+    source += CORE_SOURCES
+    source += ELEMENT_SOURCES
+    source += LAYOUT_SOURCES
+    source += FONT_SOURCES
+    source += SVG_SOURCES
+    source += LUA_SOURCES
+
+    includes = [
+        '.',
+        '../public',
+        '../public/tier0',
+        '../public/tier1',
+        '../thirdparty/freetype/include',
+        '../thirdparty/lunasvg/include',
+        '../thirdparty/lua',
+        '../thirdparty/plutovg/include',
+        '../thirdparty/freetype/include/freetype',
+        '../game/shared'
+    ]
+
+    defines = []
+
+    libs = ['tier0', 'tier1', 'tier2', 'plutovg', 'lua', 'FT2', 'LEGACY_STDIO_DEFINITIONS']
+
+    if bld.env.DEST_OS == 'android':
+        libs += ['ANDROID_SUPPORT']
+
+    bld.shlib(
+        source       = source,
+        target       = PROJECT_NAME,
+        name         = PROJECT_NAME,
+        features     = 'c cxx',
+        includes     = includes,
+        defines      = defines,
+        use          = libs,
+        subsystem    = bld.env.MSVC_SUBSYSTEM,
+        idx          = bld.get_taskgen_count()
+    )
