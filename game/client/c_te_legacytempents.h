@@ -133,7 +133,7 @@ public:
 public:
 	enum
 	{ 
-		MAX_TEMP_ENTITIES = 500,
+		MAX_TEMP_ENTITIES = 2048, // was 500: "Overflow 500 temporary ents!" on full servers (issue #24)
 		MAX_TEMP_ENTITY_SPRITES = 200,
 		MAX_TEMP_ENTITY_STUDIOMODEL = 50,
 	};
