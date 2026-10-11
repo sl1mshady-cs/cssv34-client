@@ -12,6 +12,7 @@
 #include "revCommon.h"
 #include "steamclient.h"
 #include "logging.h"
+#include "minidump.h"
 
 extern int S_CALLTYPE steam_startup();
 extern int S_CALLTYPE steam_shutdown();
@@ -106,8 +107,20 @@ S_API bool S_CALLTYPE SteamAPI_IsSteamRunning()
 S_API bool S_CALLTYPE SteamAPI_RestartAppIfNecessary(uint32 unOwnAppID) { return false; }
 
 // crash dump recording functions
-S_API void S_CALLTYPE SteamAPI_WriteMiniDump(uint32 uStructuredExceptionCode, void* pvExceptionInfo, uint32 uBuildID) { }
-S_API void S_CALLTYPE SteamAPI_SetMiniDumpComment(const char* pchMsg) { }
+S_API void S_CALLTYPE SteamAPI_WriteMiniDump(
+	uint32 uStructuredExceptionCode,
+	void* pvExceptionInfo,
+	uint32 uBuildID)
+{
+	// Write minidump using tier0 api function
+	WriteMiniDumpUsingExceptionInfo(uStructuredExceptionCode,
+		(_EXCEPTION_POINTERS*)pvExceptionInfo, 0x00000041);
+}
+
+S_API void S_CALLTYPE SteamAPI_SetMiniDumpComment(const char* pchMsg) 
+{
+	SetMinidumpComment(pchMsg);
+}
 
 // interface pointers, configured by SteamAPI_Init()
 S_API ISteamClient* S_CALLTYPE SteamClient() { 
@@ -115,7 +128,7 @@ S_API ISteamClient* S_CALLTYPE SteamClient() {
 }
 
 S_API ISteamUser* S_CALLTYPE SteamUser() { return g_pSteamUser; }
-S_API ISteamFriends* S_CALLTYPE SteamFriends() { return nullptr; }
+S_API ISteamFriends* S_CALLTYPE SteamFriends() { return g_pSteamFriends; }
 S_API ISteamUtils* S_CALLTYPE SteamUtils() { return nullptr; }
 S_API ISteamMatchmaking* S_CALLTYPE SteamMatchmaking() { return g_pSteamMatchMaking; }
 S_API void* S_CALLTYPE SteamMasterServerUpdater() { return nullptr; }
@@ -200,15 +213,6 @@ S_API ISteamUGC* S_CALLTYPE SteamGameServerUGC() { return nullptr; }
 
 S_API bool S_CALLTYPE SteamGameServer_Init(uint32 unIP, uint16 usSteamPort, uint16 usGamePort, uint16 usQueryPort, uint32 eServerMode, const char* pchVersionString) 
 {
-	std::lock_guard<std::recursive_mutex> lock(global_mutex);
-
-	// check if already initialized
-	if (g_flLastInitTime != 0.0f)
-		return true;
-
-	g_pSteamClientGameServer = CreateClientInterface(STEAMCLIENT_INTERFACE_VERSION);
-	g_flLastInitTime = Plat_FloatTime();
-
 	return true;
 }
 
@@ -219,14 +223,6 @@ S_API bool S_CALLTYPE SteamGameServer_InitSafe(uint32 unIP, uint16 usSteamPort, 
 
 S_API void S_CALLTYPE SteamGameServer_Shutdown() 
 {
-	std::lock_guard<std::recursive_mutex> lock(global_mutex);
-
-	// not doing too fast Init && Shutdown
-	if (Plat_FloatTime() - g_flLastInitTime < 10.0f)
-		return;
-
-	DestroyClientInterface(g_pSteamClientGameServer);
-	g_flLastInitTime = 0.0f;
 }
 
 S_API void S_CALLTYPE SteamGameServer_RunCallbacks() 

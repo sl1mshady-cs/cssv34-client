@@ -134,6 +134,110 @@ std::string getSystemLanguage()
     return "Unknown";
 }
 
+// Xoshiro256**
+static uint64 xoshiro_state[4] = { 0x12345, 0x6789A, 0xBCDEF, 0x13579 };
+
+static inline uint64 rotl(const uint64 x, int k) {
+    return (x << k) | (x >> (64 - k));
+}
+
+void randombytes(uint8* buf, size_t size)
+{
+    size_t i = 0;
+
+    // generate in portions of 8 bytes (size uint64_t), as long as space allows
+    while (i + 8 <= size) {
+        // Calculating a random 64-bit number using the Xoshiro256**
+        const uint64_t result = rotl(xoshiro_state[1] * 5, 7) * 9;
+
+        // Write 8 bytes to the buffer
+        *(uint64_t*)(buf + i) = result;
+
+        // Updating the internal state of the generator
+        const uint64_t t = xoshiro_state[1] << 17;
+        xoshiro_state[2] ^= xoshiro_state[0];
+        xoshiro_state[3] ^= xoshiro_state[1];
+        xoshiro_state[1] ^= xoshiro_state[2];
+        xoshiro_state[0] ^= xoshiro_state[3];
+        xoshiro_state[2] ^= t;
+        xoshiro_state[3] = rotl(xoshiro_state[3], 45);
+
+        i += 8;
+    }
+
+    // If the buffer size is not a multiple of 8, we finish off the remaining bytes
+    if (i < size) {
+        uint64_t result = rotl(xoshiro_state[1] * 5, 7) * 9;
+        while (i < size) {
+            buf[i++] = (uint8_t)result;
+            result >>= 8;
+        }
+    }
+}
+
+unsigned generateAccountID()
+{
+    int a = 0;
+    randombytes((uint8*)&a, sizeof(a));
+    a = abs(a);
+    if (!a) ++a;
+    return a;
+}
+
+SteamAPICall_t generateSteamAPICallID() {
+    static SteamAPICall_t a;
+    std::lock_guard<std::recursive_mutex> lock(global_mutex);
+    
+    randombytes((uint8*)&a, sizeof(a));
+    ++a;
+    if (a == 0) ++a;
+    return a;
+}
+
+CSteamID generateSteamIDUser()
+{
+    return CSteamID(generateAccountID(), k_unSteamUserDesktopInstance, k_EUniversePublic, k_EAccountTypeIndividual);
+}
+
+CSteamID generateSteamIDAnonUser()
+{
+    return CSteamID(generateAccountID(), k_unSteamUserDesktopInstance, k_EUniversePublic, k_EAccountTypeAnonUser);
+}
+
+
+CSteamID generateSteamIDGameServer()
+{
+    return CSteamID(generateAccountID(), k_unSteamUserDesktopInstance, k_EUniversePublic, k_EAccountTypeGameServer);
+}
+
+CSteamID generateSteamIDAnonServer()
+{
+    return CSteamID(generateAccountID(), k_unSteamUserDesktopInstance, k_EUniversePublic, k_EAccountTypeAnonGameServer);
+}
+
+CSteamID generateSteamIDLobby()
+{
+    return CSteamID(generateAccountID(), k_EChatInstanceFlagLobby | k_EChatInstanceFlagMMSLobby, k_EUniversePublic, k_EAccountTypeChat);
+}
+
+CSteamID generateSteamIDClan()
+{
+    return CSteamID(generateAccountID(), k_EChatInstanceFlagClan, k_EUniversePublic, k_EAccountTypeChat);
+}
+
+
+bool check_timedout(std::chrono::high_resolution_clock::time_point old, double timeout,
+	std::chrono::high_resolution_clock::time_point now)
+{
+	if (timeout == 0.0) return true;
+
+	if (std::chrono::duration_cast<std::chrono::duration<double>>(now - old).count() > timeout) {
+		return true;
+	}
+
+	return false;
+}
+
 ////////////////////////////////////////////////////////////////
 
 /*

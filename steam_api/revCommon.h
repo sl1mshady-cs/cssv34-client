@@ -67,18 +67,22 @@ inline uint32 JSHash(const char* data, int size)
 	return hash;
 }
 
-inline bool check_timedout(std::chrono::high_resolution_clock::time_point old, double timeout,
-	std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now()) // in seconds
-{
-	if (timeout == 0.0) return true;
+bool check_timedout(std::chrono::high_resolution_clock::time_point old, double timeout,
+	std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now());
 
-	if (std::chrono::duration_cast<std::chrono::duration<double>>(now - old).count() > timeout) {
-		return true;
-	}
+void randombytes(uint8* buf, size_t size);
 
-	return false;
-}
+SteamAPICall_t generateSteamAPICallID();
+CSteamID generateSteamIDUser();
+CSteamID generateSteamIDAnonUser();
+CSteamID generateSteamIDGameServer();
+CSteamID generateSteamIDAnonServer();
+CSteamID generateSteamIDLobby();
+CSteamID generateSteamIDClan();
 
 extern std::recursive_mutex global_mutex;
+
+extern char g_chName[50];
+extern char g_chLang[20];
 
 #endif // _REVCOMMON_H

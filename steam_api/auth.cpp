@@ -164,7 +164,7 @@ CAuthSystem::~CAuthSystem()
 
 void CAuthSystem::RunCallbacks()
 {
-	if (call_ticket_validation && check_timedout(validation_time, 0.1))
+	if (call_ticket_validation)
 	{
 		call_ticket_validation = false;
 
@@ -272,37 +272,19 @@ EBeginAuthSessionResult CAuthSystem::BeginAuth(const void* pAuthTicket, int cbAu
 	if (it != users.end())
 		return k_EBeginAuthSessionResultDuplicateRequest;
 
-	for (const auto& range : m_vecAccountIDRangeFilters)
-	{
-		if (pSteamID->GetAccountID() >= range.min && pSteamID->GetAccountID() <= range.max)
-			return k_EBeginAuthSessionResultInvalidTicket;
-	}
-
-	for (const auto& id : m_vecAccountIDFilters)
-	{
-		if (pSteamID->GetAccountID() == id)
-			return k_EBeginAuthSessionResultInvalidTicket;
-	}
-
-	for (const auto& ip : m_vecIPFilters)
-	{
-		if (unClientIP == ip)
-			return k_EBeginAuthSessionResultInvalidTicket;
-	}
-
-	// set up time and other data for running callbacks
-	validation_time = std::chrono::high_resolution_clock::now();
-	validation_response_data.m_SteamID = authData->uSteamID;
-	validation_response_data.m_OwnerSteamID = authData->uSteamID;
-
-	call_ticket_validation = true;
-
 	user_t new_user;
+	new_user.unUserType = authData->eClientType;
 	new_user.unSteamID.SetFromUint64(authData->uSteamID.ConvertToUint64());
 	new_user.unClientIP = unClientIP;
 
+	if (!CheckFilters(new_user))
+		return k_EBeginAuthSessionResultInvalidTicket;
+
 	users.push_back(new_user);
 
+	// set up time and other data for running callbacks
+	ExecValidateTicketResponse(k_EAuthSessionResponseOK, authData->uSteamID);
+	
 	return k_EBeginAuthSessionResultOK;
 }
 
@@ -585,23 +567,101 @@ bool CAuthSystem::FinishTicketValidation(TRevUserValidationHandle** recvHandle, 
 	return true;
 }
 
+// TRUE: user passed all filters successfully, 
+// FALSE: this user is in the one of filter lists
+bool CAuthSystem::CheckFilters(const user_t& user) 
+{
+	for (const auto& range : m_vecAccountIDRangeFilters)
+	{
+		if (user.unSteamID.GetAccountID() >= range.min && user.unSteamID.GetAccountID() <= range.max)
+			return false;
+	}
+
+	for (const auto& id : m_vecAccountIDFilters)
+	{
+		if (user.unSteamID.GetAccountID() == id)
+			return false;
+	}
+
+	for (const auto& ip : m_vecIPFilters)
+	{
+		if (user.unClientIP == ip)
+			return false;
+	}
+
+	return true;
+}
+
+void CAuthSystem::ExecValidateTicketResponse(EAuthSessionResponse sessionResponse, CSteamID steamID)
+{
+	if (sessionResponse < 0 || sessionResponse > 9)
+		return;
+
+	if (steamID.IsValid() == false)
+		return;
+
+	validation_time = std::chrono::high_resolution_clock::now();
+	validation_response_data.m_eAuthSessionResponse = sessionResponse;
+	validation_response_data.m_SteamID = steamID;
+	validation_response_data.m_OwnerSteamID = steamID;
+
+	call_ticket_validation = true;
+}
+
 // Add range filters for account id
 void CAuthSystem::AddRangeFilter(uint32 accountIDmin, uint32 accountIDmax)
 {
 	accountIdRangeFilter filter = { accountIDmin, accountIDmax };
 	m_vecAccountIDRangeFilters.push_back(filter);
+	bool reject = false;
+	user_t rejectedUser{};
+
+	for (const auto& user : users)
+	{
+		if (!CheckFilters(user))
+		{
+			rejectedUser = user;
+			reject = true;
+			break;
+		}
+	}
+
+	if (!reject)
+		return;
+
+	ExecValidateTicketResponse(k_EAuthSessionResponsePublisherIssuedBan, rejectedUser.unSteamID);
 }
 
 // Add single filter for account id
 void CAuthSystem::AddFilter(uint32 accountID)
 {
 	m_vecAccountIDFilters.push_back(accountID);
+
+	ExecValidateTicketResponse(k_EAuthSessionResponsePublisherIssuedBan, 
+		CSteamID(accountID, k_EUniversePublic, k_EAccountTypeIndividual));
 }
 
 // Add single filter for ip
 void CAuthSystem::AddIPFilter(uint32 clientIP)
 {
 	m_vecIPFilters.push_back(clientIP);
+	bool reject = false;
+	user_t rejectedUser{};
+
+	for (const auto& user : users)
+	{
+		if (!CheckFilters(user))
+		{
+			rejectedUser = user;
+			reject = true;
+			break;
+		}
+	}
+
+	if (!reject)
+		return;
+
+	ExecValidateTicketResponse(k_EAuthSessionResponsePublisherIssuedBan, rejectedUser.unSteamID);
 }
 
 void CAuthSystem::RemoveRangeFilter(uint32 accountIDmin, uint32 accountIDmax)
@@ -647,6 +707,10 @@ void CAuthSystem::RemoveIPFilter(uint32 clientIP)
 	}
 }
 
+std::vector<user_t>& CAuthSystem::GetUserList() {
+	return users;
+}
+
 CAuthSystem* system()
 {
 	static CAuthSystem* authsystem = new CAuthSystem();
@@ -655,7 +719,21 @@ CAuthSystem* system()
 
 }
 
-CON_COMMAND(rev_auth_addidrange, "Add accountID range filter")
+CON_COMMAND(rev_auth_list, "")
+{
+	auto users = auth::system()->GetUserList();
+	PRINT_MSG("id type   steamid   ip");
+	PRINT_MSG("#---------------------#");
+
+	for (auto u = users.begin(); u != users.end(); ++u)
+	{
+		int i = u - users.begin();
+		CUtlNetAdrRender ipRender(ntohl(u->unClientIP));
+		PRINT_MSG("%i %u   %s  %s", i, u->unUserType, u->unSteamID.RenderAsSteam2String(), ipRender.String());
+	};
+}
+
+CON_COMMAND(rev_auth_addidrange, "Add accountID range filter (accountID in SteamID2)")
 {
 	if (args.ArgC() < 3)
 	{
@@ -666,10 +744,10 @@ CON_COMMAND(rev_auth_addidrange, "Add accountID range filter")
 	uint32 min = (uint32)atoi(args.Arg(1));
 	uint32 max = (uint32)atoi(args.Arg(2));
 
-	auth::system()->AddRangeFilter(min, max);
+	auth::system()->AddRangeFilter(min*2, max*2);
 }
 
-CON_COMMAND(rev_auth_addid, "Add accountID filter")
+CON_COMMAND(rev_auth_addid, "Add accountID filter (accountID in SteamID2)")
 {
 	if (args.ArgC() < 2)
 	{
@@ -678,7 +756,7 @@ CON_COMMAND(rev_auth_addid, "Add accountID filter")
 	}
 
 	uint32 accountID = (uint32)atoi(args.Arg(1));
-	auth::system()->AddFilter(accountID);
+	auth::system()->AddFilter(accountID*2);
 } 
 
 CON_COMMAND(rev_auth_addip, "Add IP filter")
@@ -689,11 +767,11 @@ CON_COMMAND(rev_auth_addip, "Add IP filter")
 		return;
 	}
 
-	uint32 clientIP = (uint32)atoi(args.Arg(1));
+	uint32 clientIP = netadr_t(args.ArgS()).GetIPNetworkByteOrder();
 	auth::system()->AddIPFilter(clientIP);
 }
 
-CON_COMMAND(rev_auth_rmidrange, "Remove accountID range filter")
+CON_COMMAND(rev_auth_rmidrange, "Remove accountID range filter (accountID in SteamID2)")
 {
 	if (args.ArgC() < 3)
 	{
@@ -704,10 +782,10 @@ CON_COMMAND(rev_auth_rmidrange, "Remove accountID range filter")
 	uint32 min = (uint32)atoi(args.Arg(1));
 	uint32 max = (uint32)atoi(args.Arg(2));
 
-	auth::system()->RemoveRangeFilter(min, max);
+	auth::system()->RemoveRangeFilter(min*2, max*2);
 }
 
-CON_COMMAND(rev_auth_rmid, "Remove accountID filter")
+CON_COMMAND(rev_auth_rmid, "Remove accountID filter (accountID in SteamID2)")
 {
 	if (args.ArgC() < 2)
 	{
@@ -716,7 +794,7 @@ CON_COMMAND(rev_auth_rmid, "Remove accountID filter")
 	}
 
 	uint32 accountID = (uint32)atoi(args.Arg(1));
-	auth::system()->RemoveFilter(accountID);
+	auth::system()->RemoveFilter(accountID*2);
 }
 
 CON_COMMAND(rev_auth_rmip, "Remove IP filter")
@@ -727,6 +805,6 @@ CON_COMMAND(rev_auth_rmip, "Remove IP filter")
 		return;
 	}
 
-	uint32 clientIP = (uint32)atoi(args.Arg(1));
+	uint32 clientIP = netadr_t(args.ArgS()).GetIPNetworkByteOrder();
 	auth::system()->RemoveIPFilter(clientIP);
 }

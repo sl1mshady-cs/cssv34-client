@@ -11,6 +11,7 @@ class CSteamUser : public ISteamUser
 public:
 	CSteamUser(class SteamCallbacks* callbacks);
 	~CSteamUser();
+
 	// returns the HSteamUser this interface represents
 	// this is only used internally by the API, and by a few select interfaces that support multi-user
 	virtual HSteamUser GetHSteamUser();

@@ -49,6 +49,7 @@ namespace auth
 	// after they pass validation.
 	struct user_t
 	{
+		uint32		unUserType;
 		CSteamID	unSteamID;
 		uint32		unClientIP;
 	};
@@ -105,7 +106,15 @@ namespace auth
 		// Remove single filter for ip
 		void RemoveIPFilter(uint32 clientIP);
 
+		std::vector<user_t>& GetUserList();
+
 	protected:
+
+		// TRUE: user passed all filters successfully, 
+		// FALSE: this user is in the one of filter lists
+		bool CheckFilters(const user_t& user);
+
+		void ExecValidateTicketResponse(EAuthSessionResponse sessionResponse, CSteamID steamID);
 		
 		// Generate ticket
 		ESteamError GenerateTicket(void* buf, unsigned int buflen, unsigned int* ticketlen);
@@ -139,8 +148,8 @@ namespace auth
 		// those would be set to ones from steamclient
 		SteamCallbacks* callbacks_server{}, *callbacks_client{};
 		std::vector<user_t> users;
-		bool call_ticket_validation;
 
+		bool call_ticket_validation;
 		ValidateAuthTicketResponse_t validation_response_data{};
 		std::chrono::high_resolution_clock::time_point validation_time;
 	};

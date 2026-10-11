@@ -4,6 +4,7 @@
 #include "logging.h"
 
 CSteamApps* g_pSteamApps = 0;
+CSteamFriends* g_pSteamFriends = 0;
 CSteamGameServer* g_pSteamGameServer = 0;
 CSteamMatchMaking* g_pSteamMatchMaking = 0;
 CSteamMatchMakingServers* g_pSteamMatchMakingServers = 0;
@@ -28,6 +29,7 @@ CSteamClient::CSteamClient()
     callbacks_server = new SteamCallbacks(callback_results_server);
 
 	g_pSteamApps = new CSteamApps();
+    g_pSteamFriends = new CSteamFriends();
 	g_pSteamGameServer = new CSteamGameServer(callbacks_server);
 	g_pSteamMatchMaking = new CSteamMatchMaking();
 	g_pSteamMatchMakingServers = new CSteamMatchMakingServers(callbacks_client);
@@ -43,6 +45,7 @@ CSteamClient::~CSteamClient()
 
     DEL_INST(m_interfaceStub);
     DEL_INST(g_pSteamApps);
+    DEL_INST(g_pSteamFriends);
     DEL_INST(g_pSteamGameServer);
     DEL_INST(g_pSteamMatchMaking);
     DEL_INST(g_pSteamMatchMakingServers);
@@ -485,7 +488,6 @@ void CSteamClient::UnregisterCallResult(class CCallbackBase* pCallback, SteamAPI
 
 void CSteamClient::RunCallbacks(bool runClientCB, bool runGameserverCB)
 {
-    PRINT_DEBUG("begin ------------------------------------------------------");
     std::lock_guard<std::recursive_mutex> lock(global_mutex);
     cb_run_active = true;
 
@@ -521,5 +523,4 @@ void CSteamClient::RunCallbacks(bool runClientCB, bool runGameserverCB)
 
     last_cb_run = (unsigned long long)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
     cb_run_active = false;
-    PRINT_DEBUG("done ******************************************************");
 }

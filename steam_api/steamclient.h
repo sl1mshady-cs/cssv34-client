@@ -1,5 +1,6 @@
 #pragma once
 #include "steamclient/steamapps.h"
+#include "steamclient/steamfriends.h"
 #include "steamclient/steamgameserver.h"
 #include "steamclient/steammatchmaking.h"
 #include "steamclient/steammatchmakingservers.h"
@@ -69,7 +70,7 @@ public:
 	virtual void SetLocalIPBinding(uint32 unIP, uint16 usPort) {}
 	virtual ISteamFriends* GetISteamFriends(HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char* pchVersion) 
 	{
-		return (ISteamFriends*)m_interfaceStub;
+		return g_pSteamFriends;
 	}
 	virtual ISteamUtils* GetISteamUtils(HSteamPipe hSteamPipe, const char* pchVersion) 
 	{ 

@@ -24,23 +24,6 @@ extern std::recursive_mutex global_mutex;
 
 #define PRINT_DEBUG(msg, ...) g_CallbackLog.Write(msg "\n", __VA_ARGS__)
 
-void randombytes(char* buf, size_t size)
-{
-    for (size_t i = 0; i < size; i++) {
-        buf[i] = (unsigned char)(rand() & 0xFF);
-    }
-}
-
-SteamAPICall_t generate_steam_api_call_id() {
-    static SteamAPICall_t a;
-    std::lock_guard<std::recursive_mutex> lock(global_mutex);
-
-    randombytes((char*)&a, sizeof(a));
-    ++a;
-    if (a == 0) ++a;
-    return a;
-}
-
 void CCallbackMgr::SetRegister(class CCallbackBase* pCallback, int iCallback)
 {
     pCallback->m_nCallbackFlags |= CCallbackBase::k_ECallbackFlagsRegistered;
@@ -229,7 +212,7 @@ SteamAPICall_t SteamCallResults::AddCallResult(SteamAPICall_t api_call, int iCal
 
 SteamAPICall_t SteamCallResults::ReserveCallResult()
 {
-    struct SteamCallResult res = SteamCallResult(generate_steam_api_call_id(), 0, NULL, 0, 0.0, true);
+    struct SteamCallResult res = SteamCallResult(generateSteamAPICallID(), 0, NULL, 0, 0.0, true);
     res.reserved = true;
     callresults.push_back(res);
     return callresults.back().api_call;
@@ -237,7 +220,7 @@ SteamAPICall_t SteamCallResults::ReserveCallResult()
 
 SteamAPICall_t SteamCallResults::AddCallResult(int iCallback, void* result, unsigned int size, double timeout, bool run_call_completed_cb)
 {
-    return AddCallResult(generate_steam_api_call_id(), iCallback, result, size, timeout, run_call_completed_cb);
+    return AddCallResult(generateSteamAPICallID(), iCallback, result, size, timeout, run_call_completed_cb);
 }
 
 void SteamCallResults::SetCbAll(void (*cb_all)(std::vector<char> result, int callback))

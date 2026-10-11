@@ -28,6 +28,7 @@ def build(bld):
 		'logging.cpp',
 		'steamclient/gs_clientmsghandler.cpp',
 		'steamclient/steamapps.cpp',
+		'steamclient/steamfriends.cpp',
 		'steamclient/steammatchmaking.cpp',
 		'steamclient/steammatchmakingservers.cpp',
 		'steamclient/steamuser.cpp',

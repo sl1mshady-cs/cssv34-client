@@ -242,8 +242,8 @@ CON_COMMAND_F( stats_dump, "Dumps all player stats", FCVAR_DEVELOPMENTONLY )
 	}
 }
 
-#if defined(_DEBUG)
-CON_COMMAND_F( stats_preload, "Load stats with data ripe for getting achievmenets", FCVAR_DEVELOPMENTONLY )
+//#if defined(_DEBUG)
+CON_COMMAND( stats_preload, "Load stats with data ripe for getting achievmenets" )
 {
 	struct DataSet
 	{
@@ -332,7 +332,7 @@ CON_COMMAND_F( stats_preload, "Load stats with data ripe for getting achievmenet
 		gameeventmanager->FireEventClientSide( event );
 	}
 }
-#endif
+//#endif
 
 #if defined(_DEBUG)
 CON_COMMAND_F( stats_corrupt, "Load stats with corrupt values", FCVAR_DEVELOPMENTONLY )
