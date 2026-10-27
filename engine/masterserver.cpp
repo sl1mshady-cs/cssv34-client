@@ -358,7 +358,7 @@ bool CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 {
 	static ALIGN4 char string[2048] ALIGN4_POST;    // Buffer for sending heartbeat
 
-	uint ip; uint16 port;
+	uint ip = 0; uint16 port = 0;
 
 	bf_read msg = packet->message;
 	char c = msg.ReadChar();
@@ -420,6 +420,7 @@ bool CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 
 				resp->PlayersRefreshComplete();
 			}
+			break;
 		}
 
 		case M2A_SERVER_BATCH:
