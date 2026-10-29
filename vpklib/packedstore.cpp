@@ -2486,7 +2486,7 @@ int CPackedStore::GetFileAndDirLists( const char *pWildCard, CUtlStringList &out
 	return outDirnames.Count();
 }
 
-#define VPK_TEST
+//#define VPK_TEST
 #if defined(_WIN32) && defined(VPK_TEST)
 #undef MessageBox
 #include <vector>
