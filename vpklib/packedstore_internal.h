@@ -18,7 +18,8 @@
 #define VPKFILENUMBER_EMBEDDED_IN_DIR_FILE  0x7fff
 
 #define VPK_HEADER_MARKER 0x55aa1234	// significes that this is a new vpk header format
-#define VPK_COMPRESSED_VERSION 0x36		// marks that this is a ZStandard-Compressed vpk 
+#define VPK_COMPRESSED_VERSION 54		// marks that this is a ZStandard-Compressed vpk 
+#define VPK_COMPRESSED_VERSION2 154	
 #define VPK_CURRENT_VERSION 2
 #define VPK_PREVIOUS_VERSION 1
 

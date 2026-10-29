@@ -60,16 +60,26 @@ struct CFileHeaderFixedData
 		return m_nMetaDataSize + m_PartDescriptors[0].m_nFileDataSize;
 	}
 
-	size_t HeaderSizeIncludingMetaData( void ) const
+	size_t HeaderSizeIncludingMetaData( bool bCompressed = false ) const
 	{
 		size_t nRet = sizeof( *this ) - sizeof( m_PartDescriptors ) + m_nMetaDataSize;
-		// see how many parts we have and count the size of their descriptors
-		CFilePartDescr const *pPart = m_PartDescriptors;
-		while( pPart->m_nFileNumber != PACKFILEINDEX_END )
+
+		if ( bCompressed )
 		{
-			nRet += sizeof( CFilePartDescr );
-			pPart++;
+			nRet += sizeof(CFilePartDescr); // exactly one descriptor
+			nRet += sizeof(uint32); // compressed data size
 		}
+		else
+		{
+			// see how many parts we have and count the size of their descriptors
+			CFilePartDescr const* pPart = m_PartDescriptors;
+			while (pPart->m_nFileNumber != PACKFILEINDEX_END)
+			{
+				nRet += sizeof(CFilePartDescr);
+				pPart++;
+			}
+		}
+
 		nRet += sizeof( PackFileIndex_t );					// count terminator
 		return nRet;
 	}
@@ -284,8 +294,11 @@ void CPackedStore::Init( void )
 	m_nHighestChunkFileIndex = -1;
 	m_bUseDirFile = false;
 	m_bCompressed = false;
-	m_pCompressionDict = nullptr;
-	m_bCompressionDictReady = false;
+	m_nCompressionLevel = 4;
+	m_bUseCDict = false;
+	m_pCDict = NULL;
+	m_bUseDDict = false;
+	m_pDDict = NULL;
 	m_pszFileBaseName[0] = 0;
 	m_pszFullPathName[0] = 0;
 	memset( m_pExtensionData, 0, sizeof( m_pExtensionData ) );
@@ -353,6 +366,11 @@ CPackedStore::CPackedStore( char const *pFileBasename, char *pszFName, IBaseFile
 	m_PackedStoreReadCache.m_pPackedStore = this;
 	m_DirectoryData.AddToTail( 0 );
 
+#ifdef VPK_SUPPORT_COMPRESSION
+	if (bOpenForWrite)
+		m_bCompressed = bCompressedWrite;
+#endif
+
 	if ( pFileBasename )
 	{
 		V_strcpy( m_pszFileBaseName, pFileBasename );
@@ -387,27 +405,44 @@ CPackedStore::CPackedStore( char const *pFileBasename, char *pszFName, IBaseFile
 				( dirFile.Read( &dirHeader, sizeof( dirHeader ) ) == sizeof( dirHeader ) ) &&
 				( dirHeader.m_nHeaderMarker == VPK_HEADER_MARKER ) )
 			{
-				if ( dirHeader.m_nVersion == VPK_PREVIOUS_VERSION ) 
+				switch (dirHeader.m_nVersion)
+				{
+
+				case VPK_PREVIOUS_VERSION:
 				{
 					// fill in the fields of the new header.
-					dirHeader.m_nEmbeddedChunkSize = dirFile.Size() - dirHeader.m_nDirectorySize - sizeof( VPKDirHeaderOld_t );
+					dirHeader.m_nEmbeddedChunkSize = dirFile.Size() - dirHeader.m_nDirectorySize - sizeof(VPKDirHeaderOld_t);
 					dirHeader.m_nChunkHashesSize = 0;
 					dirHeader.m_nSelfHashesSize = 0;
 					dirHeader.m_nSignatureSize = 0;
 					// pretend we didnt read the extra header
-					dirFile.Seek( sizeof( VPKDirHeaderOld_t ) );
-				}
-				else if ( dirHeader.m_nVersion != VPK_CURRENT_VERSION )
-				{
-#ifdef VPK_SUPPORT_COMPRESSION
-					if ( dirHeader.m_nVersion != VPK_COMPRESSED_VERSION )
-#endif
-						Error( "Unknown version %d for vpk %s", dirHeader.m_nVersion, pFileBasename );
-				}
-				
-				if ( dirHeader.m_nVersion == VPK_COMPRESSED_VERSION )
-					m_bCompressed = true;
+					dirFile.Seek(sizeof(VPKDirHeaderOld_t));
 
+					break;
+				}
+#ifdef VPK_SUPPORT_COMPRESSION
+				case VPK_COMPRESSED_VERSION:
+				case VPK_COMPRESSED_VERSION2:
+				{
+					m_bCompressed = true;
+					break;
+				}
+#endif
+				case VPK_CURRENT_VERSION:
+				{
+					// current version, skip
+					break;
+				}
+
+				default:
+				{
+					Error("Unknown version %d for vpk %s", dirHeader.m_nVersion, pFileBasename);
+					break;
+				}
+
+				}
+
+				// mark that this is new file format
 				bNewFileFormat = true;
 			}
 			else											// its an old file
@@ -429,9 +464,6 @@ CPackedStore::CPackedStore( char const *pFileBasename, char *pszFName, IBaseFile
 			// now, if we are opening for write, read the entire contents of the embedded data chunk in the dir into ram
 			if ( bOpenForWrite && bNewFileFormat )
 			{
-#ifdef VPK_SUPPORT_COMPRESSION
-				m_bCompressed = bCompressedWrite;
-#endif
 				if ( dirHeader.m_nEmbeddedChunkSize )
 				{
 					CUtlVector<uint8> readBuffer;
@@ -556,6 +588,9 @@ CPackedStore::~CPackedStore( void )
 
 		}
 	}
+
+	ZSTD_freeCDict(m_pCDict);
+	ZSTD_freeDDict(m_pDDict);
 
 	// Free the FindFirst cache data
 	m_directoryList.PurgeAndDeleteElementsArray();
@@ -693,30 +728,43 @@ CPackedStoreFileHandle CPackedStore::OpenFile( char const *pFileName )
 	ret.m_pOwner = this;
 
 #ifdef VPK_SUPPORT_COMPRESSION
-	if (m_bCompressed)
+	if ( m_bCompressed )
 	{
 		const uint32 nCompressedSize = pHeader->CompressedDataSize();
 
-		if (nCompressedSize == 0)
+		if ( nCompressedSize == 0 )
 			return ret;
 
-		// Read the dictionary first
-		V_strncpy(tempFileName, V_UnqualifiedFileName(m_pszFileBaseName), sizeof(tempFileName));
-		V_strcat_safe(tempFileName, ".dict");
-		
-		CPackedStoreFileHandle dictFile = OpenFile(tempFileName);
-
-		if (!dictFile || dictFile.m_nFileSize <= 0)
+		if ( !m_pDDict )
 		{
-			Warning("[VPK54Read] failed to open dDict '%s' from '%s.vpk'\n", tempFileName, V_UnqualifiedFileName(m_pszFileBaseName));
-			return ret;
+			// Read the dictionary first
+			V_strncpy(tempFileName, V_UnqualifiedFileName(m_pszFileBaseName), sizeof(tempFileName));
+			V_strcat_safe(tempFileName, ".dict");
+
+			CPackedStoreFileHandle dictFile = OpenFile(tempFileName);
+
+			if (!dictFile || dictFile.m_nFileSize <= 0)
+			{
+				Warning("Failed to open DDict '%s' from '%s.vpk'\n", tempFileName, V_UnqualifiedFileName(m_pszFileBaseName));
+			}
+			else
+			{
+				CUtlVector<uint8> dictBytes;
+				dictBytes.SetCount(dictFile.m_nFileSize);
+				int nDictRead = dictFile.Read(dictBytes.Base(), dictBytes.Count());
+
+				if (nDictRead == dictFile.m_nFileSize)
+				{
+					ZSTD_DDict* pDict = ZSTD_createDDict(dictBytes.Base(), dictBytes.Count());
+
+					if (pDict)
+					{
+						m_pDDict = pDict;
+						m_bUseDDict = true;
+					}
+				}
+			}
 		}
-
-		std::vector<uint8> dictBytes(dictFile.m_nFileSize);
-		int nDictRead = dictFile.Read(dictBytes.data(), dictFile.m_nFileSize);
-
-		if (nDictRead != dictFile.m_nFileSize)
-			return ret;
 
 		// Read the compressed part
 		CPackedStoreFileHandle raw;
@@ -731,66 +779,87 @@ CPackedStoreFileHandle CPackedStore::OpenFile( char const *pFileName )
 		raw.m_pDirFileNamePtr = NULL;
 		raw.m_bDecoded = false;
 
-		std::vector<uint8> compressed(nCompressedSize);
-		int nCompressedRead = ReadData(raw, compressed.data(), nCompressedSize);
+		CUtlVector<uint8> compressed;
+		compressed.SetCount(nCompressedSize);
+		int nCompressedRead = ReadData(raw, compressed.Base(), compressed.Count());
 
 		if (nCompressedRead != (int)nCompressedSize)
 			return ret;
 
 		// We take the unpacked size from the descriptor,
 		// and not from the preload size or the compressed length
-		std::vector<uint8> decoded(pPart->m_nFileDataSize);
+		CUtlVector<uint8> decoded;
+		decoded.SetCount(pPart->m_nFileDataSize);
+		size_t nDecoded = 0;
 
-		ZSTD_DDict* pDict = ZSTD_createDDict(dictBytes.data(), dictBytes.size());
-
-		if (!pDict)
-			return ret;
-
-		ZSTD_DCtx* pCtx = ZSTD_createDCtx();
-
-		if (!pCtx)
+		if (m_bUseDDict)
 		{
-			ZSTD_freeDDict(pDict);
+			ZSTD_DCtx* pCtx = ZSTD_createDCtx();
+
+			if (!pCtx)
+				return ret;
+
+			nDecoded = ZSTD_decompress_usingDDict(
+				pCtx,
+				decoded.Base(),
+				decoded.Count(),
+				compressed.Base(),
+				compressed.Count(),
+				m_pDDict
+			);
+
+			ZSTD_freeDCtx(pCtx);
+		}
+		else
+		{
+			nDecoded = ZSTD_decompress(
+				decoded.Base(),
+				decoded.Count(),
+				compressed.Base(),
+				compressed.Count()
+			);
+		}
+
+		if (ZSTD_isError(nDecoded))
+		{
+			Warning(
+				"ZSTD decompression failed: %s, compressed=%u, expected=%u, dict=%d\n",
+				ZSTD_getErrorName(nDecoded),
+				nCompressedSize,
+				pPart->m_nFileDataSize,
+				m_bUseDDict
+			);
 			return ret;
 		}
 
-		size_t nDecoded = ZSTD_decompress_usingDDict(
-			pCtx,
-			decoded.data(),
-			decoded.size(),
-			compressed.data(),
-			compressed.size(),
-			pDict);
-
-		ZSTD_freeDCtx(pCtx);
-		ZSTD_freeDDict(pDict);
-
-		if (ZSTD_isError(nDecoded) || nDecoded != pPart->m_nFileDataSize)
+		if (nDecoded != pPart->m_nFileDataSize)
 		{
-			Warning("[VPK54Read] zstd error: nDecoded=%zu, compressedSize=%zu\n", nDecoded, compressed.size());
+			Warning(
+				"ZSTD size mismatch: decoded=%zu, expected=%u, compressed=%u\n",
+				nDecoded,
+				pPart->m_nFileDataSize,
+				nCompressedSize
+			);
 			return ret;
 		}
 
-		// Logical content: preload + decoded part
-		ret.m_DecodedData.clear();
-		ret.m_DecodedData.reserve(ret.m_nFileSize);
+		ret.m_DecodedData.Clear();
 
-		if (pHeader->m_nMetaDataSize)
+		if (pHeader->m_nMetaDataSize > 0)
 		{
-			const uint8* pPreload = reinterpret_cast<const uint8*>(ret.m_pMetaData);
-			ret.m_DecodedData.insert(ret.m_DecodedData.end(), pPreload, pPreload + pHeader->m_nMetaDataSize);
+			const uint8* pPreload =
+				static_cast<const uint8*>(ret.m_pMetaData);
+
+			ret.m_DecodedData.Put(pPreload, pHeader->m_nMetaDataSize);
 		}
 
-		ret.m_DecodedData.insert(ret.m_DecodedData.end(), decoded.begin(), decoded.end());
+		ret.m_DecodedData.Put(decoded.Base(), static_cast<int>(nDecoded));
 
-		ret.m_nFileSize = (int)ret.m_DecodedData.size();
+		ret.m_nFileSize = ret.m_DecodedData.TellPut();
 		ret.m_nCurrentFileOffset = 0;
 		ret.m_pMetaData = NULL;
 		ret.m_nMetaDataSize = 0;
 		ret.m_bDecoded = true;
-
-		//Msg("[VPK54Read] fileNumber:%i, fileOffset:%i, fileSize:%i, decoded:%d\n",
-		//	ret.m_nFileNumber, ret.m_nFileOffset, ret.m_nFileSize, ret.m_bDecoded);
 	}
 #endif
 
@@ -1364,7 +1433,7 @@ int CPackedStore::ReadData( CPackedStoreFileHandle &handle, void *pOutData, int 
 		nNumBytes = MIN( nNumBytes, handle.m_nFileSize - handle.m_nCurrentFileOffset );
 
 		memcpy(pOutData,
-			handle.m_DecodedData.data() +
+			(uint8*)handle.m_DecodedData.Base() +
 			handle.m_nCurrentFileOffset,
 			nNumBytes);
 
@@ -1426,6 +1495,76 @@ int CPackedStore::ReadData( CPackedStoreFileHandle &handle, void *pOutData, int 
 	}
 	m_PackedStoreReadCache.RetryAllBadCacheLines();
 	return nRet;
+}
+
+// Compress payload. Allocates or reallocates output buffer during compression.
+// @return If compression failed, returns 0 and frees output buffer
+// otherwise returns number of bytes written to output buffer
+static uint32 CompressPayload(const void* pSource, uint32 nSourceSize, int level, ZSTD_CDict* pDict, CUtlVector<uint8> &pOutCompressed)
+{
+    if (!pSource || nSourceSize == 0)
+        return 0;
+
+    const size_t nMaxSize = ZSTD_compressBound(nSourceSize);
+	if ( ZSTD_isError(nMaxSize) )
+		return 0;
+
+	pOutCompressed.SetCount(nMaxSize);
+
+    size_t nResultSize = 0;
+    if (pDict)
+    {
+        ZSTD_CCtx* pCtx = ZSTD_createCCtx();
+        if (!pCtx)
+        {
+			pOutCompressed.SetCount(0);
+            return 0;
+        }
+
+		nResultSize = ZSTD_compress_usingCDict(
+            pCtx,
+			pOutCompressed.Base(),
+			nMaxSize,
+            pSource,
+            nSourceSize,
+            pDict);
+
+        ZSTD_freeCCtx(pCtx);
+    }
+    else
+    {
+		nResultSize = ZSTD_compress(
+			pOutCompressed.Base(),
+			nMaxSize,
+            pSource,
+            nSourceSize,
+			level);
+    }
+
+    if (ZSTD_isError(nResultSize) || nResultSize == 0)
+    {
+		pOutCompressed.SetCount(0);
+        return 0;
+    }
+
+    return nResultSize;
+}
+
+void CPackedStore::SetCompressionDictionary( const void* pData, uint32 nSize, int level ) 
+{
+	if ( !pData || nSize == 0 )
+		return;
+
+	// Allocate/Reallocate memory and copy dictBuffer
+	m_CDictData.CopyArray( (uint8*)pData, nSize );
+
+	// Create dictionary
+	m_pCDict = ZSTD_createCDict( m_CDictData.Base(), m_CDictData.Count(), level );
+	if ( !m_pCDict )
+	{
+		m_CDictData.Purge();
+		return;
+	}
 }
 
 bool CPackedStore::HashEntirePackFile( CPackedStoreFileHandle &handle, int64 &nFileSize, int nFileFraction, int nFractionSize, FileHash_t &fileHash )
@@ -1702,15 +1841,19 @@ bool CPackedStore::RemoveFileFromDirectory( const char *pszName )
 
 bool CPackedStore::InternalRemoveFileFromDirectory( const char *pszName )
 {
-	CPackedStoreFileHandle pData = OpenFile( pszName );
-	if ( !pData )
-		return false;
+    CPackedStoreFileHandle pData = OpenFile(pszName);
+    if (!pData)
+        return false;
 
-	CFileHeaderFixedData *pHeader = pData.m_pHeaderData;
-	// delete the old header so we can insert a new one with updated contents
-	int nBytesToRemove = ( int )( V_strlen( ( char * ) pData.m_pDirFileNamePtr ) + 1 + pHeader->HeaderSizeIncludingMetaData() );
-	m_DirectoryData.RemoveMultiple( pData.m_pDirFileNamePtr - m_DirectoryData.Base(), nBytesToRemove );
-	return true;
+    CFileHeaderFixedData *pHeader = pData.m_pHeaderData;
+    int nBytesToRemove =
+        static_cast<int>(V_strlen((char *)pData.m_pDirFileNamePtr) + 1) +
+        static_cast<int>(pHeader->HeaderSizeIncludingMetaData(m_bCompressed));
+
+    const int nOffset = static_cast<int>(pData.m_pDirFileNamePtr - m_DirectoryData.Base());
+
+    m_DirectoryData.RemoveMultiple(nOffset, nBytesToRemove);
+    return true;
 }
 
 void CPackedStore::AddFileToDirectory( const VPKContentFileInfo_t &info )
@@ -1738,13 +1881,13 @@ void CPackedStore::AddFileToDirectory( const VPKContentFileInfo_t &info )
 	char *pOut = pBuf;
 	strcpy( pOut, pszExt );
 	pOut += strlen( pszExt );
-	*( pOut++ ) = 0;										// null on ext name
+	*( pOut++ ) = 0;									// null on ext name
 	strcpy( pOut, pszDir );
 	pOut += strlen( pszDir );
 	*( pOut++ ) = 0;									// null at end of dir name
 	strcpy( pOut, pszBase );
 	pOut += strlen( pszBase );
-	*( pOut++ ) = 0;
+	*( pOut++ ) = 0;									// null at end of base name
 	uint32 nCRC = info.m_crc;
 	memcpy( pOut, &nCRC, sizeof( nCRC ) );
 	pOut += sizeof( int );
@@ -1816,7 +1959,7 @@ void CPackedStore::AddFileToDirectory( const VPKContentFileInfo_t &info )
 	BuildHashTables();
 }
 
-ePackedStoreAddResultCode CPackedStore::AddFile( char const *pFile, uint16 nMetaDataSize, const void *pFileData, uint32 nFileTotalSize, bool bMultiChunk, uint32 const *pCrcValue )
+ePackedStoreAddResultCode CPackedStore::AddFile( char const *pFile, uint16 nMetaDataSize, const void *pFileData, uint32 nFileTotalSize, bool bMultiChunk, uint32 const *pCrcValue, bool bShouldSendForCompression )
 {
 	// Calculate CRC if they didn't provide one
 	uint32 nCRC;
@@ -1850,12 +1993,45 @@ ePackedStoreAddResultCode CPackedStore::AddFile( char const *pFile, uint16 nMeta
 	dirEntry.m_pPreloadData = ( dirEntry.m_iPreloadSize > 0 ) ? pFileData : NULL;
 	dirEntry.m_nCompressedDataSize = 0;
 	dirEntry.m_crc = nCRC;
+
+#ifdef VPK_SUPPORT_COMPRESSION
+	CUtlVector<uint8> outBuffer;
+
+	const bool bIsDict = V_stristr(pFile, ".dict") != NULL;
+	const uint32 nPreloadSize = dirEntry.m_iPreloadSize;
+	const uint32 nPayloadSize = nFileTotalSize - nPreloadSize;
+
+	if ( m_bCompressed && bShouldSendForCompression && !bIsDict && nPayloadSize > 0 )
+	{
+		const uint8* pPayload = static_cast<const uint8*>(pFileData) + nPreloadSize;
+
+		const uint32 nCompressedSize = CompressPayload(
+			pPayload,
+			nPayloadSize,
+			m_nCompressionLevel,
+			m_pCDict,
+			outBuffer
+		);
+
+		if (outBuffer.IsEmpty() || nCompressedSize == 0)
+		{
+			Error("Compression of '%s' failed\n", pFile);
+			return nRslt;
+		}
+
+		dirEntry.m_iPreloadSize = nPreloadSize;
+		dirEntry.m_pPreloadData = nPreloadSize > 0 ? pFileData : NULL;
+		dirEntry.m_nCompressedDataSize = nCompressedSize;
+
+		pFileData = outBuffer.Base();
+	}
+#endif
+
 	uint32 nBytesInChunk = dirEntry.GetStoredSizeInChunkFile();
 	const unsigned char *pDataStart = (const unsigned char *)pFileData + dirEntry.m_iPreloadSize;
-
+	
 	if ( bMultiChunk && nBytesInChunk > 0 )
 	{
-
 		// Check if we need to start a new chunk
 		char szDataFileName[MAX_PATH];
 		if ( m_nHighestChunkFileIndex < 0 )
@@ -2310,3 +2486,163 @@ int CPackedStore::GetFileAndDirLists( const char *pWildCard, CUtlStringList &out
 	return outDirnames.Count();
 }
 
+#define VPK_TEST
+#if defined(_WIN32) && defined(VPK_TEST)
+#undef MessageBox
+#include <vector>
+#include "kv3lib/keyvalues3.h"
+#pragma comment(lib, "..\\kv3lib\\kv3lib.lib")
+
+DEFINE_LOGGING_CHANNEL_NO_TAGS(LOG_VPKTest, "vpk", 0, LS_MESSAGE, Color(255, 100, 100, 255));
+#define VTMsg(...) Log_Msg(LOG_VPKTest, __VA_ARGS__);
+
+/* convars & commands used for testing vpk functionality */
+static ConVar vpkTestChunkSize("vpk_test_chunksize", "256", 0, "size in mb", false, 128.0f, true, 512.0f);
+static ConVar vpkTestSingleFileSize("vpk_test_singlefsize", "4", 0, "size in mb", false, 4.0f, true, 16.0f);
+
+void rand_str(char* dest, size_t length) {
+	char charset[] = "0123456789"
+		"abcdefghijklmnopqrstuvwxyz"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	while (length-- > 0) {
+		size_t index = (double)rand() / RAND_MAX * (sizeof charset - 1);
+		*dest++ = charset[index];
+	}
+	*dest = '\0';
+}
+
+void removeoldvpks()
+{
+	char szVPKPath[MAX_PATH];
+
+	int nVPKNumber = 0;
+	while (nVPKNumber != -1)
+	{
+		sprintf(szVPKPath, "vpk_test_%03d.vpk", nVPKNumber++);
+		if (g_pFullFileSystem->FileExists(szVPKPath))
+		{
+			if (g_pFullFileSystem->IsFileWritable(szVPKPath)) {
+				g_pFullFileSystem->RemoveFile(szVPKPath);
+				VTMsg("Removed %s\n", szVPKPath);
+			}
+		}
+		else
+		{
+			nVPKNumber = -1;
+		}
+	}
+
+	sprintf(szVPKPath, "vpk_test_dir.vpk", nVPKNumber++);
+	if (g_pFullFileSystem->FileExists(szVPKPath))
+	{
+		if (g_pFullFileSystem->IsFileWritable(szVPKPath)) {
+			g_pFullFileSystem->RemoveFile(szVPKPath);
+			VTMsg("Removed %s\n", szVPKPath);
+		}
+	}
+
+	sprintf(szVPKPath, "vpk_test.vpk", nVPKNumber++);
+	if (g_pFullFileSystem->FileExists(szVPKPath))
+	{
+		if (g_pFullFileSystem->IsFileWritable(szVPKPath)) {
+			g_pFullFileSystem->RemoveFile(szVPKPath);
+			VTMsg("Removed %s\n", szVPKPath);
+		}
+	}
+
+}
+
+CON_COMMAND(vpk_test_write, "Run tests")
+{
+	if (args.ArgC() < 4)
+		return;
+
+	removeoldvpks();
+
+	int nVersion = atoi(args[1]);
+	bool bCompressed = (nVersion > 2);
+	int64 nSize = atoll(args[2]);
+	bool bMultiChunk = (bool)atoi(args[3]);
+	int nChunkSize = vpkTestChunkSize.GetInt() * 1024 * 1024;
+	int nSingleFileSize = vpkTestSingleFileSize.GetInt() * 1024 * 1024;
+
+	if (strstr(args[2], "kb"))
+		nSize *= 1024;
+	else if (strstr(args[2], "mb"))
+		nSize *= 1024 * 1024;
+
+	int64 nTotalSize = nSize;
+	VTMsg("version:%i, compressed:%d, size:%lli, multi:%d, chunksize:%i, singlefsize:%i\n", nVersion, bCompressed, nSize, bMultiChunk, nChunkSize, nSingleFileSize);
+
+	char szFName[MAX_PATH];
+	CPackedStore vpk("vpk_test", szFName, g_pFullFileSystem, true, bCompressed);
+
+	vpk.SetWriteChunkSize(nChunkSize);
+
+	std::vector<uint8> fileData;
+	VTMsg("Packing up %lli bytes...\n", nSize);
+	fileData.reserve(nSingleFileSize);
+
+	nSize -= 300; // manifest.kv3
+	int nTotalFiles = 0;
+	while (nSize)
+	{
+		fileData.push_back((uint8)RandomInt(0, 16));
+		nSize--;
+
+		if (fileData.size() <= nSingleFileSize)
+			continue;
+
+		char fname[19];
+		rand_str(fname, 16);
+		strcat(fname, ".txt");
+
+		//VTMsg("%zu.", fileData.size());
+
+		// Replace 'void' with Msg when debugging.
+		ePackedStoreAddResultCode ret = vpk.AddFile(fname, NULL, fileData.data(), fileData.size(), bMultiChunk);
+		if (ret == EPADD_NEWFILE)
+			void("EPADD_NEWFILE\n");
+		else if (ret == EPADD_ADDSAMEFILE)
+			void("EPADD_ADDSAMEFILE\n");
+		else if (ret == EPADD_UPDATEFILE)
+			void("EPADD_UPDATEFILE\n");
+		else
+			void("EPADD_ERROR\n");
+
+		nTotalFiles++;
+
+		fileData.clear();
+	}
+
+	char fname[19];
+	rand_str(fname, 16);
+	strcat(fname, ".txt");
+
+	if (fileData.size() != NULL) {
+		vpk.AddFile(fname, NULL, fileData.data(), fileData.size(), bMultiChunk);
+		nTotalFiles++;
+	}
+
+	KeyValues3 manifest;
+	manifest.SetMemberInt("version", nVersion);
+	manifest.SetMemberBool("compressed", bCompressed);
+	manifest.SetMemberInt64("totalsize", nTotalSize);
+	manifest.SetMemberBool("multichunk", bMultiChunk);
+	manifest.SetMemberInt("chunksize", nChunkSize);
+	manifest.SetMemberInt("singlefsize", nSingleFileSize);
+	manifest.SetMemberInt("filecount", nTotalFiles);
+
+	CUtlString outErrorMsg = "Success";
+	CUtlBuffer buffer(0, 0, 1);
+	SaveKV3(KV3_ENCODING_TEXT, KV3_FORMAT_GENERIC, &manifest, &outErrorMsg, &buffer);
+	buffer.PutChar(0);
+	VTMsg("Writing manifest file (%i): %s\n", buffer.TellPut() - 1, outErrorMsg);
+	vpk.AddFile("manifest.kv3", NULL, buffer.Base(), buffer.TellPut() - 1, bMultiChunk);
+	VTMsg("Hashing metadata...\n");
+	vpk.HashMetadata();
+	VTMsg("Writing...\n");
+	vpk.Write();
+}
+#endif

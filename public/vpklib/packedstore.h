@@ -10,7 +10,6 @@
 #pragma once
 #endif
 
-#include <vector>
 #include <libzstd/zstd.h>
 #include <tier0/platform.h>
 #include <tier0/threadtools.h>
@@ -71,7 +70,7 @@ public:
 	struct CFileHeaderFixedData *m_pHeaderData;
 	uint8 *m_pDirFileNamePtr;								// pointer to basename in dir block
 
-	std::vector<uint8> m_DecodedData;
+	CUtlBuffer m_DecodedData;
 	bool m_bDecoded;
 
 	CPackedStoreFileHandle()
@@ -103,7 +102,7 @@ public:
 		m_pOwner = NULL;
 		m_pHeaderData = NULL;
 		m_pDirFileNamePtr = NULL;
-		m_DecodedData.clear();
+		m_DecodedData.Purge();
 		m_bDecoded = false;
 	}
 
@@ -189,10 +188,10 @@ struct FileHandleTracker_t
 
 enum ePackedStoreAddResultCode
 {
-	EPADD_NEWFILE,											// the file was added and is new
-	EPADD_ADDSAMEFILE,										// the file was already present, and the contents are the same as what you passed.
-	EPADD_UPDATEFILE,										// the file was alreayd present and its contents have been updated
-	EPADD_ERROR,											// some error has resulted
+	EPADD_NEWFILE,					// the file was added and is new
+	EPADD_ADDSAMEFILE,				// the file was already present, and the contents are the same as what you passed.
+	EPADD_UPDATEFILE,				// the file was alreayd present and its contents have been updated
+	EPADD_ERROR,					// some error has resulted
 };
 
 // Describe a file inside of a VPK file.  Is not memory efficient; only used for interface
@@ -237,7 +236,6 @@ struct VPKContentFileInfo_t
 		//memset( m_md5Source.bits, 0, sizeof( m_md5Source.bits ) );
 	}
 };
-
 
 // a 1MB chunk of cached VPK data
 // For CPackedStoreReadCache
@@ -347,7 +345,7 @@ public:
 
 	/// Add file, writing file data to the end
 	/// of the current chunk
-	ePackedStoreAddResultCode AddFile( char const *pFile, uint16 nMetaDataSize, const void *pFileData, uint32 nFullFileSize, bool bMultiChunk, uint32 const *pCrcToUse = NULL );
+	ePackedStoreAddResultCode AddFile( char const *pFile, uint16 nMetaDataSize, const void *pFileData, uint32 nFullFileSize, bool bMultiChunk, uint32 const *pCrcToUse = NULL, bool bShouldCompress = true );
 
 	// write out the file directory
 	void Write( void );
@@ -418,6 +416,12 @@ public:
 		m_nWriteChunkSize = nWriteChunkSize;
 	}
 
+	// Set compression dictionary and compression level
+	void SetCompressionDictionary( const void* pData, uint32 nSize, int nLevel );
+
+	// Set compression level
+	void SetCompressionLevel( int nLevel );
+
 	int GetWriteChunkSize() const { return m_nWriteChunkSize; }
 
 	int GetHighestChunkFileIndex() { return m_nHighestChunkFileIndex; }
@@ -452,9 +456,14 @@ private:
 	bool m_bUseDirFile;
 
 	bool m_bCompressed;
-	ZSTD_CDict* m_pCompressionDict;
-	std::vector<uint8> m_CompressionDictData;
-	bool m_bCompressionDictReady;
+	int m_nCompressionLevel;
+
+	bool m_bUseCDict;
+	CUtlVector<uint8> m_CDictData;
+	ZSTD_CDict* m_pCDict;
+
+	bool m_bUseDDict;
+	ZSTD_DDict* m_pDDict;
 
 	IBaseFileSystem *m_pFileSystem;
 	IThreadedFileMD5Processor *m_pFileTracker;
