@@ -236,7 +236,7 @@ InitReturnVal_t CToolFrameworkInternal::Init()
 
 // Disabled in REL for now
 #if 1
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineTool_InstallQuitHandler( this, CToolFrameworkInternal_QuitHandler );
 
 	// FIXME: Eventually this should be -edit

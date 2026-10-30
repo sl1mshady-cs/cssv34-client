@@ -41,9 +41,9 @@ void SV_ClearWorld (void)
 {
 	MDLCACHE_COARSE_LOCK_(g_pMDLCache);
 	// Clean up static props from the previous level
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	g_pShadowMgr->LevelShutdown();
-#endif // SWDS
+#endif // DEDICATED
 	StaticPropMgr()->LevelShutdown();
 
 	for ( int i = 0; i < 3; i++ )
@@ -57,7 +57,7 @@ void SV_ClearWorld (void)
 
 	// Load all static props into the spatial partition
 	StaticPropMgr()->LevelInit();
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	g_pShadowMgr->LevelInit( host_state.worldbrush->numsurfaces );
 #endif
 }

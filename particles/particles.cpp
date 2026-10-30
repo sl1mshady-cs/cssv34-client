@@ -380,7 +380,7 @@ void CParticleSystemDefinition::Precache()
 		return;
 
 	m_bIsPrecached = true;
-#ifndef SWDS
+#ifndef DEDICATED
 	m_Material.Init( MaterialName(), TEXTURE_GROUP_OTHER, true );
 #endif
 
@@ -558,7 +558,7 @@ void CParticleSystemDefinition::Read( CDmxElement *pElement )
 	CopyUniqueId( pElement->GetId(), &m_Id );
 	pElement->UnpackIntoStructure( this, sizeof( *this ), s_pParticleSystemDefinitionUnpack );
 
-#ifndef SWDS												// avoid material/ texture load
+#ifndef DEDICATED												// avoid material/ texture load
 // NOTE: This makes a X appear for uncached particles.
 //	m_Material.Init( "debug/particleerror", TEXTURE_GROUP_OTHER, true );
 #endif

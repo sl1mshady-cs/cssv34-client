@@ -94,7 +94,7 @@ void CDispInfo::GetIntersectingSurfaces( GetIntersectingSurfaces_Struct *pStruct
 // ----------------------------------------------------------------------------- //
 void CDispInfo::RenderWireframeInLightmapPage( int pageId )
 {
-#ifndef SWDS
+#ifndef DEDICATED
     // render displacement as wireframe into lightmap pages
 	SurfaceHandle_t surfID = GetParent();
 
@@ -132,7 +132,7 @@ unsigned int CDispInfo::ComputeDynamicLightMask( dlight_t *pLights )
 {
 	int lightMask = 0;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if( !IS_SURF_VALID( m_ParentSurfID ) )
 	{
 		Assert( !"CDispInfo::ComputeDynamicLightMask: no parent surface" );
@@ -164,7 +164,7 @@ unsigned int CDispInfo::ComputeDynamicLightMask( dlight_t *pLights )
 
 void CDispInfo::AddDynamicLights( dlight_t *pLights, unsigned int mask )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if( !IS_SURF_VALID( m_ParentSurfID ) )
 	{
 		Assert( !"CDispInfo::AddDynamicLights: no parent surface" );
@@ -272,7 +272,7 @@ DispDecalHandle_t CDispInfo::NotifyAddDecal( decal_t *pDecal, float flSize )
 			++nDecalCount;
 		}
 		
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( nDecalCount >= MAX_DISP_DECALS )
 		{
 			R_DecalUnlink( s_DispDecals[iLastDecal].m_pDecal, host_state.worldbrush );
@@ -474,7 +474,7 @@ bool CDispInfo::ComputeShadowFragments( DispShadowHandle_t h, int& vertexCount, 
 
 	// Check to see if the bitfield wasn't computed. If so, compute it.
 	// This should happen whenever the shadow moves
-#ifndef SWDS
+#ifndef DEDICATED
 	if ((pShadowDecal->m_Flags & CDispDecalBase::NODE_BITFIELD_COMPUTED ) == 0)
 	{
 		// First, determine the nodes that the shadow decal should affect		
@@ -556,7 +556,7 @@ void DispInfo_BuildPrimLists( int nSortGroup, SurfaceHandle_t *pList, int listCo
 		if ( bDepthOnly )
 			continue;
 
-#ifndef SWDS
+#ifndef DEDICATED
 		OverlayMgr()->AddFragmentListToRenderList( nSortGroup, MSurf_OverlayFragmentList( pList[i] ), true );
 #endif
 	}
@@ -566,7 +566,7 @@ ConVar disp_dynamic( "disp_dynamic", "0" );
 
 void DispInfo_DrawPrimLists( ERenderDepthMode DepthMode )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	VPROF("DispInfo_DrawPrimLists");
 
 	int nDispGroupsSize = g_DispGroups.Size();
@@ -683,7 +683,7 @@ void DispInfo_DrawPrimLists( ERenderDepthMode DepthMode )
 //-----------------------------------------------------------------------------
 void DecalDispSurfacesInit( void )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	g_aDispDecalSortPool.RemoveAll();
 	++g_nDispDecalSortCheckCount;
 #endif
@@ -694,7 +694,7 @@ void DecalDispSurfacesInit( void )
 //-----------------------------------------------------------------------------
 void DispInfo_BatchDecals( CDispInfo **pVisibleDisps, int nVisibleDisps )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 
 	// Performance analysis.
 	VPROF( "DispInfo_BatchDecals" );
@@ -816,7 +816,7 @@ inline void DispInfo_DrawDecalMeshList( DecalMeshList_t &meshList )
 
 void DispInfo_DrawDecalsGroup( int iGroup, int iTreeType )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	CMatRenderContextPtr pRenderContext( materials );
 
 	DecalMeshList_t		meshList;
@@ -997,7 +997,7 @@ void DispInfo_DrawDecalsGroup( int iGroup, int iTreeType )
 
 void DispInfo_DrawDecals( CDispInfo **visibleDisps, int nVisibleDisps )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	VPROF( "DispInfo_DrawDecals" );
 
 	int iGroup = 0;
@@ -1015,7 +1015,7 @@ void DispInfo_DrawDecals( CDispInfo **visibleDisps, int nVisibleDisps )
 
 void DispInfo_DrawDecals_Old( CDispInfo *visibleDisps[MAX_MAP_DISPINFO], int nVisibleDisps )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 //	VPROF("DispInfo_DrawDecals");
 	if( !nVisibleDisps )
 		return;
@@ -1158,7 +1158,7 @@ void DispInfo_DrawDecals_Old( CDispInfo *visibleDisps[MAX_MAP_DISPINFO], int nVi
 // ----------------------------------------------------------------------------- //
 int DispInfo_AddShadowsToMeshBuilder( CMeshBuilder& meshBuilder, DispShadowHandle_t h, int baseIndex )
 {
-#ifdef SWDS
+#ifdef DEDICATED
 	return 0;
 #else
 
@@ -1329,7 +1329,7 @@ void DispInfo_ClearAllTags( HDISPINFOARRAY hArray )
 
 static void DispInfo_DrawChainNormals( SurfaceHandle_t *pList, int listCount )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 #ifdef _DEBUG
 	CMatRenderContextPtr pRenderContext( materials );
 
@@ -1393,7 +1393,7 @@ static void DispInfo_DrawChainNormals( SurfaceHandle_t *pList, int listCount )
 
 static void DispInfo_DrawDebugInformation( SurfaceHandle_t *pList, int listCount )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	VPROF("DispInfo_DrawDebugInformation");
 	// Overlay with normals if we're in that mode
 	if( mat_normals.GetInt() )
@@ -1409,7 +1409,7 @@ static void DispInfo_DrawDebugInformation( SurfaceHandle_t *pList, int listCount
 //-----------------------------------------------------------------------------
 void DispInfo_RenderList( int nSortGroup, SurfaceHandle_t *pList, int listCount, bool bOrtho, unsigned long flags, ERenderDepthMode DepthMode )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if( !r_DrawDisp.GetInt() || !listCount )
 		return;
 

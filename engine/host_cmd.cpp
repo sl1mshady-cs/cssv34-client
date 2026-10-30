@@ -52,7 +52,7 @@
 #endif
 #include "cdll_engine_int.h"
 #include "cl_steamauth.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #endif
 #include "sound.h"
@@ -96,7 +96,7 @@ extern IXboxSystem *g_pXboxSystem;
 
 #define KICKED_BY_CONSOLE "Kicked from server"
 
-#ifndef SWDS
+#ifndef DEDICATED
 bool g_bInEditMode = false;
 bool g_bInCommentaryMode = false;
 #endif
@@ -112,7 +112,7 @@ ConVar host_map( "host_map", "", 0, "Current map name." );
 void Host_VoiceRecordStop_f(void);
 static void voiceconvar_file_changed_f( IConVar *pConVar, const char *pOldValue, float flOldValue )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	ConVarRef var( pConVar );
 	if ( var.GetInt() == 0 )
 	{
@@ -174,7 +174,7 @@ uint GetSteamAppID()
 	
 	if ( !bHaveValidSteamInterface )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( Steam3Client().SteamUtils() )
 		{
 			bHaveValidSteamInterface = true;
@@ -196,7 +196,7 @@ uint GetSteamAppID()
 
 EUniverse GetSteamUniverse()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( Steam3Client().SteamUtils() )
 		return Steam3Client().SteamUtils()->GetConnectedUniverse();
 #endif
@@ -272,7 +272,7 @@ Host_Quit_f
 */
 void Host_Quit_f( const CCommand &args )
 {
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	
 	if ( args.FindArg( "prompt" ) )
 	{
@@ -303,7 +303,7 @@ CON_COMMAND( _restart, "Shutdown and restart the engine." )
 {
 	/*
 	// FIXME:  How to handle restarts?
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !EngineTool_CheckQuitHandlers() )
 	{
 		return;
@@ -314,7 +314,7 @@ CON_COMMAND( _restart, "Shutdown and restart the engine." )
 	HostState_Restart();
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 //-----------------------------------------------------------------------------
 // A console command to spew out driver information
 //-----------------------------------------------------------------------------
@@ -792,7 +792,7 @@ void Host_Map_Helper( const CCommand &args, bool bEditmode, bool bBackground, bo
 
 	// If I was in edit mode reload config file
 	// to overwrite WC edit key bindings
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	if ( !bEditmode )
 	{
 		if ( g_bInEditMode )
@@ -877,7 +877,7 @@ void Host_Map_f( const CCommand &args )
 // Active clients are kicked off.
 // UNDONE: protect this from use if not in dev. mode
 //-----------------------------------------------------------------------------
-#ifndef SWDS
+#ifndef DEDICATED
 CON_COMMAND( map_edit, "" )
 {
 	Host_Map_Helper( args, true, false, false );
@@ -909,7 +909,7 @@ void Host_Map_Commentary_f( const CCommand &args )
 CON_COMMAND( restart, "Restart the game on the same level (add setpos to jump to current view position on restart)." )
 {
 	if ( 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 		demoplayer->IsPlayingBack() || 
 #endif
 		!sv.IsActive() )
@@ -946,13 +946,13 @@ CON_COMMAND( restart, "Restart the game on the same level (add setpos to jump to
 //-----------------------------------------------------------------------------
 CON_COMMAND( reload, "Reload the most recent saved game (add setpos to jump to current view position on reload).")
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	const char *pSaveName;
 	char name[MAX_OSPATH];
 #endif
 
 	if ( 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 		demoplayer->IsPlayingBack() || 
 #endif
 		!sv.IsActive() )
@@ -974,7 +974,7 @@ CON_COMMAND( reload, "Reload the most recent saved game (add setpos to jump to c
 	// See if there is a most recently saved game
 	// Restart that game if there is
 	// Otherwise, restart the starting game map
-#ifndef SWDS
+#ifndef DEDICATED
 	pSaveName = saverestore->FindRecentSave( name, sizeof( name ) );
 
 	// Put up loading plaque
@@ -1090,7 +1090,7 @@ void Host_Changelevel2_f( const CCommand &args )
 		}
 	}
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	// needs to be before CL_HL2Demo_MapCheck() check as d1_trainstation_03 isn't a valid map
 	if ( IsPC() && CL_IsHL2Demo() && !sv.IsDedicated() && !Q_stricmp( szName, "d1_trainstation_03" ) ) 
 	{
@@ -1137,7 +1137,7 @@ void Host_Disconnect( bool bShowMainMenu, const char *pszReason )
 		g_pQueuedLoader->EndMapLoading( false );
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !sv.IsDedicated() )
 	{
 		cl.Disconnect( pszReason, bShowMainMenu );
@@ -1168,7 +1168,7 @@ void Disconnect()
 //-----------------------------------------------------------------------------
 CON_COMMAND( disconnect, "Disconnect game from server." )
 {
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	// Just run the regular Disconnect function if we're not the client or the client didn't handle it for us
 	if( !g_ClientDLL || !g_ClientDLL->DisconnectAttempt() )
 	{
@@ -1211,7 +1211,7 @@ CON_COMMAND( version, "Print version info string." )
 //-----------------------------------------------------------------------------
 CON_COMMAND( pause, "Toggle the server pause state." )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !sv.IsDedicated() )
 	{
 		if ( !cl.m_szLevelFileName[ 0 ] )
@@ -1241,7 +1241,7 @@ CON_COMMAND( pause, "Toggle the server pause state." )
 //-----------------------------------------------------------------------------
 CON_COMMAND( setpause, "Set the pause state of the server." )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !cl.m_szLevelFileName[ 0 ] )
 		return;
 #endif
@@ -1261,7 +1261,7 @@ CON_COMMAND( setpause, "Set the pause state of the server." )
 //-----------------------------------------------------------------------------
 CON_COMMAND( unpause, "Unpause the game." )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !cl.m_szLevelFileName[ 0 ] )
 		return;
 #endif
@@ -1706,7 +1706,7 @@ DEMO LOOP CONTROL
 */
 
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 //MOTODO move all demo commands to demoplayer
 
@@ -1718,7 +1718,7 @@ DEMO LOOP CONTROL
 int Host_GetNumDemos()
 {
 	int c = 0;
-#ifndef SWDS
+#ifndef DEDICATED
 	for ( int i = 0; i < MAX_DEMOS; ++i )
 	{
 		const char *demoname = cl.demos[ i ].Get();
@@ -1744,7 +1744,7 @@ void Host_PrintDemoList()
 		next = 0;
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	for ( int i = 0; i < MAX_DEMOS; ++i )
 	{
 		const char *demoname = cl.demos[ i ].Get();
@@ -1764,7 +1764,7 @@ void Host_PrintDemoList()
 }
 
 
-#ifndef SWDS
+#ifndef DEDICATED
 //-----------------------------------------------------------------------------
 //
 // Con commands related to demos, not available on dedicated servers
@@ -1898,7 +1898,7 @@ CON_COMMAND_F( soundfade, "Fade client volume.", FCVAR_SERVER_CAN_EXECUTE )
 	S_SoundFade( percent, holdTime, outTime, inTime );
 }
 
-#endif // !SWDS
+#endif // !DEDICATED
 
 #endif
 
@@ -1917,7 +1917,7 @@ CON_COMMAND( killserver, "Shutdown the server." )
 	}
 }
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 void Host_VoiceRecordStart_f(void)
 {
 #ifdef VOICE_VOX_ENABLE
@@ -2021,7 +2021,7 @@ void Host_VoiceToggle_f( const CCommand &args )
 }
 #endif // VOICE_VOX_ENABLE
 	
-#endif // SWDS
+#endif // DEDICATED
 
 //-----------------------------------------------------------------------------
 // Purpose: Wrapper for modelloader->Print() function call
@@ -2131,7 +2131,7 @@ CON_COMMAND_F( multvar, "Multiply specified convar value.", FCVAR_DONTRECORD )
 CON_COMMAND( dumpstringtables, "Print string tables to console." )
 {
 	SV_PrintStringTables();
-#ifndef SWDS
+#ifndef DEDICATED
 	CL_PrintStringTables();
 #endif
 }
@@ -2140,7 +2140,7 @@ CON_COMMAND( dumpstringtables, "Print string tables to console." )
 ConCommand quit("quit", Host_Quit_f, "Exit the engine.");
 static ConCommand cmd_exit("exit", Host_Quit_f, "Exit the engine.");
 
-#ifndef SWDS
+#ifndef DEDICATED
 #ifdef VOICE_OVER_IP
 static ConCommand startvoicerecord("+voicerecord", Host_VoiceRecordStart_f);
 static ConCommand endvoicerecord("-voicerecord", Host_VoiceRecordStop_f);
@@ -2149,7 +2149,7 @@ static ConCommand togglevoicerecord("voicerecord_toggle", Host_VoiceToggle_f);
 #endif // VOICE_VOX_ENABLE
 #endif // VOICE_OVER_IP
 
-#endif // SWDS
+#endif // DEDICATED
 
 
 #if defined( STAGING_ONLY )
@@ -2237,18 +2237,18 @@ CON_COMMAND( crash, "[ sys_error | hang | purecall | segfault | minidump ]: Caus
 
 CON_COMMAND_F( flush, "Flush unlocked cache memory.", FCVAR_CHEAT )
 {
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	g_ClientDLL->InvalidateMdlCache();
-#endif // SWDS
+#endif // DEDICATED
 	serverGameDLL->InvalidateMdlCache();
 	g_pDataCache->Flush( true );
 }
 
 CON_COMMAND_F( flush_locked, "Flush unlocked and locked cache memory.", FCVAR_CHEAT )
 {
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	g_ClientDLL->InvalidateMdlCache();
-#endif // SWDS
+#endif // DEDICATED
 	serverGameDLL->InvalidateMdlCache();
 	g_pDataCache->Flush( false );
 }

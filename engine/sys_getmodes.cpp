@@ -2385,7 +2385,7 @@ bool CVideoMode_MaterialSystem::SetMode( int nWidth, int nHeight, bool bWindowed
 		config.m_nVRModeAdapter = materials->GetCurrentAdapter();
 	}
 
-#ifdef SWDS
+#ifdef DEDICATED
     config.m_VideoMode.m_RefreshRate = 60;
 #else
     config.m_VideoMode.m_RefreshRate = GetRefreshRateForMode( pMode );

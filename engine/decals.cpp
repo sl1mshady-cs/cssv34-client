@@ -79,7 +79,7 @@ IMaterial *Draw_DecalMaterial( int index )
 	}
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 void Draw_DecalSetName( int decal, char *name )
 {
 	while ( decal >= g_DecalLookup.Count() )
@@ -143,7 +143,7 @@ int Draw_DecalIndexFromName( char *name, bool *found )
 
 const char *Draw_DecalNameFromIndex( int index )
 {
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	return g_DecalDictionary[index].material ? g_DecalDictionary[index].material->GetName() : "";
 #else
 	return "";

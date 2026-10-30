@@ -604,7 +604,7 @@ void CStudioRender::DrawModelArray( const DrawModelInfo_t &drawInfo, const Studi
 {
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s %d", __FUNCTION__, arrayCount );
 
-#ifndef SWDS												// no drawing on dedicated server
+#ifndef DEDICATED												// no drawing on dedicated server
 #if 0
 	FlexWeights_t flex;
 	memset(&flex, 0, sizeof(flex));

@@ -278,7 +278,7 @@ void CGame::AppActivate( bool fActive )
 	// Don't let video modes changes queue up another activate event
 	SetCanPostActivateEvents( false );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( videomode )
 	{
 		if ( fActive )
@@ -322,7 +322,7 @@ void CGame::AppActivate( bool fActive )
 			}
 		}
 	}
-#endif // SWDS
+#endif // DEDICATED
 	SetActiveApp( fActive );
 
 #ifdef _XBOX
@@ -344,7 +344,7 @@ void CGame::AppActivate( bool fActive )
 void CGame::HandleMsg_WindowMove( const InputEvent_t &event )
 {
 	game->SetWindowXY( event.m_nData, event.m_nData2 );
-#ifndef SWDS
+#ifndef DEDICATED
 	videomode->UpdateWindowPosition();
 #endif
 }
@@ -667,7 +667,7 @@ LRESULT CGame::WindowProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			Cbuf_AddText( "quit\n" );
 		}
 
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( VCRGetMode() == VCR_Disabled )
 		{
 			S_BlockSound();
@@ -677,7 +677,7 @@ LRESULT CGame::WindowProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		lRet = CallWindowProc( m_ChainedWindowProc, hWnd, uMsg, wParam, lParam );
 
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( VCRGetMode() == VCR_Disabled )
 		{
 			S_UnblockSound();
@@ -800,7 +800,7 @@ LRESULT CGame::WindowProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		hdc = BeginPaint(hWnd, &ps);
 		RECT rcClient;
 		GetClientRect( hWnd, &rcClient );
-#ifndef SWDS		
+#ifndef DEDICATED		
 		// Only renders stuff if running -noshaderapi
 		if ( videomode )
 		{
@@ -825,7 +825,7 @@ LRESULT CGame::WindowProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		default:
 			break;
 
-#ifndef SWDS
+#ifndef DEDICATED
 		case 14:
             if ( !videomode->IsWindowedMode() )
 				return 0;
@@ -980,7 +980,7 @@ bool CGame::CreateGameWindow( void )
 	}
 
 #if defined( WIN32 ) && !defined( USE_SDL )
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( IsPC() )
 	{
 		if ( !LoadUnicode() )
@@ -1017,7 +1017,7 @@ bool CGame::CreateGameWindow( void )
 	}
 	
 
-#ifndef SWDS
+#ifndef DEDICATED
 	char const *pszGameType = modinfo->GetString( "type" );
 	if ( pszGameType && Q_stristr( pszGameType, "multiplayer" ) )
 		DoSomeSocketStuffInOrderToGetZoneAlarmToNoticeUs();
@@ -1155,7 +1155,7 @@ void CGame::DestroyGameWindow()
 		m_hWindow = (HWND)0;
 		m_bExternallySuppliedWindow = false;
 	}
-#endif // !defined( SWDS )
+#endif // !defined( DEDICATED )
 #endif
 }
 
@@ -1302,7 +1302,7 @@ void CGame::PlayStartupVideos( void )
 	if ( IsX360() || Plat_IsInBenchmarkMode() )
 		return;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	
 	// Wait for the mode to change and stabilized
 	// FIXME: There's really no way to know when this is completed, so we have to guess a time that will mostly be correct
@@ -1398,7 +1398,7 @@ void CGame::PlayStartupVideos( void )
 	// call free on the buffer since the buffer was malloc'd in COM_LoadFile
 	free( (void *)buffer );
 
-#endif // SWDS
+#endif // DEDICATED
 }
 
 //-----------------------------------------------------------------------------

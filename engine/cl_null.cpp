@@ -5,7 +5,7 @@
 //=============================================================================//
 
 #include "client_pch.h"
-#ifdef SWDS
+#ifdef DEDICATED
 #include "igame.h"
 #include "hltvclientstate.h"
 #include "convar.h"

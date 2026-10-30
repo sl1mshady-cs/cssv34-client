@@ -31,7 +31,7 @@
 #include "gl_cvars.h"
 #include "filesystem_engine.h"
 #include "tier0/cpumonitoring.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #endif
 #include "tier0/etwprof.h"
@@ -269,7 +269,7 @@ bool CEngine::FilterTime( float dt )
 		m_flMinFrameTime = minframetime;
 
 		if (
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 		    !demoplayer->IsPlayingTimeDemo() && 
 #endif
 			!g_bDedicatedServerBenchmarkMode && 
@@ -397,7 +397,7 @@ void CEngine::Frame( void )
 	// Reset swallowed time...
 	m_flFilteredTime = 0.0f;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !sv.IsDedicated() )
 	{
 		ClientDLL_FrameStageNotify( FRAME_START );

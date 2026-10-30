@@ -16,7 +16,7 @@
 #include "GameEventManager.h"
 #include "LocalNetworkBackdoor.h"
 #include "dt_send_eng.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #endif
 #include "sv_remoteaccess.h" // NotifyDedicatedServerUI()
@@ -541,7 +541,7 @@ void CBaseClient::SpawnPlayer( void )
 bool CBaseClient::SendSignonData( void )
 {
 	COM_TimestampedLog( " CBaseClient::SendSignonData" );
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_SENDSIGNONDATA);
 #endif
 
@@ -562,7 +562,7 @@ bool CBaseClient::SendSignonData( void )
 void CBaseClient::Connect( const char * szName, int nUserID, INetChannel *pNetChannel, bool bFakePlayer, int clientChallenge )
 {
 	COM_TimestampedLog( "CBaseClient::Connect" );
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_SIGNONCONNECT);
 #endif
 	Clear();
@@ -609,7 +609,7 @@ void CBaseClient::Disconnect( const char *fmt, ... )
 	if ( m_nSignonState == SIGNONSTATE_NONE )
 		return;	// no recursion
 
-#if !defined( SWDS ) && defined( ENABLE_RPT )
+#if !defined( DEDICATED ) && defined( ENABLE_RPT )
 	SV_NotifyRPTOfDisconnect( m_nClientSlot );
 #endif
 

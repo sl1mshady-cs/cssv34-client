@@ -28,7 +28,7 @@
 #include "ModelInfo.h"
 #include "networkstringtable.h" // for Lock()
 
-#ifndef SWDS
+#ifndef DEDICATED
 #include "demo.h"
 #endif
 
@@ -241,7 +241,7 @@ int CModelInfo::GetModelIndex( const char *name ) const
 			return NETDYNAMIC_TO_MODEL( netdyn );
 		}
 
-#if defined( DEMO_BACKWARDCOMPATABILITY ) && !defined( SWDS )
+#if defined( DEMO_BACKWARDCOMPATABILITY ) && !defined( DEDICATED )
 		// dynamic model tables in old system did not have a full path with "models/" prefix
 		if ( V_strnicmp( name, "models/", 7 ) == 0 && demoplayer && demoplayer->IsPlayingBack() && demoplayer->GetProtocolVersion() < PROTOCOL_VERSION_20 )
 		{
@@ -297,7 +297,7 @@ model_t *CModelInfo::LookupDynamicModel( int i )
 			GrowNetworkedDynamicModels( netidx );
 			const char *name = pTable->GetString( netidx );
 
-#if defined( DEMO_BACKWARDCOMPATABILITY ) && !defined( SWDS )
+#if defined( DEMO_BACKWARDCOMPATABILITY ) && !defined( DEDICATED )
 			// dynamic model tables in old system did not have a full path with "models/" prefix
 			char fixupBuf[MAX_PATH];
 			if ( V_strnicmp( name, "models/", 7 ) != 0 && demoplayer && demoplayer->IsPlayingBack() && demoplayer->GetProtocolVersion() < PROTOCOL_VERSION_20 )
@@ -490,7 +490,7 @@ int CModelInfo::GetModelType( const model_t *model ) const
 		if ( pTable && pTable->FindStringIndex( model->strName ) != INVALID_STRING_INDEX )
 			return mod_studio;
 
-#if defined( DEMO_BACKWARDCOMPATABILITY ) && !defined( SWDS )
+#if defined( DEMO_BACKWARDCOMPATABILITY ) && !defined( DEDICATED )
 		// dynamic model tables in old system did not have a full path with "models/" prefix
 		if ( pTable && demoplayer && demoplayer->IsPlayingBack() && demoplayer->GetProtocolVersion() < PROTOCOL_VERSION_20 &&
 			 V_strnicmp( model->strName, "models/", 7 ) == 0 && pTable->FindStringIndex( model->strName + 7 ) != INVALID_STRING_INDEX )
@@ -993,7 +993,7 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CModelInfoServer, IVModelInfo, VMODELINFO_SER
 IVModelInfo *modelinfo = &g_ModelInfoServer;
 
 
-#ifndef SWDS
+#ifndef DEDICATED
 //-----------------------------------------------------------------------------
 // implementation of IVModelInfo for client
 //-----------------------------------------------------------------------------

@@ -95,7 +95,7 @@ void Shader_Disconnect( void )
 
 
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 void Shader_SwapBuffers( void )
 {

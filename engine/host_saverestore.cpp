@@ -870,7 +870,7 @@ void CSaveRestore::UpdateSaveGameScreenshots()
 	if ( IsPC() && g_LostVideoMemory )
 		return;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( m_szSaveGameScreenshotFile[0] )
 	{
 		host_framecount++;
@@ -1960,7 +1960,7 @@ void CSaveRestore::RestoreAdjacenClientState( char const *map )
 //-----------------------------------------------------------------------------
 bool CSaveRestore::SaveClientState( const char *name )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	decallist_t		*decalList;
 	int				i;
 
@@ -2932,7 +2932,7 @@ static void SaveGame( const CCommand &args )
 		Q_strncpy( sv.m_szMapname, szMapName, sizeof(sv.m_szMapname) );
 	}
 
-#if !defined (SWDS)
+#if !defined (DEDICATED)
 	CL_HudMessage( IsX360() ? "GAMESAVED_360" : "GAMESAVED" );
 #endif
 }
@@ -3068,7 +3068,7 @@ CON_COMMAND( _autosave, "Autosave" )
 #endif
 	if ( bConsole )
 	{
-#if !defined (SWDS)
+#if !defined (DEDICATED)
 		CL_HudMessage( IsX360() ? "GAMESAVED_360" : "GAMESAVED" );
 #endif
 	}
@@ -3087,7 +3087,7 @@ CON_COMMAND( _autosavedangerous, "AutoSaveDangerous" )
 #endif
 	if ( bConsole )
 	{
-#if !defined (SWDS)
+#if !defined (DEDICATED)
 		CL_HudMessage( IsX360() ? "GAMESAVED_360" : "GAMESAVED" );
 #endif
 	}
@@ -3111,7 +3111,7 @@ CON_COMMAND( autosave, "Autosave" )
 
 	if ( bConsole )
 	{
-#if !defined (SWDS)
+#if !defined (DEDICATED)
 		CL_HudMessage( pchSaving );
 #endif
 		g_SaveRestore.AddDeferredCommand( "_autosave" );
@@ -3145,7 +3145,7 @@ CON_COMMAND( autosavedangerous, "AutoSaveDangerous" )
 
 	if ( bConsole )
 	{
-#if !defined (SWDS)
+#if !defined (DEDICATED)
 		CL_HudMessage( pchSaving );
 #endif
 		g_SaveRestore.AddDeferredCommand( "_autosavedangerous" );

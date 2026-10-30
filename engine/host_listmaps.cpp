@@ -12,7 +12,7 @@
 #include "filesystem_engine.h"
 #include "utldict.h"
 #include "demo.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #endif
 
@@ -217,7 +217,7 @@ void CMapListManager::Think( void )
 	if ( !m_bDirty )
 		return;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// Only update pending files if console is visible to avoid slamming FS while in a map
 	if ( !EngineVGui()->IsConsoleVisible() )
 		return;

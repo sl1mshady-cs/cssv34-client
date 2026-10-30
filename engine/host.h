@@ -117,7 +117,7 @@ bool Host_AllowQueuedMaterialSystem( bool bAllow );
 bool Host_IsSecureServerAllowed();
 void FORCEINLINE Host_DisallowSecureServers()
 {
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	g_bAllowSecureServers = false;
 #endif
 }

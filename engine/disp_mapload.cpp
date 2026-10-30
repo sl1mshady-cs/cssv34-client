@@ -124,7 +124,7 @@ static void BuildDispSurfInit(
 	if ( MSurf_VertCount( worldSurfID ) != 4 )
 		return;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	BuildMSurfaceVerts( pWorld->brush.pShared, worldSurfID, surfPoints, surfTexCoords, surfLightCoords );
 #endif
 	BuildDispGetSurfNormals( surfPoints, surfNormals );
@@ -163,7 +163,7 @@ static void BuildDispSurfInit(
 	pDispSurf->FindSurfPointStartIndex();
 	pDispSurf->AdjustSurfPointData();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	//
 	// adjust the lightmap coordinates -- this is currently done redundantly!
 	// the will be fixed correctly when the displacement common code is written.
@@ -271,7 +271,7 @@ void FillStaticBuffer(
 	const CDispVert *pVerts,
 	int nLightmaps )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Put the verts into the buffer.
 	int nVerts, nIndices;
 	CalcMaxNumVertsAndIndices( pDisp->GetPower(), &nVerts, &nIndices );
@@ -834,7 +834,7 @@ CDispInfo::~CDispInfo()
 
 void CDispInfo::CopyCoreDispVertData( const CCoreDispInfo *pCoreDisp, float bumpSTexCoordOffset )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if( NumLightMaps() <= 1 )
 	{
 		bumpSTexCoordOffset = 0.0f;
@@ -865,7 +865,7 @@ bool CDispInfo::CopyCoreDispData(
 {
 	m_idLMPage = pSortInfos[MSurf_MaterialSortID( GetParent() )].lightmapPageID;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	SurfaceCtx_t ctx;
 	SurfSetupSurfaceContext( ctx, GetParent() );
 #endif
@@ -873,7 +873,7 @@ bool CDispInfo::CopyCoreDispData(
 	// Restoring is only for alt+tabbing, which can't happen on consoles
 	if ( IsPC() && bRestoring )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		// When restoring, have to recompute lightmap coords
 		if( NumLightMaps() > 1 )
 		{
@@ -887,7 +887,7 @@ bool CDispInfo::CopyCoreDispData(
 		{
 			pCoreDisp->GetLuxelCoord( 0, i, m_Verts[i].m_LMCoords );
 		}
-#endif // SWDS
+#endif // DEDICATED
 		return true;
 	}
 
@@ -899,7 +899,7 @@ bool CDispInfo::CopyCoreDispData(
 		m_BaseSurfacePositions[index] = pSurface->GetPoint( index );
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	CopyCoreDispVertData( pCoreDisp, ctx.m_BumpSTexCoordOffset );
 #endif
 

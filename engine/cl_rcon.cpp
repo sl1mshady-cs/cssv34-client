@@ -74,7 +74,7 @@ CRConClient & RPTClient()
 
 static void RconAddressChanged_f( IConVar *pConVar, const char *pOldString, float flOldValue )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	ConVarRef var( pConVar );
 	netadr_t to;
 

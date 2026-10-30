@@ -37,7 +37,7 @@
 #include "vgui_baseui_interface.h"
 #include "tier2/tier2.h"
 #include "language.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "cl_steamauth.h"
 #endif
 #include "tier3/tier3.h"
@@ -872,7 +872,7 @@ void COM_InitFilesystem( const char *pFullModPath )
 {
 	CFSSearchPathsInit initInfo;
 
-#ifndef SWDS	
+#ifndef DEDICATED	
 	if ( IsPC() )
 	{
 		static char language[128];
@@ -940,7 +940,7 @@ void COM_InitFilesystem( const char *pFullModPath )
 	Q_strlower( com_basedir );
 	Q_FixSlashes( com_basedir );
 	
-#if !defined( SWDS ) && !defined( DEDICATED )
+#if !defined( DEDICATED ) && !defined( DEDICATED )
 	EngineVGui()->SetVGUIDirectories();
 #endif
 

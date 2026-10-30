@@ -21,7 +21,7 @@
 #include "host.h"
 #include "cmd.h"
 #include "common.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #endif
 
@@ -281,7 +281,7 @@ void CSteam3Client::OnGameServerChangeRequested( GameServerChangeRequested_t *pG
 //-----------------------------------------------------------------------------
 void CSteam3Client::OnGameOverlayActivated( GameOverlayActivated_t *pGameOverlayActivated )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( Host_IsSinglePlayerGame() )
 	{
 		if ( !EngineVGui()->IsGameUIVisible() && 

@@ -78,7 +78,7 @@ void CClockDriftMgr::Clear()
 // NOTE: and frame end on the client
 void CClockDriftMgr::SetServerTick( int nTick )
 {
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	m_nServerTick = nTick;
 
 	int nMaxDriftTicks = IsEngineThreaded() ? 
@@ -112,7 +112,7 @@ void CClockDriftMgr::SetServerTick( int nTick )
 	// adjust the clock offset by the clock with thread mode compensation
 	m_ClockOffsets[m_iCurClockOffset] = clientTick - m_nServerTick;
 	m_iCurClockOffset = (m_iCurClockOffset + 1) % NUM_CLOCKDRIFT_SAMPLES;
-#endif // SWDS
+#endif // DEDICATED
 }
 
 
@@ -121,7 +121,7 @@ float CClockDriftMgr::AdjustFrameTime( float inputFrameTime )
 	float flAdjustmentThisFrame = 0;
 	float flAdjustmentPerSec = 0;
 	if ( IsClockCorrectionEnabled() 
-#if !defined( _XBOX ) && !defined( SWDS )
+#if !defined( _XBOX ) && !defined( DEDICATED )
 		 && !demoplayer->IsPlayingBack()
 #endif
 		)
@@ -214,7 +214,7 @@ extern ConVar net_usesocketsforloopback;
 
 bool CClockDriftMgr::IsClockCorrectionEnabled()
 {
-#ifdef SWDS
+#ifdef DEDICATED
 	return false;
 #else
 

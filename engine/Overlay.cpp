@@ -575,7 +575,7 @@ void COverlayMgr::ClearRenderLists( int nSortGroup )
 //-----------------------------------------------------------------------------
 void COverlayMgr::RenderOverlays( int nSortGroup )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	VPROF_BUDGET( "COverlayMgr::RenderOverlays", VPROF_BUDGETGROUP_OVERLAYS );
 
 	if (r_renderoverlayfragment.GetInt() == 0)
@@ -782,7 +782,7 @@ bool COverlayMgr::Surf_PreClipFragment( moverlay_t *pOverlay, moverlayfragment_t
 void COverlayMgr::Surf_PostClipFragment( moverlay_t *pOverlay, moverlayfragment_t &overlayFrag,
 								         SurfaceHandle_t surfID )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Get fragment vertex count.
 	int nVertCount = overlayFrag.m_aPrimVerts.Count();
 
@@ -868,7 +868,7 @@ void COverlayMgr::Surf_PostClipFragment( moverlay_t *pOverlay, moverlayfragment_
 	// Therefore, we need to add to the head of the list
 	m_aFragments.LinkBefore( MSurf_OverlayFragmentList( surfID ), hFragment );
 	MSurf_OverlayFragmentList( surfID ) = hFragment;
-#endif // !SWDS
+#endif // !DEDICATED
 }
 
 
@@ -1060,7 +1060,7 @@ void COverlayMgr::CreateFragments( void )
 //-----------------------------------------------------------------------------
 void COverlayMgr::ReSortMaterials( void )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Clear the old render queue.
 	m_RenderQueue.Purge();
 	for ( int iSort = 0; iSort < MAX_MAT_SORT_GROUPS; ++iSort )
@@ -1107,7 +1107,7 @@ void COverlayMgr::ReSortMaterials( void )
 			hFrag = m_OverlayFragments.Next( hFrag );
 		}
 	}
-#endif // !SWDS
+#endif // !DEDICATED
 }
 
 //-----------------------------------------------------------------------------
@@ -1360,7 +1360,7 @@ bool COverlayMgr::Disp_PreClipFragment( moverlay_t *pOverlay, OverlayFragmentVec
 void COverlayMgr::Disp_PostClipFragment( CDispInfo *pDisp, CMeshReader *pReader, moverlay_t *pOverlay, 
 										 OverlayFragmentVector_t &aDispFragments, SurfaceHandle_t surfID )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( aDispFragments.Count() == 0 )
 		return;
 
@@ -1470,7 +1470,7 @@ void COverlayMgr::Disp_PostClipFragment( CDispInfo *pDisp, CMeshReader *pReader,
 		m_aFragments.LinkBefore( MSurf_OverlayFragmentList( surfID ), hFragment );
 		MSurf_OverlayFragmentList( surfID ) = hFragment;
 	}
-#endif // !SWDS
+#endif // !DEDICATED
 }
 
 

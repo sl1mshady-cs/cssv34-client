@@ -437,7 +437,7 @@ void Sys_Error_Internal( bool bMinidump, const char *error, va_list argsList )
 
 	g_bInErrorExit = true;
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	if ( IsPC() && videomode )
 		videomode->Shutdown();
 #endif
@@ -1038,7 +1038,7 @@ void *GameFactory( const char *pName, int *pReturnCode )
 	if (pRetVal)
 		return pRetVal;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// now ask the client dll
 	if (ClientDLL_GetFactory())
 	{

@@ -273,7 +273,7 @@ private:
 
 extern	CClientState	cl;
 
-#ifndef SWDS
+#ifndef DEDICATED
 extern CGlobalVarsBase g_ClientGlobalVariables;
 #endif
 

@@ -44,7 +44,7 @@
 #include "tier0/icommandline.h"
 #include "gl_matsysiface.h"
 #include "GameEventManager.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #endif
 #include "cbenchmark.h"
@@ -547,7 +547,7 @@ void CGameServer::CopyPureServerWhitelistToStringTable()
 
 void SV_InstallClientStringTableMirrors( void )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 #ifndef SHARED_NET_STRING_TABLES
 
 	int numTables = networkStringTableContainerServer->GetNumTables();
@@ -850,7 +850,7 @@ void SV_InitGameDLL( void )
 		return;
 	}
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 #if !defined(_X360)
 	if ( CL_IsHL2Demo() && !sv.IsDedicated() && Q_stricmp( COM_GetModDirectory(), "hl2" ) )
 	{
@@ -1756,7 +1756,7 @@ void CGameServer::UpdateHibernationState()
 
 void CGameServer::FinishRestore()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	CSaveRestoreData currentLevelData;
 	char			name[MAX_OSPATH];
 
@@ -2157,7 +2157,7 @@ void SV_InitGameServerSteam()
 bool SV_ActivateServer()
 {
 	COM_TimestampedLog( "SV_ActivateServer" );
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_ACTIVATESERVER);
 #endif
 
@@ -2410,7 +2410,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 	ReloadWhitelist( szMapName );
 
 	COM_TimestampedLog( "SV_SpawnServer(%s)", szMapName );
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_SPAWNSERVER);
 #endif
 	COM_SetupLogDir( szMapName );
@@ -2419,7 +2419,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 	g_Log.Printf( "Loading map \"%s\"\n", szMapName );
 	g_Log.PrintServerVars();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	SCR_CenterStringOff();
 #endif
 
@@ -2452,9 +2452,9 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 
 	COM_TimestampedLog( "StaticPropMgr()->LevelShutdown()" );
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	g_pShadowMgr->LevelShutdown();
-#endif // SWDS
+#endif // DEDICATED
 	StaticPropMgr()->LevelShutdown();
 
 	// if we have an hltv relay proxy running, stop it now
@@ -2507,7 +2507,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 		g_pDataCache->Flush();
 		g_pMaterialSystem->CompactMemory();
 		g_pFileSystem->AsyncFinishAll();
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		extern CThreadMutex g_SndMutex;
 		g_SndMutex.Lock();
 		g_pFileSystem->AsyncSuspend();
@@ -2516,7 +2516,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 		g_pThreadPool->ResumeExecution();
 		g_pFileSystem->AsyncResume();
 		g_SndMutex.Unlock();
-#endif // SWDS
+#endif // DEDICATED
 	}
 
 	// Preload any necessary data from the xzps:
@@ -2529,7 +2529,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 
 	g_ServerGlobalVariables.maxEntities = max_edicts;
 	g_ServerGlobalVariables.maxClients = GetMaxClients();
-#ifndef SWDS
+#ifndef DEDICATED
 	g_ClientGlobalVariables.network_protocol = PROTOCOL_VERSION;
 #endif
 
@@ -2603,7 +2603,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 
 	if ( IsMultiplayer() && !IsX360() )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		EngineVGui()->UpdateProgressBar(PROGRESS_CRCMAP);
 #endif
 		// Server map CRC check.
@@ -2616,7 +2616,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 			return false;
 		}
 
-#ifndef SWDS
+#ifndef DEDICATED
 		EngineVGui()->UpdateProgressBar(PROGRESS_CRCCLIENTDLL);
 #endif
 	}
@@ -2629,7 +2629,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 
 	COM_TimestampedLog( "SV_CreateNetworkStringTables" );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_CREATENETWORKSTRINGTABLES);
 #endif
 
@@ -2643,7 +2643,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 
 	COM_TimestampedLog( "Precache world model (%s)", szMapFile );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_PRECACHEWORLD);
 #endif
 	// Add in world
@@ -2661,7 +2661,7 @@ bool CGameServer::SpawnServer( const char *szMapName, const char *szMapFile, con
 		PrecacheModel( localmodel, RES_FATALIFMISSING | RES_PRELOAD, modelloader->GetModelForName( localmodel, IModelLoader::FMODELLOADER_SERVER ) );
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_CLEARWORLD);
 #endif
 	COM_TimestampedLog( "SV_ClearWorld" );
@@ -2767,7 +2767,7 @@ bool SV_IsSimulating( void )
 	if ( sv.IsPaused() )
 		return false;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// Don't simulate in single player if console is down or the bug UI is active and we're in a game 
 	if ( !sv.IsMultiplayer() )
 	{
@@ -2778,7 +2778,7 @@ bool SV_IsSimulating( void )
 		if ( cl.IsActive() && ( Con_IsVisible() || EngineVGui()->ShouldPause() ) )
 			return false;
 	}
-#endif //SWDS
+#endif //DEDICATED
 	
 	return true;
 }

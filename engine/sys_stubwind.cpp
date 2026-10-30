@@ -22,7 +22,7 @@
 #include "server.h"
 #include "cdll_int.h"
 
-#ifdef SWDS
+#ifdef DEDICATED
 void ForceReloadProfile( void );
 
 void ClearIOStates( void );

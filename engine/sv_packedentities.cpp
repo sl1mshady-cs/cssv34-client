@@ -34,7 +34,7 @@
 #include "vstdlib/jobthread.h"
 #include "enginethreads.h"
 
-#ifdef SWDS
+#ifdef DEDICATED
 IClientEntityList *entitylist = NULL;
 #endif
 
@@ -501,7 +501,7 @@ void SV_ComputeClientPacks(
 		
 		g_pLocalNetworkBackdoor->StartEntityStateUpdate();
 
-#ifndef SWDS
+#ifndef DEDICATED
 		int saveClientTicks = cl.GetClientTickCount();
 		int saveServerTicks = cl.GetServerTickCount();
 		bool bSaveSimulation = cl.insimulation;
@@ -520,7 +520,7 @@ void SV_ComputeClientPacks(
 
 		g_pLocalNetworkBackdoor->EndEntityStateUpdate();
 
-#ifndef SWDS
+#ifndef DEDICATED
 		cl.SetClientTickCount( saveClientTicks );
 		cl.SetServerTickCount( saveServerTicks );
 		cl.insimulation = bSaveSimulation;

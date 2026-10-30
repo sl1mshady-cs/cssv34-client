@@ -57,6 +57,8 @@ CTextConsoleUnix console;
 extern char *gpszCvars;
 #endif
 
+#define DEFAULT_DS_GAMEDIR	"cstrike"
+
 IDedicatedServerAPI *engine = NULL;
 
 //-----------------------------------------------------------------------------
@@ -77,7 +79,7 @@ public:
 };
 CVCRHelpers g_VCRHelpers;
 
-SpewRetval_t DedicatedSpewOutputFunc( SpewType_t spewType, char const *pMsg ); // in sys_common.cpp
+static CNonFatalLoggingResponsePolicy s_NonFatalLoggingResponsePolicy;
 
 //-----------------------------------------------------------------------------
 // Run a single VGUI frame. if bFinished is true, run VGUIFinishedConfig() first.
@@ -220,8 +222,12 @@ bool CDedicatedAppSystemGroup::Create( )
 		return false;
 #endif		
 
+	extern ILoggingListener* g_pDedicatedServerLoggingListener;
+
 	// Hook the debug output stuff (override the spew func in the appframework)
-	SpewOutputFunc( DedicatedSpewOutputFunc );
+	LoggingSystem_PushLoggingState();
+	LoggingSystem_SetLoggingResponsePolicy( &s_NonFatalLoggingResponsePolicy );
+	LoggingSystem_RegisterLoggingListener( g_pDedicatedServerLoggingListener );
 
 	// Added the dedicated exports module for the engine to grab
 	AppModule_t dedicatedModule = LoadModule( Sys_GetFactoryThis() );
@@ -278,7 +284,8 @@ bool CDedicatedAppSystemGroup::PreInit( )
 		return false;
 
 #ifdef _WIN32
-	g_bVGui = CommandLine()->CheckParm( "-vgui" );
+	// Disable VGUI for now
+	g_bVGui = false; 
 #endif
 
 	CreateInterfaceFn factory = GetFactory();
@@ -317,8 +324,8 @@ int CDedicatedAppSystemGroup::Main( )
 	ModInfo_t info;
 	info.m_pInstance = GetAppInstance();
 	info.m_pBaseDirectory = UTIL_GetBaseDir();
-	info.m_pInitialMod = CommandLine()->ParmValue( "-game", "hl2" );
-	info.m_pInitialGame = CommandLine()->ParmValue( "-defaultgamedir", "hl2" );
+	info.m_pInitialMod = CommandLine()->ParmValue( "-game", DEFAULT_DS_GAMEDIR );
+	info.m_pInitialGame = CommandLine()->ParmValue( "-defaultgamedir", DEFAULT_DS_GAMEDIR );
 	info.m_pParentAppSystemGroup = this;
 	info.m_bTextMode = CommandLine()->CheckParm( "-textmode" );
 
@@ -520,6 +527,10 @@ int main(int argc, char **argv)
 
 	// Rehook the command line through VCR mode.
 	CommandLine()->CreateCmdLine( VCRHook_GetCommandLine() );
+
+	// Setup game dir if not specified
+	if (!CommandLine()->HasParm("-game"))
+		CommandLine()->AppendParm("-game", DEFAULT_DS_GAMEDIR);
 
 	if ( !InitInstance() )
 		return -1;

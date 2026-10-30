@@ -18,7 +18,7 @@ extern CSysModule		*g_ClientDLLModule;
 
 IMaterialProxy *CMaterialProxyFactory::CreateProxy( const char *proxyName )
 {
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	IMaterialProxy *materialProxy = LookupProxy( proxyName, Sys_GetFactory( g_ClientDLLModule ) );
 
 	// If the client didn't have it and we're in tool mode, ask the tools...

@@ -31,7 +31,7 @@
 #include "gl_drawlights.h"
 #include "tier0/icommandline.h"
 #include "MapReslistGenerator.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #endif
 #include "engine/ivmodelrender.h"
@@ -482,7 +482,7 @@ void CMapLoadHelper::Init( model_t *pMapModel, const char *loadname )
 		g_ServerGlobalVariables.mapversion = s_MapHeader.mapRevision;
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	InitDLightGlobals( s_MapHeader.version );
 #endif
 
@@ -579,7 +579,7 @@ void CMapLoadHelper::InitFromMemory( model_t *pMapModel, const void *pData, int 
 	// Store map version
 	g_ServerGlobalVariables.mapversion = s_MapHeader.mapRevision;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	InitDLightGlobals( s_MapHeader.version );
 #endif
 
@@ -1197,7 +1197,7 @@ void Mod_LoadWorldlights( CMapLoadHelper &lh, bool bIsHDR )
 			break;
 	}
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	if ( r_lightcache_zbuffercache.GetInt() )
 	{
 		size_t zbufSize = lh.GetMap()->numworldlights * sizeof( lightzbuffer_t );
@@ -1547,7 +1547,7 @@ static void LinearToGamma( unsigned char *pDstRGB, const float *pSrcRGB )
 
 static void CheckSurfaceLighting( SurfaceHandle_t surfID, worldbrushdata_t *pBrushData )
 {
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	host_state.worldbrush = pBrushData;
 	msurfacelighting_t *pLighting = SurfaceLighting( surfID, pBrushData );
 
@@ -4447,7 +4447,7 @@ void CModelLoader::Map_LoadModel( model_t *mod )
 
 	MEM_ALLOC_CREDIT();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_LOADWORLDMODEL);
 #endif
 
@@ -4503,7 +4503,7 @@ void CModelLoader::Map_LoadModel( model_t *mod )
 	COM_TimestampedLog( "  Mod_LoadTexinfo" );
 	Mod_LoadTexinfo();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_LOADWORLDMODEL);
 #endif
 
@@ -4529,7 +4529,7 @@ void CModelLoader::Map_LoadModel( model_t *mod )
 	COM_TimestampedLog( "  Mod_LoadPrimIndices" );
 	Mod_LoadPrimIndices();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_LOADWORLDMODEL);
 #endif
 
@@ -4543,7 +4543,7 @@ void CModelLoader::Map_LoadModel( model_t *mod )
 	COM_TimestampedLog( "  Mod_LoadVertNormalIndices" );
 	Mod_LoadVertNormalIndices();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_LOADWORLDMODEL);
 #endif
 
@@ -4563,7 +4563,7 @@ void CModelLoader::Map_LoadModel( model_t *mod )
 	COM_TimestampedLog( "  Mod_LoadCubemapSamples" );
 	Mod_LoadCubemapSamples();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// UNDONE: Does the cmodel need worldlights?
 	COM_TimestampedLog( "  OverlayMgr()->LoadOverlays" );
 	OverlayMgr()->LoadOverlays();	
@@ -4572,7 +4572,7 @@ void CModelLoader::Map_LoadModel( model_t *mod )
 	COM_TimestampedLog( "  Mod_LoadLeafMinDistToWater" );
 	Mod_LoadLeafMinDistToWater();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_LOADWORLDMODEL);
 #endif
 
@@ -4624,7 +4624,7 @@ void CModelLoader::Map_LoadModel( model_t *mod )
 	Mod_LoadPortals();
 #endif
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_LOADWORLDMODEL);
 #endif
 
@@ -4632,7 +4632,7 @@ void CModelLoader::Map_LoadModel( model_t *mod )
 	CUtlVector<mmodel_t> submodelList;
 	Mod_LoadSubmodels( submodelList );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_LOADWORLDMODEL);
 #endif
 
@@ -4642,7 +4642,7 @@ void CModelLoader::Map_LoadModel( model_t *mod )
 	COM_TimestampedLog( "  RecomputeSurfaceFlags" );
 	RecomputeSurfaceFlags( mod );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_LOADWORLDMODEL);
 #endif
 
@@ -4744,19 +4744,19 @@ void CModelLoader::Map_UnloadModel( model_t *mod )
 	Assert( !( mod->nLoadFlags & FMODELLOADER_REFERENCEMASK ) );
 	mod->nLoadFlags &= ~FMODELLOADER_LOADED;
 	
-#ifndef SWDS
+#ifndef DEDICATED
 	OverlayMgr()->UnloadOverlays();
 #endif
 
 	DeallocateLightingData( &m_worldBrushData );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	DispInfo_ReleaseMaterialSystemObjects( mod );
 #endif
 
 	Map_UnloadCubemapSamples( mod );
 	
-#ifndef SWDS
+#ifndef DEDICATED
 	// Free decals in displacements.
 	R_DecalTerm( &m_worldBrushData, true );
 #endif
@@ -4842,7 +4842,7 @@ void CModelLoader::Sprite_LoadModel( model_t *mod )
 	// The hunk data is not used on the server
 	byte* pSprite = NULL;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( g_ClientDLL )
 	{
 		int nSize = g_ClientDLL->GetSpriteSize();
@@ -4867,7 +4867,7 @@ void CModelLoader::Sprite_LoadModel( model_t *mod )
 	BuildSpriteLoadName( mod->strName, loadName, MAX_PATH, bIsVideo );
 	GetSpriteInfo( loadName, bIsVideo, mod->sprite.width, mod->sprite.height, mod->sprite.numframes );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( g_ClientDLL && mod->sprite.sprite )
 	{
 		g_ClientDLL->InitSprite( mod->sprite.sprite, loadName );
@@ -4894,7 +4894,7 @@ void CModelLoader::Sprite_UnloadModel( model_t *mod )
 		GL_UnloadMaterial( mat );
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( g_ClientDLL && mod->sprite.sprite )
 	{
 		g_ClientDLL->ShutdownSprite( mod->sprite.sprite );
@@ -4912,10 +4912,10 @@ void CModelLoader::Sprite_UnloadModel( model_t *mod )
 //-----------------------------------------------------------------------------
 void CModelLoader::Studio_ReloadModels( CModelLoader::ReloadType_t reloadType )
 {
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	if ( g_ClientDLL )
 		g_ClientDLL->InvalidateMdlCache();
-#endif // SWDS
+#endif // DEDICATED
 	if ( serverGameDLL )
 		serverGameDLL->InvalidateMdlCache();
 
@@ -6039,7 +6039,7 @@ void CModelLoader::InternalUpdateDynamicModels( bool bIgnoreTime )
 
 void CModelLoader::Client_OnServerModelStateChanged( model_t *pModel, bool bServerLoaded )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Listen server don't distinguish between server and client ready, never use SERVERLOADING flag
 	if ( sv.IsActive() ) 
 		return;
@@ -6244,7 +6244,7 @@ CON_COMMAND_F( mod_dynamicmodeldebug, "debug spew for dynamic model loading", FC
 }
 
 #include "server.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "client.h"
 #endif
 void CModelLoader::DebugPrintDynamicModels()
@@ -6261,7 +6261,7 @@ void CModelLoader::DebugPrintDynamicModels()
 		}
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	Msg( "\nnetwork table (client):\n" );
 	if ( cl.m_pDynamicModelsTable )
 	{
@@ -6282,7 +6282,7 @@ void CModelLoader::DebugPrintDynamicModels()
 	{
 		CDynamicModelInfo &dyn = m_DynamicModels[h];
 		int idx = modelinfo->GetModelIndex( m_DynamicModels.Key(h)->strName );
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( idx == -1 ) idx = modelinfoclient->GetModelIndex( m_DynamicModels.Key(h)->strName );
 #endif
 		Msg( "%d (%d%c): %s [ref: %d (%dc)] %s%s%s%s\n", idx, ((-2 - idx) >> 1), (idx & 1) ? 'c' : 's',

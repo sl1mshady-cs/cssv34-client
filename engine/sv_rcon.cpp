@@ -81,7 +81,7 @@ static void RconPasswordChanged_f( IConVar *pConVar, const char *pOldString, flo
 {
 	ConVarRef var( pConVar );
 	const char *pPassword = var.GetString(); 
-#ifndef SWDS
+#ifndef DEDICATED
 	RCONClient().SetPassword( pPassword );
 #endif
 	RCONServer().SetPassword( pPassword );

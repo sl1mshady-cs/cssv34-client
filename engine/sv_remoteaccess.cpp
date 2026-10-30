@@ -17,7 +17,7 @@
 #include "vprof_engine.h"
 #include "PlayerState.h"
 #include "sv_log.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "zip/XZip.h"
 #endif
 #include "cl_main.h"
@@ -256,7 +256,7 @@ void CServerRemoteAccess::WriteDataRequest( CRConServer *pNetworkListener, ra_li
 				break;
 
 			case SERVERDATA_TAKE_SCREENSHOT:
-#ifndef SWDS
+#ifndef DEDICATED
 				m_nScreenshotListener = listener;
 				CL_TakeJpeg( );
 #endif
@@ -264,7 +264,7 @@ void CServerRemoteAccess::WriteDataRequest( CRConServer *pNetworkListener, ra_li
 
 			case SERVERDATA_SEND_CONSOLE_LOG:
 				{
-#ifndef SWDS
+#ifndef DEDICATED
 					CUtlBuffer buf( 0, 0, CUtlBuffer::TEXT_BUFFER );
 					if ( GetConsoleLogFileData( buf ) )
 					{
@@ -305,7 +305,7 @@ void CServerRemoteAccess::WriteDataRequest( ra_listener_id listener, const void 
 //-----------------------------------------------------------------------------
 void CServerRemoteAccess::UploadScreenshot( const char *pFileName )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( m_nScreenshotListener < 0 )
 		return;
 

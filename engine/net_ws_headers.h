@@ -78,7 +78,7 @@ typedef int SOCKET;
 #endif
 
 #include "sv_rcon.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "cl_rcon.h"
 #endif
 

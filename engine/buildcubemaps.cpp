@@ -354,7 +354,7 @@ static void BuildSingleCubemap( const char *pVTFName, const Vector &vecOrigin,
 }
 
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 
 //-----------------------------------------------------------------------------
 // Grab six views for environment mapping tests
@@ -1141,6 +1141,6 @@ CON_COMMAND( buildcubemaps, "Rebuild cubemaps." )
 	}
 	Host_AllowQueuedMaterialSystem(bAllow);
 }
-#endif // SWDS
+#endif // DEDICATED
 
 #endif

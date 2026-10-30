@@ -279,7 +279,7 @@ void LeafVisBuild( const Vector &p )
 }
 
 
-#ifndef SWDS
+#ifndef DEDICATED
 void DrawLeafvis( leafvis_t *pVis )
 {
 	CMatRenderContextPtr pRenderContext( materials );

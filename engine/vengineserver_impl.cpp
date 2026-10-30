@@ -321,7 +321,7 @@ public:
 	
 	virtual int IsInEditMode( void )
 	{
-#ifdef SWDS
+#ifdef DEDICATED
 		return false;
 #else
 		return g_bInEditMode;
@@ -330,7 +330,7 @@ public:
 
 	virtual int IsInCommentaryMode( void )
 	{
-#ifdef SWDS
+#ifdef DEDICATED
 		return false;
 #else
 		return g_bInCommentaryMode;
@@ -752,7 +752,7 @@ public:
 	
 	virtual void		*SaveAllocMemory( size_t num, size_t size )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		return ::SaveAllocMemory(num, size);
 #else
 		return NULL;
@@ -761,7 +761,7 @@ public:
 	
 	virtual void		SaveFreeMemory( void *pSaveMem )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		::SaveFreeMemory(pSaveMem);
 #endif
 	}
@@ -1260,7 +1260,7 @@ public:
 		sv.Client(entnum-1)->ClientPrintf( "%s", szMsg );
 	}
 	
-#ifdef SWDS
+#ifdef DEDICATED
 	void Con_NPrintf( int pos, const char *fmt, ... )
 	{
 	}
@@ -1510,7 +1510,7 @@ public:
 	// Name of most recently load .sav file
 	virtual char const *GetMostRecentlyLoadedFileName()
 	{
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		return saverestore->GetMostRecentlyLoadedFileName();
 #else
 		return "";
@@ -1519,7 +1519,7 @@ public:
 
 	virtual char const *GetSaveFileName()
 	{
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		return saverestore->GetSaveFileName();
 #else
 		return "";
@@ -1535,14 +1535,14 @@ public:
 			
 	virtual void MultiplayerEndGame()
 	{
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		g_pMatchmaking->EndGame();
 #endif
 	}
 
 	virtual void ChangeTeam( const char *pTeamName )
 	{
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		g_pMatchmaking->ChangeTeam( pTeamName );
 #endif
 	}
@@ -1889,7 +1889,7 @@ void CVEngineServer::LogPrint(const char * msg)
 // HACKHACK: Save/restore wrapper - Move this to a different interface
 bool CVEngineServer::LoadGameState( char const *pMapName, bool createPlayers )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	return saverestore->LoadGameState( pMapName, createPlayers ) != 0;
 #else
 	return 0;
@@ -1898,21 +1898,21 @@ bool CVEngineServer::LoadGameState( char const *pMapName, bool createPlayers )
 
 void CVEngineServer::LoadAdjacentEnts( const char *pOldLevel, const char *pLandmarkName )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	saverestore->LoadAdjacentEnts( pOldLevel, pLandmarkName );
 #endif
 }
 
 void CVEngineServer::ClearSaveDir()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	saverestore->ClearSaveDir();
 #endif
 }
 
 void CVEngineServer::ClearSaveDirAfterClientLoad()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	saverestore->RequestClearSaveDir();
 #endif
 }

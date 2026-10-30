@@ -179,7 +179,7 @@ public:
 	virtual ICollideable *GetCollideable( IHandleEntity *pEntity );
 };
 
-#ifndef SWDS
+#ifndef DEDICATED
 class CEngineTraceClient : public CEngineTrace
 {
 private:
@@ -200,7 +200,7 @@ public:
 static CEngineTraceServer	s_EngineTraceServer;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CEngineTraceServer, IEngineTrace, INTERFACEVERSION_ENGINETRACE_SERVER, s_EngineTraceServer);
 
-#ifndef SWDS
+#ifndef DEDICATED
 static CEngineTraceClient	s_EngineTraceClient;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CEngineTraceClient, IEngineTrace, INTERFACEVERSION_ENGINETRACE_CLIENT, s_EngineTraceClient);
 #endif
@@ -209,14 +209,14 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CEngineTraceClient, IEngineTrace, INTERFACEVER
 // Expose CVEngineServer to the engine.
 //-----------------------------------------------------------------------------
 IEngineTrace *g_pEngineTraceServer = &s_EngineTraceServer;
-#ifndef SWDS
+#ifndef DEDICATED
 IEngineTrace *g_pEngineTraceClient = &s_EngineTraceClient;
 #endif
 
 //-----------------------------------------------------------------------------
 // Client-server neutral method of getting at collideables
 //-----------------------------------------------------------------------------
-#ifndef SWDS
+#ifndef DEDICATED
 ICollideable *CEngineTraceClient::GetCollideable( IHandleEntity *pEntity )
 {
 	Assert( pEntity );
@@ -246,7 +246,7 @@ ICollideable *CEngineTraceServer::GetCollideable( IHandleEntity *pEntity )
 //-----------------------------------------------------------------------------
 // Spatial partition masks for iteration
 //-----------------------------------------------------------------------------
-#ifndef SWDS
+#ifndef DEDICATED
 int CEngineTraceClient::SpatialPartitionMask() const
 {
 	return PARTITION_CLIENT_SOLID_EDICTS;
@@ -258,7 +258,7 @@ int CEngineTraceServer::SpatialPartitionMask() const
 	return PARTITION_ENGINE_SOLID_EDICTS;
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 int CEngineTraceClient::SpatialPartitionTriggerMask() const
 {
 	return 0;
@@ -1005,7 +1005,7 @@ bool CEngineTrace::ClipRayToOBB( const Ray_t &ray, unsigned int fMask, ICollidea
 //-----------------------------------------------------------------------------
 // Main entry point for clipping rays to entities
 //-----------------------------------------------------------------------------
-#ifndef SWDS
+#ifndef DEDICATED
 void CEngineTraceClient::SetTraceEntity( ICollideable *pCollideable, trace_t *pTrace )
 {
 	if ( !pTrace->DidHit() )
@@ -1291,7 +1291,7 @@ void CEngineTraceServer::HandleEntityToCollideable( IHandleEntity *pHandleEntity
 	*ppDebugName = pServerUnknown->GetNetworkable()->GetClassName();
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 void CEngineTraceClient::HandleEntityToCollideable( IHandleEntity *pHandleEntity, ICollideable **ppCollide, const char **ppDebugName )
 {
 	*ppCollide = StaticPropMgr()->GetStaticProp( pHandleEntity );
@@ -1325,7 +1325,7 @@ void CEngineTraceClient::HandleEntityToCollideable( IHandleEntity *pHandleEntity
 //-----------------------------------------------------------------------------
 // Returns the world collideable for trace setting
 //-----------------------------------------------------------------------------
-#ifndef SWDS
+#ifndef DEDICATED
 ICollideable *CEngineTraceClient::GetWorldCollideable()
 {
 	IClientEntity *pUnk = entitylist->GetClientEntity( 0 );
@@ -1347,7 +1347,7 @@ ICollideable *CEngineTraceServer::GetWorldCollideable()
 //-----------------------------------------------------------------------------
 void EngineTraceRenderRayCasts()
 {
-#if defined _DEBUG && !defined SWDS
+#if defined _DEBUG && !defined DEDICATED
 	if( debugrayenable.GetBool() && s_FrameRays.Count() > debugraylimit.GetInt() && !debugrayreset.GetInt() )
 	{
 		Warning( "m_FrameRays.Count() == %d\n", s_FrameRays.Count() );
@@ -1659,7 +1659,7 @@ CON_COMMAND_EXTERN( ray_bench, RayBench, "Time the rays" )
 //-----------------------------------------------------------------------------
 void CEngineTrace::TraceRay( const Ray_t &ray, unsigned int fMask, ITraceFilter *pTraceFilter, trace_t *pTrace )
 {	
-#if defined _DEBUG && !defined SWDS
+#if defined _DEBUG && !defined DEDICATED
 	if( debugrayenable.GetBool() )
 	{
 		s_FrameRays.AddToTail( ray );
@@ -1982,7 +1982,7 @@ public:
 			return;
 
 		QAngle test( 0, 45, 0 );
-	#ifndef SWDS
+	#ifndef DEDICATED
 		CDebugOverlay::AddBoxOverlay( pCollide->GetCollisionOrigin(),
 			pCollide->OBBMins(), pCollide->OBBMaxs(),
 			test /*pCollide->GetCollisionAngles()*/, 0, 0, 255, 128, 5.0f );
@@ -1999,7 +1999,7 @@ public:
 		r = bIntersect ? 255 : 0;
 		g = bIntersect ? 0 : 255;
 
-	#ifndef SWDS
+	#ifndef DEDICATED
 		CDebugOverlay::AddSweptBoxOverlay( tr.startpos, tr.endpos,
 			Vector( -10, -20, -10 ), Vector( 30, 30, 20 ), vec3_angle, r, g, b, a, 5.0 );
 	#endif

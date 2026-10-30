@@ -715,7 +715,7 @@ bool CWingedEdgeList::IsOccludingEdgeList( CWingedEdgeList &testList )
 //-----------------------------------------------------------------------------
 void CWingedEdgeList::QueueVisualization( unsigned char *pColor )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !r_visocclusion.GetInt() )
 		return;
 
@@ -737,7 +737,7 @@ void CWingedEdgeList::QueueVisualization( unsigned char *pColor )
 //-----------------------------------------------------------------------------
 void CWingedEdgeList::Visualize( unsigned char *pColor )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !r_visocclusion.GetInt() )
 		return;
 
@@ -1969,7 +1969,7 @@ void CEdgeList::ReduceActiveList( CWingedEdgeList &newEdgeList )
 //-----------------------------------------------------------------------------
 void CEdgeList::QueueVisualization( unsigned char *pColor )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !r_visocclusion.GetInt() )
 		return;
 
@@ -1987,7 +1987,7 @@ void CEdgeList::QueueVisualization( unsigned char *pColor )
 
 void CEdgeList::Visualize( unsigned char *pColor )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !r_visocclusion.GetInt() )
 		return;
 
@@ -2890,7 +2890,7 @@ bool COcclusionSystem::IsOccluded( const Vector &vecAbsMins, const Vector &vecAb
 //-----------------------------------------------------------------------------
 void VisualizeQueuedEdges( )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !g_EdgeVisualization.Count() )
 		return;
 

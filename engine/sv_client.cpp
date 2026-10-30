@@ -67,7 +67,7 @@ static const char * s_clcommands[] =
 	"ping",
 	"rpt_server_enable",
 	"rpt_client_enable",
-#ifndef SWDS 
+#ifndef DEDICATED 
 	"rpt",
 	"rpt_connect",
 	"rpt_password",
@@ -169,7 +169,7 @@ bool CGameClient::ProcessMove(CLC_Move *msg)
 	int netdrop = m_NetChannel->GetDropNumber();
 
 	bool ignore = !sv.IsActive();
-#ifdef SWDS
+#ifdef DEDICATED
 	bool paused = sv.IsPaused();
 #else
 	bool paused = sv.IsPaused() || ( !sv.IsMultiplayer() && Con_IsVisible() );

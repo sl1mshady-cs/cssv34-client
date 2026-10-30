@@ -252,7 +252,7 @@ public:
 
 		// Record the tick count and start of frame.
 		Record_WriteToken( Token_StartFrame );
-#ifdef SWDS
+#ifdef DEDICATED
 		g_pFileSystem->Write( &host_tickcount, sizeof( host_tickcount ), m_hFile );		
 #else
 		g_pFileSystem->Write( &g_ClientGlobalVariables.tickcount, sizeof( g_ClientGlobalVariables.tickcount ), m_hFile );

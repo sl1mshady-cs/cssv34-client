@@ -182,7 +182,7 @@ InitReturnVal_t CMatRenderContextBase::Init( )
 		int nSize = 2200 * 1024;
 		int nCommitSize = 32 * 1024;
 
-#ifdef SWDS
+#ifdef DEDICATED
 		nSize = nCommitSize = 1024;
 #endif
 

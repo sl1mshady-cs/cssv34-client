@@ -163,58 +163,58 @@ static const char *get_consolelog_filename()
 	return s_consolelog;
 }
 
-SpewRetval_t DedicatedSpewOutputFunc( SpewType_t spewType, char const *pMsg )
+class CDedicatedServerLoggingListener : public ILoggingListener
 {
-	if ( sys )
-	{
-		sys->Printf( "%s", pMsg );
+public:
 
-		// If they have specified -consolelog, log this message there. Otherwise these
-		//	wind up being lost because Sys_InitGame hasn't been called yet, and 
-		//  Sys_SpewFunc is the thing that logs stuff to -consolelog, etc.
-		const char *filename = get_consolelog_filename();
-		if ( filename[ 0 ] && pMsg[ 0 ] )
+	virtual void Log( const LoggingContext_t* pContext, const tchar* pMessage )
+	{
+		if ( sys )
 		{
-			FileHandle_t fh = g_pFullFileSystem->Open( filename, "a" );
-			if ( fh != FILESYSTEM_INVALID_HANDLE )
+			sys->Printf("%s", pMessage);
+
+			// If they have specified -consolelog, log this message there. Otherwise these
+			//	wind up being lost because Sys_InitGame hasn't been called yet, and 
+			//  Sys_SpewFunc is the thing that logs stuff to -consolelog, etc.
+			const char* filename = get_consolelog_filename();
+			if (filename[0] && pMessage[0])
 			{
-				g_pFullFileSystem->Write( pMsg, V_strlen( pMsg ), fh );
-				g_pFullFileSystem->Close( fh );
+				FileHandle_t fh = g_pFullFileSystem->Open(filename, "a");
+				if (fh != FILESYSTEM_INVALID_HANDLE)
+				{
+					g_pFullFileSystem->Write(pMessage, V_strlen(pMessage), fh);
+					g_pFullFileSystem->Close(fh);
+				}
 			}
 		}
-	}
 #ifdef _WIN32
-	Plat_DebugString( pMsg );
+		Plat_DebugString( pMessage );
 #endif
 
-	if (spewType == SPEW_ERROR)
-	{
-		// In Windows vgui mode, make a message box or they won't ever see the error.
-#ifdef _WIN32
-		extern bool g_bVGui;
-		if ( g_bVGui )
+		if ( pContext->m_Severity == LS_ERROR )
 		{
-			MessageBox( NULL, pMsg, "Error", MB_OK | MB_TASKMODAL );
-		}
-		TerminateProcess( GetCurrentProcess(), 1 );
+			// In Windows vgui mode, make a message box or they won't ever see the error.
+#ifdef _WIN32
+			extern bool g_bVGui;
+			if ( g_bVGui )
+			{
+				MessageBox( NULL, pMessage, "Error", MB_OK | MB_TASKMODAL );
+			}
+			TerminateProcess( GetCurrentProcess(), 1 );
 #elif POSIX
-		fflush(stdout);
-		_exit(1);
+			fflush(stdout);
+			_exit(1);
 #else
 #error "Implement me"
 #endif
-		
-		return SPEW_ABORT;
+		}
+
 	}
-	if (spewType == SPEW_ASSERT)
-	{
-		if ( CommandLine()->FindParm( "-noassert" ) == 0 )
-			return SPEW_DEBUGGER;
-		else
-			return SPEW_CONTINUE;
-	}
-	return SPEW_CONTINUE;
-}
+
+};
+
+static CDedicatedServerLoggingListener s_DedicatedServerLoggingListener;
+ILoggingListener* g_pDedicatedServerLoggingListener = &s_DedicatedServerLoggingListener;
 
 int Sys_GetExecutableName( char *out )
 {

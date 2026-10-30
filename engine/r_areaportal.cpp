@@ -249,7 +249,7 @@ inline bool GetRectIntersection( CPortalRect const *pRect1, CPortalRect const *p
 static void R_FlowThroughArea( int area, const Vector &vecVisOrigin, const CPortalRect *pClipRect, 
 	const VisOverrideData_t* pVisData, float *pReflectionWaterHeight )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Update this area's frustum.
 	if( g_AreaCullInfo[area].m_GlobalCounter != g_GlobalCounter )
 	{
@@ -366,7 +366,7 @@ static void IncrementGlobalCounter()
 
 static void R_SetupGlobalFrustum()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 
 	// Copy the current view away so that we can play with it if needed.
 	g_viewSetup = g_EngineRenderer->ViewGetCurrent();
@@ -417,7 +417,7 @@ static void R_SetupGlobalFrustum()
 		g_ScreenFromWorldProjection = matrixWorldToScreen;
 	}
 
-#endif //#ifndef SWDS
+#endif //#ifndef DEDICATED
 }
 
 ConVar r_snapportal( "r_snapportal", "-1" );
@@ -425,7 +425,7 @@ extern void CSGFrustum( Frustum_t &frustum );
 
 static void R_SetupVisibleAreaFrustums()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 
 	// Now scale the portals as specified in the normalized view frustum (-1,-1,1,1)
 	// into our view window and generate planes out of that.

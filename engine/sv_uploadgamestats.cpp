@@ -297,7 +297,7 @@ public:
 
 		// try getting client SteamUtils interface
 		ISteamUtils *pSteamUtils = NULL;
-#ifndef SWDS
+#ifndef DEDICATED
 		pSteamUtils = Steam3Client().SteamUtils();
 #endif
 		// if that fails, try the game server SteamUtils interface
@@ -356,7 +356,7 @@ public:
 		if ( CommandLine()->FindParm( "-nogamestats" ) )
 			return false;
 
-#ifdef SWDS
+#ifdef DEDICATED
 		return true;
 #else
 		IRegistry *temp = InstanceRegistry( "Steam" );
@@ -382,7 +382,7 @@ public:
 	{
 		Q_memset( buf, 0, bufsize );
 
-#ifndef SWDS
+#ifndef DEDICATED
 		IRegistry *temp = InstanceRegistry( "Steam" );
 		Assert( temp );
 		// Check registry
@@ -472,7 +472,7 @@ public:
 	// Only works in single player
 	virtual bool IsHDREnabled( void )
 	{
-#if defined( SWDS ) || defined( _X360 )
+#if defined( DEDICATED ) || defined( _X360 )
 		return false;
 #else
 		return g_pMaterialSystemHardwareConfig->GetHDREnabled();

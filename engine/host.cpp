@@ -42,7 +42,7 @@
 #include "datacache/idatacache.h"
 #include "master.h"
 
-#if !defined SWDS
+#if !defined DEDICATED
 #include "voice.h"
 #include "sound.h"
 #endif
@@ -60,7 +60,7 @@
 #include "gl_shader.h"
 #include "sys_dll.h"
 #include "cmodel_engine.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "con_nprint.h"
 #endif
 #include "filesystem.h"
@@ -102,7 +102,7 @@
 #endif
 #include "sys_mainwind.h"
 #include "host_phonehome.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #include "cl_steamauth.h"
 #endif
@@ -277,7 +277,7 @@ extern ConVar sv_unlockedchapters;
 
 void Snd_Restart_f()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	extern bool snd_firsttime;
 
 	char szVoiceCodec[_MAX_PATH] = { 0 };
@@ -641,7 +641,7 @@ ConVar	r_ForceRestore( "r_ForceRestore", "0", 0 );
 
 ConVar vcr_verbose( "vcr_verbose", "0", 0, "Write extra information into .vcr file." );
 
-#ifndef SWDS
+#ifndef DEDICATED
 void CL_CheckToDisplayStartupMenus(); // in cl_main.cpp
 #endif
 
@@ -857,7 +857,7 @@ void Host_EndGame (bool bShowMainMenu, const char *message, ...)
 	Q_vsnprintf (string,sizeof(string),message,argptr);
 	va_end (argptr);
 	Warning("Host_EndGame: %s\n", string);
-#ifndef SWDS
+#ifndef DEDICATED
 	scr_disabled_for_loading = true;
 #endif
 
@@ -876,7 +876,7 @@ void Host_EndGame (bool bShowMainMenu, const char *message, ...)
 
 	if (cl.demonum != -1)
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		CL_NextDemo ();
 #endif		
 		g_HostEndDemo++;
@@ -885,7 +885,7 @@ void Host_EndGame (bool bShowMainMenu, const char *message, ...)
 	else
 	{
 
-#ifndef SWDS
+#ifndef DEDICATED
 		scr_disabled_for_loading = false;
 #endif
 		if ( g_bAbortServerSet )
@@ -918,7 +918,7 @@ void Host_Error (const char *error, ...)
 	}
 	inerror = true;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	//	CL_WriteMessageHistory();	TODO must be done by network layer
 #endif
 
@@ -933,7 +933,7 @@ void Host_Error (const char *error, ...)
 		return;
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// Reenable screen updates
 	SCR_EndLoadingPlaque ();		
 #endif
@@ -952,7 +952,7 @@ void Host_Error (const char *error, ...)
 	}
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 ButtonCode_t nInvalidKeyBindings[] =
 {
@@ -1267,13 +1267,13 @@ void Host_WriteConfiguration( const char *filename, bool bAllVars )
 	Key_WriteBindings( configBuff );
 	cv->WriteVariables( configBuff, bAllVars );
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		bool down;
 		if ( g_ClientDLL->IN_IsKeyDown( "in_jlook", down ) && down )
 		{
 			configBuff.Printf( "+jlook\n" );
 		}
-#endif // SWDS
+#endif // DEDICATED
 
 	if ( !configBuff.TellMaxPut() )
 	{
@@ -1827,7 +1827,7 @@ void Host_ShutdownServer( void )
 
 	Host_AllowQueuedMaterialSystem( false );
 	// clear structures
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	g_pShadowMgr->LevelShutdown();
 #endif
 	StaticPropMgr()->LevelShutdown();
@@ -1858,7 +1858,7 @@ void Host_AccumulateTime( float dt )
 	realtime += dt;
 
 	bool bUseNormalTickTime = true;
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	if ( demoplayer->IsPlayingTimeDemo() )
 		bUseNormalTickTime = false;
 #endif
@@ -1877,7 +1877,7 @@ void Host_AccumulateTime( float dt )
 
 #if 1
 	if ( host_framerate.GetFloat() > 0 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 		&& ( CanCheat() || demoplayer->IsPlayingBack() ) 
 #endif
 		)
@@ -1889,7 +1889,7 @@ void Host_AccumulateTime( float dt )
 		}
 		host_frametime = fps;
 
-#if !defined(SWDS) && defined( REPLAY_ENABLED )
+#if !defined(DEDICATED) && defined( REPLAY_ENABLED )
 		extern IDemoPlayer *g_pReplayDemoPlayer;
 		if ( demoplayer->IsPlayingBack() && demoplayer == g_pReplayDemoPlayer )
 		{
@@ -1901,14 +1901,14 @@ void Host_AccumulateTime( float dt )
 		host_frametime_unbounded = host_frametime;
 	}
 	else if (host_timescale.GetFloat() > 0 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 		&& ( CanCheat() || demoplayer->IsPlayingBack() ) 
 #endif
 		)
 	{
 		float fullscale = host_timescale.GetFloat();
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 		if ( demoplayer->IsPlayingBack() )
 		{
 			// adjust time scale if playing back demo
@@ -2161,7 +2161,7 @@ void Host_BuildConVarUpdateMessage( NET_SetConVar *cvarMsg, int flags, bool nonD
 	Assert( cvarMsg->m_ConVars.Count() == count );
 }
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 // FIXME: move me somewhere more appropriate
 void CL_SendVoicePacket(bool bFinal)
 {
@@ -2240,7 +2240,7 @@ Refresh the screen
 */
 void Host_UpdateScreen( void )
 {
-#ifndef SWDS 
+#ifndef DEDICATED 
 
 #ifdef _DEBUG
 	if( r_ForceRestore.GetInt() )
@@ -2264,7 +2264,7 @@ Update sound subsystem and cd audio
 */
 void Host_UpdateSounds( void )
 {
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	// update audio
 	if ( cl.IsActive() )
 	{
@@ -2349,7 +2349,7 @@ void CFrameTimer::MarkFrame()
 			ent_count, 
 			ticks );
 
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( host_speeds.GetInt() >= 2 )
 		{
 			Con_NPrintf ( 0, sz );
@@ -2473,7 +2473,7 @@ void CFrameTimer::ComputeFrameVariability()
 void Host_Speeds()
 {
 	g_HostTimes.MarkFrame();
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	ToClientDemoPlayer( demoplayer )->MarkFrame( g_HostTimes.m_flFPSVariability );
 #endif
 }
@@ -2609,7 +2609,7 @@ void _Host_SetGlobalTime()
 	g_ServerGlobalVariables.absoluteframetime	= host_frametime;
 	g_ServerGlobalVariables.interval_per_tick	= host_state.interval_per_tick;
 	g_ServerGlobalVariables.serverCount			= Host_GetServerCount();
-#ifndef SWDS
+#ifndef DEDICATED
 	// Client
 	g_ClientGlobalVariables.realtime			= realtime;
 	g_ClientGlobalVariables.framecount			= host_framecount;
@@ -2647,7 +2647,7 @@ void _Host_RunFrame_Input( float accumulated_extra_samples, bool bFinalTick )
 
 	g_HostTimes.StartFrameSegment( FRAME_SEGMENT_INPUT );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// Client can process input
 	ClientDLL_ProcessInput( );
 
@@ -2697,7 +2697,7 @@ void _Host_RunFrame_Server_Async( int numticks )
 
 void _Host_RunFrame_Client( bool framefinished )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	VPROF( "_Host_RunFrame_Client" );
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s %d", __FUNCTION__, framefinished );
 
@@ -2766,7 +2766,7 @@ void CheckSpecialCheatVars()
 
 void _Host_RunFrame_Render()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	VPROF( "_Host_RunFrame_Render" );
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "_Host_RunFrame_Render" );
 
@@ -2874,7 +2874,7 @@ void CL_DiscardOldAddAngleEntries( float t )
 	}
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 void CL_ApplyAddAngle()
 {
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
@@ -2913,7 +2913,7 @@ void CL_ApplyAddAngle()
 
 void _Host_RunFrame_Sound()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 
 	VPROF_BUDGET( "_Host_RunFrame_Sound", VPROF_BUDGETGROUP_OTHER_SOUND );
 
@@ -2927,7 +2927,7 @@ void _Host_RunFrame_Sound()
 
 float Host_GetSoundDuration( const char *pSample )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if (!sv.IsDedicated())
 	{
 		extern float SV_GetSoundDuration(const char *pSample);
@@ -3034,7 +3034,7 @@ void Host_ShowIPCCallCount()
 
 void Host_SetClientInSimulation( bool bInSimulation )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Tracker 77931:  If the game is paused, then lock the client clock at the previous tick boundary 
 	//  (otherwise we'll keep interpolating through the "remainder" time causing the paused characters
 	//  to twitch like they have the shakes)
@@ -3113,7 +3113,7 @@ void _Host_RunFrame (float time)
 		if ( prevremainder < 0 )
 			prevremainder = 0;
 
-	#if !defined(SWDS)
+	#if !defined(DEDICATED)
 		if ( !demoplayer->IsPlaybackPaused() )
 	#endif
 		{
@@ -3163,7 +3163,7 @@ void _Host_RunFrame (float time)
 
 		// Msg( "Running %i ticks (%f remainder) for frametime %f total %f tick %f delta %f\n", numticks, remainder, host_frametime, host_time );
 		g_ServerGlobalVariables.interpolation_amount = 0.0f;
-#ifndef SWDS
+#ifndef DEDICATED
 		g_ClientGlobalVariables.interpolation_amount = 0.0f;
 
 		cl.insimulation = true;
@@ -3172,7 +3172,7 @@ void _Host_RunFrame (float time)
 		host_frameticks = numticks;
 		host_currentframetick = 0;
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		// This is to make the tool do both sim + rendering on the initial frame
 		// cl.IsActive changes in the loop below, as does scr_nextdrawtick
 		// We're just caching off the state here so that we have a consistent return value
@@ -3182,11 +3182,11 @@ void _Host_RunFrame (float time)
 		CJob *pGameJob = NULL;
 
 // threaded path only supported in listen server
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( !IsEngineThreaded() )
 #endif
 		{
-#ifndef SWDS
+#ifndef DEDICATED
 			if ( g_ClientDLL )
 			{
 				g_ClientDLL->IN_SetSampleTime(host_frametime);
@@ -3232,7 +3232,7 @@ void _Host_RunFrame (float time)
 				// NOTE:  Do we want do this at start or end of this loop?
 				++host_tickcount;
 				++host_currentframetick;
-#ifndef SWDS
+#ifndef DEDICATED
 				g_ClientGlobalVariables.tickcount = cl.GetClientTickCount();
 
 				// Make sure state is correct
@@ -3258,7 +3258,7 @@ void _Host_RunFrame (float time)
 				// client operations
 				//
 				//-------------------
-#ifndef SWDS
+#ifndef DEDICATED
 				if ( !sv.IsDedicated() )
 				{
 					_Host_RunFrame_Client( bFinalTick );
@@ -3297,7 +3297,7 @@ void _Host_RunFrame (float time)
 			}
 #endif
 
-#ifndef SWDS
+#ifndef DEDICATED
 			// This is a hack to let timedemo pull messages from the queue faster than every 15 msec
 			// Also when demoplayer is skipping packets to a certain tick we should process the queue
 			// as quickly as we can.
@@ -3354,7 +3354,7 @@ void _Host_RunFrame (float time)
 			}
 #endif
 		}
-#ifndef SWDS
+#ifndef DEDICATED
 		else
 		{
 			static int numticks_last_frame = 0;
@@ -3479,7 +3479,7 @@ void _Host_RunFrame (float time)
 			}
 #endif
 		}
-#endif	// SWDS
+#endif	// DEDICATED
 
 		g_Log.RunFrame();
 
@@ -3524,7 +3524,7 @@ void _Host_RunFrame (float time)
 		// simulation
 		//-------------------
 		g_HostTimes.MarkSwapTime( );
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( !sv.IsDedicated() )
 		{
 			VPROF( "_Host_RunFrame - ClientDLL_Update" );
@@ -3567,7 +3567,7 @@ void _Host_RunFrame (float time)
 		Host_UpdateMapList();
 
 		host_framecount++;
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 		if ( !demoplayer->IsPlaybackPaused() )
 #endif
 		{
@@ -3605,7 +3605,7 @@ void Host_RunFrame( float time )
 	static  int		timecount = 0;
 	static	double  timestart = 0;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !scr_drawloading && sv.IsActive() && cl.IsActive() && !sv.m_bLoadgame)
 	{
 		switch ( host_thread_mode.GetInt() )
@@ -3895,7 +3895,7 @@ void Host_PostInit()
 		serverGameDLL->PostInit();
 	}
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	if ( g_ClientDLL )
 	{
 		g_ClientDLL->PostInit();
@@ -3954,7 +3954,7 @@ void HLTV_Shutdown()
 // Check with steam to see if the requested file (requires full path) is a valid, signed binary
 bool DLL_LOCAL Host_IsValidSignature( const char *pFilename, bool bAllowUnknown )
 {
-#if defined( SWDS ) || defined(_X360)
+#if defined( DEDICATED ) || defined(_X360)
 	return true;
 #else
 	if ( sv.IsDedicated() || IsOSX() || IsLinux() || IsBSD() )
@@ -3999,7 +3999,7 @@ bool DLL_LOCAL Host_IsValidSignature( const char *pFilename, bool bAllowUnknown 
 	}
 
 	return false;
-#endif // SWDS
+#endif // DEDICATED
 }
 
 
@@ -4008,7 +4008,7 @@ bool DLL_LOCAL Host_IsValidSignature( const char *pFilename, bool bAllowUnknown 
 // This keeps legitimate users with modified binaries from getting VAC banned because of them
 bool DLL_LOCAL Host_AllowLoadModule( const char *pFilename, const char *pPathID, bool bAllowUnknown, bool bIsServerOnly /* = false */ )
 {
-#if defined( SWDS ) || defined ( OSX ) || defined( LINUX )
+#if defined( DEDICATED ) || defined ( OSX ) || defined( LINUX )
 	// dedicated servers and Mac and Linux binaries don't check signatures
 	return true;
 #else
@@ -4065,7 +4065,7 @@ bool DLL_LOCAL Host_AllowLoadModule( const char *pFilename, const char *pPathID,
 
 		return bSignatureIsValid;
 	}
-#endif // SWDS
+#endif // DEDICATED
 }
 
 bool DLL_LOCAL Host_IsSecureServerAllowed()
@@ -4131,20 +4131,20 @@ void Host_Init( bool bDedicated )
 
 	TRACEINIT( g_pCVar->Init(), g_pCVar->Shutdown() ); // So we can list cvars with "cvarlst"
 
-#ifndef SWDS
+#ifndef DEDICATED
 	TRACEINIT( V_Init(), V_Shutdown() );
 #endif
 
 	TRACEINIT( COM_Init(), COM_Shutdown() );
 
 
-#ifndef SWDS
+#ifndef DEDICATED
 	TRACEINIT( saverestore->Init(), saverestore->Shutdown() );
 #endif
 
 	TRACEINIT( Filter_Init(), Filter_Shutdown() );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	TRACEINIT( Key_Init(), Key_Shutdown() );
 #endif
 
@@ -4191,7 +4191,7 @@ void Host_Init( bool bDedicated )
 
 	ConDMsg( "Heap: %5.2f Mb\n", host_parms.memsize/(1024.0f*1024.0f) );
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	if ( !bDedicated )
 	{
 		TRACEINIT( CL_Init(), CL_Shutdown() );
@@ -4237,7 +4237,7 @@ void Host_Init( bool bDedicated )
 		cl.m_nSignonState = SIGNONSTATE_NONE; // disable client
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	Host_ReadConfiguration();
 	TRACEINIT( S_Init(), S_Shutdown() );
 #endif
@@ -4328,7 +4328,7 @@ void Host_Init( bool bDedicated )
 		}
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// Rebuild audio caches
 	if ( !sv.IsDedicated() && S_IsInitted() )
 	{
@@ -4418,7 +4418,7 @@ bool Host_Changelevel( bool loadfromsavedgame, const char *mapname, const char *
 	char			_startspot[MAX_QPATH];
 	char			*startspot;
 	char			oldlevel[MAX_PATH];
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	CSaveRestoreData *pSaveData = NULL;
 #endif
 	bool bTransitionBySave = false;
@@ -4429,7 +4429,7 @@ bool Host_Changelevel( bool loadfromsavedgame, const char *mapname, const char *
 		return false;
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// FIXME:  Even needed?
 	if ( demoplayer->IsPlayingBack() )
 	{
@@ -4440,7 +4440,7 @@ bool Host_Changelevel( bool loadfromsavedgame, const char *mapname, const char *
 
 #endif
 
-#ifndef SWDS
+#ifndef DEDICATED
 	SCR_BeginLoadingPlaque();
 
 	// stop sounds (especially looping!)
@@ -4465,7 +4465,7 @@ bool Host_Changelevel( bool loadfromsavedgame, const char *mapname, const char *
 
 	if ( !modelloader->Map_IsValid( szMapFile ) )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		SCR_EndLoadingPlaque();
 #endif
 		// We have already inactivated clients at this point due to PrepareLevelResources being blocking, false alarm,
@@ -4507,7 +4507,7 @@ bool Host_Changelevel( bool loadfromsavedgame, const char *mapname, const char *
 	Warning( "---- Host_Changelevel ----\n" );
 	CheckForFlushMemory( sv.GetMapName(), szMapName );
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	// Always save as an xsave if we're on the X360
 	saverestore->SetIsXSave( IsX360() );
 
@@ -4544,7 +4544,7 @@ bool Host_Changelevel( bool loadfromsavedgame, const char *mapname, const char *
 
 	Q_strncpy( oldlevel, sv.GetMapName(), sizeof( oldlevel ) );
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	if ( loadfromsavedgame )
 	{
 		if ( !bTransitionBySave )
@@ -4566,11 +4566,11 @@ bool Host_Changelevel( bool loadfromsavedgame, const char *mapname, const char *
 #endif
 	g_pServerPluginHandler->LevelShutdown();
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	audiosourcecache->LevelShutdown();
 #endif
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	saverestore->FinishAsyncSave();
 #endif
 
@@ -4585,13 +4585,13 @@ bool Host_Changelevel( bool loadfromsavedgame, const char *mapname, const char *
 
 	if ( !sv.SpawnServer( szMapName, szMapFile, startspot ) )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		SCR_EndLoadingPlaque();
 #endif
 		return false;
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( loadfromsavedgame )
 	{
 		if ( !bTransitionBySave )
@@ -4612,7 +4612,7 @@ bool Host_Changelevel( bool loadfromsavedgame, const char *mapname, const char *
 #endif
 	{
 		g_ServerGlobalVariables.curtime = sv.GetTime();
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 		audiosourcecache->LevelInit( szMapName );
 #endif
 		g_pServerPluginHandler->LevelInit( szMapName, CM_EntityString(), NULL, NULL, false, false );
@@ -4620,7 +4620,7 @@ bool Host_Changelevel( bool loadfromsavedgame, const char *mapname, const char *
 
 	SV_ActivateServer();
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	// Offset stored elapsed time by the current elapsed time for this new map
 	int maptime = sv.GetTime();
 	int minutes = (int)( maptime / 60.0f );
@@ -4651,7 +4651,7 @@ bool Host_NewGame( char *mapName, bool loadGame, bool bBackgroundLevel, const ch
 	char previousMapName[MAX_PATH] = { 0 };
 	Q_strncpy( previousMapName, host_map.GetString(), sizeof( previousMapName ) );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	SCR_BeginLoadingPlaque();
 #endif
 
@@ -4674,7 +4674,7 @@ bool Host_NewGame( char *mapName, bool loadGame, bool bBackgroundLevel, const ch
 
 	if ( !modelloader->Map_IsValid( szMapFile ) )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		SCR_EndLoadingPlaque();
 #endif
 		return false;
@@ -4729,7 +4729,7 @@ bool Host_NewGame( char *mapName, bool loadGame, bool bBackgroundLevel, const ch
 
 	COM_TimestampedLog( "serverGameDLL->LevelInit" );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_LEVELINIT);
 
 	audiosourcecache->LevelInit( szMapName );
@@ -4764,7 +4764,7 @@ bool Host_NewGame( char *mapName, bool loadGame, bool bBackgroundLevel, const ch
 		GetTestScriptMgr()->CheckPoint( "FinishedMapLoad" );
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !loadGame || bOldSave )
 	{
 		// clear the most recent remember save, so the level will just restart if the player dies
@@ -4797,7 +4797,7 @@ void Host_FreeStateAndWorld( bool server )
 	// HACKHACK: You can't clear the hunk unless the client data is free
 	// since this gets called by the server, it's necessary to wipe the client
 	// in case we are on a listen server
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( server && !sv.IsDedicated() )
 	{
 		CL_ClearState();
@@ -4819,7 +4819,7 @@ void Host_FreeStateAndWorld( bool server )
 		extern IVModelInfo* modelinfo;
 		modelinfo->OnLevelChange();
 	}
-#ifndef SWDS
+#ifndef DEDICATED
 	else
 	{
 		extern IVModelInfoClient* modelinfoclient;
@@ -4884,7 +4884,7 @@ void Host_Shutdown(void)
 	phonehome->Message( IPhoneHome::PHONE_MSG_ENGINEEND, NULL );
 	phonehome->Shutdown();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// Store active configuration settings
 	Host_WriteConfiguration(); 
 #endif
@@ -4892,12 +4892,12 @@ void Host_Shutdown(void)
 	// Disconnect from server
 	Host_Disconnect(true);
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// keep ConMsg from trying to update the screen
 	scr_disabled_for_loading = true;
 #endif
 
-#if defined VOICE_OVER_IP && !defined SWDS && !defined( NO_VOICE ) //!defined(_XBOX)
+#if defined VOICE_OVER_IP && !defined DEDICATED && !defined( NO_VOICE ) //!defined(_XBOX)
 	Voice_Deinit();
 #endif // VOICE_OVER_IP
 
@@ -4910,7 +4910,7 @@ void Host_Shutdown(void)
 	VProfRecord_Shutdown();
 #endif
 
-#if !defined SWDS
+#if !defined DEDICATED
 	if ( !sv.IsDedicated() )
 	{
 		TRACESHUTDOWN( Decal_Shutdown() );
@@ -4970,7 +4970,7 @@ void Host_Shutdown(void)
 
 	TRACESHUTDOWN( NET_Shutdown() );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	TRACESHUTDOWN( Key_Shutdown() );
 #if !defined _X360 && !defined ANDROID
 	TRACESHUTDOWN( ShutdownMixerControls() );
@@ -4979,14 +4979,14 @@ void Host_Shutdown(void)
 
 	TRACESHUTDOWN( Filter_Shutdown() );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	TRACESHUTDOWN( saverestore->Shutdown() );
 #endif
 
 	TRACESHUTDOWN( COM_Shutdown() );
 
 	// TRACESHUTDOWN( Host_ShutdownVCR() );
-#ifndef SWDS
+#ifndef DEDICATED
 	TRACESHUTDOWN( V_Shutdown() );
 #endif
 

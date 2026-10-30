@@ -47,7 +47,7 @@
 #include "materialsystem/imaterialvar.h"
 #include "coordsize.h"
 #include "mempool.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "Overlay.h"
 #endif
 
@@ -110,7 +110,7 @@ struct CachedConvars_t
 
 static CachedConvars_t s_ShaderConvars;
 
-// AR - moved so SWDS can access these vars
+// AR - moved so DEDICATED can access these vars
 Frustum_t g_Frustum;
 
 
@@ -230,7 +230,7 @@ int SortInfoToLightmapPage( int sortID )
 
 
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 class CWorldRenderList : public CRefCounted1<IWorldRenderList>
 {

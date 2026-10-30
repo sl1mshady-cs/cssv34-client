@@ -238,7 +238,7 @@ void CDispInfo::TestAddDecalTri( int iIndexStart, unsigned short decalHandle, CD
 		(unsigned short)(m_MeshReader.Index( iIndexStart+1 ) - m_iVertOffset),
 		(unsigned short)(m_MeshReader.Index( iIndexStart+2 ) - m_iVertOffset)
 	};
-#ifndef SWDS
+#ifndef DEDICATED
 	// Setup verts.
 	Vector vPositions[3] ={
 		GetOverlayPos( &m_MeshReader, tempIndices[0] ),
@@ -374,7 +374,7 @@ void CDispInfo::SpecifyWalkableDynamicMesh( void )
 	// Specify the vertices and indices.
 	CMatRenderContextPtr pRenderContext( materials );
 
-#ifdef SWDS
+#ifdef DEDICATED
 	IMesh *pMesh = pRenderContext->GetDynamicMesh( false, NULL, NULL, NULL );
 #else
 	IMesh *pMesh = pRenderContext->GetDynamicMesh( false, NULL, NULL, g_materialTranslucentSingleColor );
@@ -407,7 +407,7 @@ void CDispInfo::SpecifyBuildableDynamicMesh( void )
 	// Specify the vertices and indices.
 	CMatRenderContextPtr pRenderContext( materials );
 
-#ifdef SWDS
+#ifdef DEDICATED
 	IMesh *pMesh = pRenderContext->GetDynamicMesh( false, NULL, NULL, NULL );
 #else
 	g_materialTranslucentSingleColor->ColorModulate( 0.0f, 1.0f, 1.0f );
@@ -478,9 +478,9 @@ bool DispInfoRenderDebugModes()
 {
 	if( ShouldDrawInWireFrameMode() || mat_luxels.GetInt() || r_DispWalkable.GetInt() || 
 		r_DispBuildable.GetInt() 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		|| mat_surfaceid.GetInt() || mat_surfacemat.GetInt()
-#endif // SWDS
+#endif // DEDICATED
 		)
 		return true;
 
@@ -489,7 +489,7 @@ bool DispInfoRenderDebugModes()
 
 bool CDispInfo::Render( CGroupMesh *pGroup, bool bAllowDebugModes )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if( !m_pMesh )
 	{
 		Assert( !"CDispInfo::Render: m_pMesh == NULL" );
@@ -539,7 +539,7 @@ bool CDispInfo::Render( CGroupMesh *pGroup, bool bAllowDebugModes )
 			bNormalRender = false;
 		}
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		if ( mat_surfaceid.GetInt() )
 		{
 			Vector bbMin, bbMax, vecCenter;
@@ -574,7 +574,7 @@ bool CDispInfo::Render( CGroupMesh *pGroup, bool bAllowDebugModes )
 
 			CDebugOverlay::AddTextOverlay( vecCenter, 0, pMaterialName );
 		}
-#endif // SWDS
+#endif // DEDICATED
 	}
 
 	// Mark it visible.
@@ -769,7 +769,7 @@ void IterateLightmapSamples( CDispInfo *pDisp, const ProcessLightmapSampleData_t
 
 void CDispInfo::AddSingleDynamicLight( dlight_t& dl )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	ProcessLightmapSampleData_t data;
 	data.m_LightDistSqr = dl.GetRadiusSquared();
 
@@ -793,7 +793,7 @@ void CDispInfo::AddSingleDynamicLight( dlight_t& dl )
 
 void CDispInfo::AddSingleDynamicLightBumped( dlight_t& dl )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	ProcessLightmapSampleData_t data;
 
 	data.m_LightDistSqr = dl.GetRadiusSquared();
@@ -818,7 +818,7 @@ void CDispInfo::AddSingleDynamicLightBumped( dlight_t& dl )
 
 void CDispInfo::AddSingleDynamicAlphaLight( dlight_t& dl )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	ProcessLightmapSampleData_t data;
 
 	data.m_LightDistSqr = dl.GetRadiusSquared();
@@ -1007,7 +1007,7 @@ Vector CDispInfo::GetFlatVert( int iVertex )
 void CDispInfo::ComputeLightmapAndTextureCoordinate( RayDispOutput_t const& output, 
 													Vector2D* luv, Vector2D* tuv )
 {	
-#ifndef SWDS
+#ifndef DEDICATED
 	// lightmap coordinate
 	if( luv )
 	{

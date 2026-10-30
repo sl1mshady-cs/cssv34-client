@@ -21,7 +21,7 @@
 #include "GameEventManager.h"
 #include "sv_rcon.h"
 #include "cl_rcon.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #include "cl_pluginhelpers.h"
 #include "vgui_askconnectpanel.h"
@@ -55,24 +55,24 @@ void CL_NotifyRPTOfDisconnect( );
 #if !defined( NO_STEAM ) 
 void UpdateNameFromSteamID( IConVar *pConVar, CSteamID *pSteamID )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !pConVar || !pSteamID || !Steam3Client().SteamFriends() )
 		return;
 
 	const char *pszName = Steam3Client().SteamFriends()->GetFriendPersonaName( *pSteamID );
 	pConVar->SetValue( pszName );
-#endif // SWDS
+#endif // DEDICATED
 }
 
 void SetNameToSteamIDName( IConVar *pConVar )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( Steam3Client().SteamUtils() && Steam3Client().SteamFriends() && Steam3Client().SteamUser() )
 	{
 		CSteamID steamID = Steam3Client().SteamUser()->GetSteamID();
 		UpdateNameFromSteamID( pConVar, &steamID );
 	}
-#endif // SWDS
+#endif // DEDICATED
 }
 #endif // NO_STEAM
 
@@ -106,7 +106,7 @@ void CL_NameCvarChanged( IConVar *pConVar, const char *pOldString, float flOldVa
 	}
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 void askconnect_accept_f()
 {
 	char szHostName[256];
@@ -127,7 +127,7 @@ static ConVar cl_particles_show_bbox("cl_particles_show_bbox", "0", FCVAR_CLIENT
 // allow user to hide messages from server
 static ConVar cl_allow_remote_print("cl_allow_remote_print", "1", FCVAR_ARCHIVE);
 
-#ifndef SWDS
+#ifndef DEDICATED
 extern IVEngineClient *engineClient;
 // ---------------------------------------------------------------------------------------- //
 static void SendClanTag( const char *pTag )
@@ -141,7 +141,7 @@ static void SendClanTag( const char *pTag )
 // ---------------------------------------------------------------------------------------- //
 void CL_ClanIdChanged( IConVar *pConVar, const char *pOldString, float flOldValue )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Get the clan ID we're trying to select
 	ConVarRef var( pConVar );
 	uint32 newId = var.GetInt();
@@ -174,7 +174,7 @@ void CL_ClanIdChanged( IConVar *pConVar, const char *pOldString, float flOldValu
 
 	// Couldn't validate the ID, so clear to the default (no tag)
 	var.SetValue( 0 );
-#endif // !SWDS
+#endif // !DEDICATED
 }
 
 ConVar	cl_resend	( "cl_resend","6", FCVAR_NONE, "Delay in seconds before the client will resend the 'connect' attempt", true, CL_MIN_RESEND_TIME, true, CL_MAX_RESEND_TIME );
@@ -680,7 +680,7 @@ void CBaseClientState::FullConnect( netadr_t &adr )
 
 	// Mark client as connected
 	SetSignonState( SIGNONSTATE_CONNECTED, -1 );
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	RCONClient().SetAddress( m_NetChannel->GetRemoteAddress() );
 #endif
 
@@ -712,7 +712,7 @@ void CBaseClientState::Disconnect( const char *pszReason, bool bShowMainMenu )
 	if ( m_nSignonState == SIGNONSTATE_NONE )
 		return;
 
-#if !defined( SWDS ) && defined( ENABLE_RPT )
+#if !defined( DEDICATED ) && defined( ENABLE_RPT )
 	CL_NotifyRPTOfDisconnect( );
 #endif
 
@@ -728,7 +728,7 @@ void CBaseClientState::Disconnect( const char *pszReason, bool bShowMainMenu )
 		NET_StringToAdr (m_szRetryAddress, &adr);
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	netadr_t checkAdr = adr;
 	if ( adr.GetType() == NA_LOOPBACK || adr.IsLocalhost() )
 	{
@@ -1076,7 +1076,7 @@ bool CBaseClientState::ProcessMenu( SVC_Menu *msg )
 {
 	VPROF( "ProcessMenu" );
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	PluginHelpers_Menu( msg );	
 #endif
 	return true;
@@ -1086,14 +1086,14 @@ bool CBaseClientState::ProcessServerInfo( SVC_ServerInfo *msg )
 {
 	VPROF( "ProcessServerInfo" );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_PROCESSSERVERINFO);
 #endif
 
 	COM_TimestampedLog( " CBaseClient::ProcessServerInfo" );
 	
 	if (  msg->m_nProtocol != PROTOCOL_VERSION 
-#if  defined( DEMO_BACKWARDCOMPATABILITY ) && (! defined( SWDS ) )
+#if  defined( DEMO_BACKWARDCOMPATABILITY ) && (! defined( DEDICATED ) )
 		&& !( demoplayer->IsPlayingBack() && msg->m_nProtocol >= PROTOCOL_VERSION_12 )
 #endif
 		)
@@ -1123,7 +1123,7 @@ bool CBaseClientState::ProcessServerInfo( SVC_ServerInfo *msg )
 		return false;
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !sv.IsActive() && 
 		!( m_NetChannel->IsLoopback() || m_NetChannel->IsNull() ) )
 	{
@@ -1172,7 +1172,7 @@ bool CBaseClientState::ProcessServerInfo( SVC_ServerInfo *msg )
 
 	Q_strncpy( m_szLevelBaseName, msg->m_szMapName, sizeof( m_szLevelBaseName ) );
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	audiosourcecache->LevelInit( m_szLevelBaseName );
 #endif
 
@@ -1304,7 +1304,7 @@ bool CBaseClientState::ProcessCreateStringTable( SVC_CreateStringTable *msg )
 {
 	VPROF( "ProcessCreateStringTable" );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	EngineVGui()->UpdateProgressBar(PROGRESS_PROCESSSTRINGTABLE);
 #endif
 
@@ -1805,7 +1805,7 @@ bool CBaseClientState::ProcessGetCvarValue( SVC_GetCvarValue *msg )
 // Returns dem file protocol version, or, if not playing a demo, just returns PROTOCOL_VERSION
 int CBaseClientState::GetDemoProtocolVersion() const
 {
-#ifndef SWDS												// why is demo play undefined? it shuold be fine on a dedicated server
+#ifndef DEDICATED												// why is demo play undefined? it shuold be fine on a dedicated server
 	if ( demoplayer->IsPlayingBack() )
 	{
 		return demoplayer->GetProtocolVersion();

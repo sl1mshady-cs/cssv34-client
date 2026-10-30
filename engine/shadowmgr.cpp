@@ -674,7 +674,7 @@ ShadowHandle_t CShadowMgr::CreateShadow( IMaterial* pMaterial, IMaterial* pModel
 
 ShadowHandle_t CShadowMgr::CreateShadowEx( IMaterial* pMaterial, IMaterial* pModelMaterial, void* pBindProxy, int creationFlags )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	ShadowHandle_t h = m_Shadows.AddToTail();
 	//=============================================================================
 	// HPE_BEGIN:
@@ -1311,7 +1311,7 @@ void CShadowMgr::RemoveAllModelsFromShadow( ShadowHandle_t handle )
 //-----------------------------------------------------------------------------
 void CShadowMgr::SetModelShadowState( ModelInstanceHandle_t instance )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	g_pStudioRender->ClearAllShadows();
 	if (instance != MODEL_INSTANCE_INVALID && r_shadows.GetInt() )
 	{
@@ -2639,7 +2639,7 @@ int CShadowMgr::AddDisplacementShadowsToMeshBuilder( CMeshBuilder& meshBuilder,
 //-----------------------------------------------------------------------------
 static void DrawShadowID( ShadowHandle_t shadowHandle, const Vector &vecCentroid )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	char buf[32];
 	Q_snprintf(buf, sizeof( buf ), "%d", shadowHandle );
 	CDebugOverlay::AddTextOverlay( vecCentroid, 0, buf );
@@ -3392,7 +3392,7 @@ void CShadowMgr::SetFlashlightRenderState( ShadowHandle_t handle )
 //---------------------------------------------------------------------------------------
 void CShadowMgr::RenderFlashlights( bool bDoMasking, const VMatrix* pModelToWorld )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	VPROF_BUDGET( "CShadowMgr::RenderFlashlights", VPROF_BUDGETGROUP_SHADOW_RENDERING );
 
 	if ( IsX360() || r_flashlight_version2.GetInt() )

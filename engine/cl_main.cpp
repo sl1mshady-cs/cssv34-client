@@ -2587,7 +2587,7 @@ void CL_SetPagedPoolInfo()
 {
 	if ( IsX360() )
 		return;
-#if !defined( _X360 ) && !defined(NO_STEAM) && !defined(SWDS)
+#if !defined( _X360 ) && !defined(NO_STEAM) && !defined(DEDICATED)
 	Plat_GetPagedPoolInfo( &g_pagedpoolinfo );
 #endif
 }
@@ -3084,7 +3084,7 @@ void Callback_UserInfoChanged( void *object, INetworkStringTable *stringTable, i
 
 void Callback_DynamicModelsChanged( void *object, INetworkStringTable *stringTable, int stringNumber, const char *newString, const void *newData )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	extern IVModelInfoClient *modelinfoclient;
 	if ( modelinfoclient )
 	{

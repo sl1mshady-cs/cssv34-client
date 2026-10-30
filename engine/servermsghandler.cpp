@@ -4,7 +4,7 @@
 //
 //=============================================================================//
 
-#ifndef SWDS
+#ifndef DEDICATED
 #include "screen.h"
 #include "cl_main.h"
 #include "iprediction.h"
@@ -954,4 +954,4 @@ bool CClientState::ProcessTempEntities( SVC_TempEntities *msg )
 	return true;
 }
 
-#endif // swds
+#endif // DEDICATED

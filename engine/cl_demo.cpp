@@ -33,7 +33,7 @@
 #include "con_nprint.h"
 #include "networkstringtableclient.h"
 
-#ifdef SWDS
+#ifdef DEDICATED
 #include "server.h"
 #endif
 
@@ -320,7 +320,7 @@ void CDemoRecorder::GetClientCmdInfo( democmdinfo_t& info )
 	}
 
 	g_pClientSidePrediction->GetViewOrigin( info.viewOrigin );
-#ifndef SWDS
+#ifndef DEDICATED
 	info.viewAngles = cl.viewangles;
 #endif
 	g_pClientSidePrediction->GetLocalViewAngles( info.localViewAngles );
@@ -1679,7 +1679,7 @@ void CDemoPlayer::InterpolateViewpoint( void )
 	g_pClientSidePrediction->SetViewOrigin( outinfo.viewOrigin );
 	g_pClientSidePrediction->SetViewAngles( outinfo.viewAngles );
 	g_pClientSidePrediction->SetLocalViewAngles( outinfo.localViewAngles );
-#ifndef SWDS
+#ifndef DEDICATED
 	VectorCopy( outinfo.viewAngles, cl.viewangles );
 #endif
 

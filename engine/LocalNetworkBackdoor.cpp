@@ -16,7 +16,7 @@
 
 CLocalNetworkBackdoor *g_pLocalNetworkBackdoor = NULL;
 
-#ifndef SWDS
+#ifndef DEDICATED
 // This is called 
 void CLocalNetworkBackdoor::InitFastCopy()
 {

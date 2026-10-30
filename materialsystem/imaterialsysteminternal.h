@@ -30,7 +30,7 @@ public:
 	CMatCallQueue()
 	{
 		MEM_ALLOC_CREDIT_( "CMatCallQueue.m_Allocator" );
-#ifdef SWDS
+#ifdef DEDICATED
 		m_Allocator.Init( 2*1024, 0, 0, 16 );
 #else
 		m_Allocator.Init( IsX360() ? 2*1024*1024 : 8*1024*1024, 64*1024, 256*1024, 16 );

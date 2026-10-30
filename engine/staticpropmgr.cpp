@@ -744,7 +744,7 @@ void CStaticProp::CleanUpRenderHandle( )
 {
 	if ( m_RenderHandle != INVALID_CLIENT_RENDER_HANDLE )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		clientleafsystem->RemoveRenderable( m_RenderHandle );
 #endif
 		m_RenderHandle = INVALID_CLIENT_RENDER_HANDLE;
@@ -906,7 +906,7 @@ bool CStaticProp::ShouldCacheRenderInfo()
 
 void CStaticProp::PrecacheLighting()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( m_ModelInstance == MODEL_INSTANCE_INVALID )
 	{
 		LightCacheHandle_t lightCacheHandle = CreateStaticLightingCache( m_LightingOrigin, m_WorldRenderBBoxMin, m_WorldRenderBBoxMax );
@@ -918,7 +918,7 @@ void CStaticProp::PrecacheLighting()
 
 void CStaticProp::RecomputeStaticLighting( void )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	modelrender->RecomputeStaticLighting( m_ModelInstance );
 #endif
 }
@@ -929,7 +929,7 @@ void CStaticProp::RecomputeStaticLighting( void )
 //-----------------------------------------------------------------------------
 void CStaticProp::DisplayStaticPropInfo( int nInfoType )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	char buf[512];
 	switch( nInfoType )
 	{
@@ -969,7 +969,7 @@ void CStaticProp::DisplayStaticPropInfo( int nInfoType )
 //-----------------------------------------------------------------------------
 int	CStaticProp::DrawModelSlow( int flags )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	VPROF_BUDGET( "CStaticProp::DrawModel", VPROF_BUDGETGROUP_STATICPROP_RENDERING );
 
 	if ( !r_drawstaticprops.GetBool() )
@@ -1065,7 +1065,7 @@ int	CStaticProp::DrawModelSlow( int flags )
 
 int CStaticProp::DrawModel( int flags )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	VPROF_BUDGET( "CStaticProp::DrawModel", VPROF_BUDGETGROUP_STATICPROP_RENDERING );
 
 	if ( (m_Alpha == 0) || !m_pModel )
@@ -1500,7 +1500,7 @@ void CStaticPropMgr::LevelShutdown()
 
 void CStaticPropMgr::LevelInitClient()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( sv.IsDedicated() ) 
 		return;
 
@@ -1564,7 +1564,7 @@ void CStaticPropMgr::LevelShutdownClient()
 		modelrender->SetStaticLighting( m_StaticProps[i].GetModelInstance(), NULL );
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// Make sure static prop lightcache is reset
 	ClearStaticLightingCache();
 #endif
@@ -1920,7 +1920,7 @@ void CStaticPropMgr::DrawStaticProps_Slow( IClientRenderable **pProps, int count
 
 void CStaticPropMgr::DrawStaticProps_Fast( IClientRenderable **pProps, int count, bool bShadowDepth )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	float color[3];
 	color[0] = color[1] = color[2] = 1.0f;
 	g_pStudioRender->SetColorModulation(color);
@@ -2062,7 +2062,7 @@ unsigned char CStaticPropMgr::ComputeScreenFade( CStaticProp &prop, float flMinS
 //-----------------------------------------------------------------------------
 void CStaticPropMgr::ChangeRenderGroup( CStaticProp &prop )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	static RenderGroup_t opaqueRenderGroup = ( g_bClientLeafSystemV1 ) ? RENDER_GROUP_OPAQUE_ENTITY : RENDER_GROUP_OPAQUE_STATIC;
 	ClientRenderHandle_t renderHandle = prop.GetRenderHandle();
 	Assert( renderHandle != INVALID_CLIENT_RENDER_HANDLE );
@@ -2088,7 +2088,7 @@ void CStaticPropMgr::ChangeRenderGroup( CStaticProp &prop )
 //-----------------------------------------------------------------------------
 void CStaticPropMgr::ComputePropOpacity( CStaticProp &prop )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if (modelinfoclient->ModelHasMaterialProxy( prop.GetModel() ))
 	{
 		modelinfoclient->RecomputeTranslucency( prop.GetModel(), prop.GetSkin(), prop.GetBody(), prop.GetClientRenderable(), (float)(prop.GetFxBlend()) / 255.0f );
@@ -2165,7 +2165,7 @@ void CStaticPropMgr::ComputePropOpacity( CStaticProp &prop )
 		ChangeRenderGroup( prop );
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !IsXbox() )
 	{
 		// Fade all props, if we have a default level setting
@@ -2203,7 +2203,7 @@ void CStaticPropMgr::ComputePropOpacity( const Vector &viewOrigin, float factor 
 //-----------------------------------------------------------------------------
 void CStaticPropMgr::TraceRayAgainstStaticProp( const Ray_t& ray, int staticPropIndex, trace_t& tr )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Get the prop
 	CStaticProp& prop = m_StaticProps[staticPropIndex];
 
@@ -2238,7 +2238,7 @@ void CStaticPropMgr::AddDecalToStaticProp( Vector const& rayStart, Vector const&
 void CStaticPropMgr::AddColorDecalToStaticProp( Vector const& rayStart, Vector const& rayEnd,
 	int staticPropIndex, int decalIndex, bool doTrace, trace_t& tr, bool bUseColor, Color cColor )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Invalid static prop? Blow it off! 
 	if (staticPropIndex >= m_StaticProps.Size())
 	{
@@ -2296,7 +2296,7 @@ void CStaticPropMgr::AddColorDecalToStaticProp( Vector const& rayStart, Vector c
 //-----------------------------------------------------------------------------
 void CStaticPropMgr::AddShadowToStaticProp( unsigned short shadowHandle, IClientRenderable* pRenderable )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	Assert( dynamic_cast<CStaticProp*>(pRenderable) != 0 );
 
 	CStaticProp* pProp = static_cast<CStaticProp*>(pRenderable);
@@ -2307,7 +2307,7 @@ void CStaticPropMgr::AddShadowToStaticProp( unsigned short shadowHandle, IClient
 
 void CStaticPropMgr::RemoveAllShadowsFromStaticProp( IClientRenderable* pRenderable )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	Assert( dynamic_cast<CStaticProp*>(pRenderable) != 0 );
 	CStaticProp* pProp = static_cast<CStaticProp*>(pRenderable);
 	if (pProp->GetModelInstance() != MODEL_INSTANCE_INVALID)
@@ -2324,7 +2324,7 @@ void CStaticPropMgr::RemoveAllShadowsFromStaticProp( IClientRenderable* pRendera
 void CStaticPropMgr::GetStaticPropMaterialColorAndLighting( trace_t* pTrace,
 														   int staticPropIndex, Vector& lighting, Vector& matColor )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Invalid static prop? Blow it off! 
 	if (staticPropIndex >= m_StaticProps.Size())
 	{

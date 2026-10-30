@@ -166,7 +166,7 @@ static CUtlVector<SurfaceHandle_t>	s_DecalSurfaces[ MAX_MAT_SORT_GROUPS + 1 ];
 static ConVar r_drawdecals( "r_drawdecals", "1", FCVAR_CHEAT, "Render decals." );
 static ConVar r_drawbatchdecals( "r_drawbatchdecals", "1", 0, "Render decals batched." );
 
-#ifndef SWDS
+#ifndef DEDICATED
 static void R_DecalCreate( decalinfo_t* pDecalInfo, SurfaceHandle_t surfID, float x, float y, bool bForceForDisplacement );
 static bool R_DecalUnProject( decal_t *pdecal, decallist_t *entry);
 #endif
@@ -404,7 +404,7 @@ static VertexFormat_t GetUncompressedFormat( const IMaterial * pMaterial )
 //-----------------------------------------------------------------------------
 void Shader_DecalDrawPoly( CDecalVert *v, IMaterial *pMaterial, SurfaceHandle_t surfID, int vertCount, decal_t *pdecal, float flFade )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	int vertexFormat = 0;
 	CMatRenderContextPtr pRenderContext( materials );
 
@@ -523,7 +523,7 @@ void R_DecalGetMaterialAndSize( int decalIndex, IMaterial*& pDecalMaterial, floa
 	h = pDecalMaterial->GetMappingHeight() * scale;
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 
 
@@ -3035,4 +3035,4 @@ void DecalSurfaceAdd( SurfaceHandle_t surfID, int iGroup )
 }
 
 #pragma check_stack(off)
-#endif // SWDS
+#endif // DEDICATED

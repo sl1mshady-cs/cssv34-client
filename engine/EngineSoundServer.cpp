@@ -395,7 +395,7 @@ void CEngineSoundServer::StopSound( int iEntIndex, int iChannel, const char *pSa
 
 float SV_GetSoundDuration( const char *pSample )
 {
-#ifdef SWDS
+#ifdef DEDICATED
 	return 0; // TODO: make this return a real value (i.e implement an OS independent version of the sound code)
 #else
 	return AudioSource_GetSoundDuration( PSkipSoundChars( pSample ) );
@@ -429,7 +429,7 @@ void Host_RestartAmbientSounds()
 	}
 	
 	
-#ifndef SWDS
+#ifndef DEDICATED
 	const int 	NUM_INFOS = 64;
 	SoundInfo_t soundInfo[NUM_INFOS];
 

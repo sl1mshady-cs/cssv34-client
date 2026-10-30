@@ -25,7 +25,7 @@
 #include "iengine.h"
 #include "snd_audio_source.h"
 #include "sv_steamauth.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #endif
 #include "sv_plugin.h"
@@ -47,7 +47,7 @@
 #include "tier0/memdbgon.h"
 
 extern bool		g_bAbortServerSet;
-#ifndef SWDS
+#ifndef DEDICATED
 extern ConVar	reload_materials;
 #endif
 
@@ -153,7 +153,7 @@ void HostState_NewGame( char const *pMapName, bool remember_location, bool backg
 //-----------------------------------------------------------------------------
 void HostState_LoadGame( char const *pSaveFileName, bool remember_location )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Make sure the freaking save file exists....
 	if ( !saverestore->SaveFileExists( pSaveFileName ) )
 	{
@@ -371,7 +371,7 @@ void CHostState::State_NewGame()
 
 void CHostState::State_LoadGame()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	HostState_RunGameInit();
 	
 	if ( saverestore->LoadGame( m_saveName ) )
@@ -407,7 +407,7 @@ void CHostState::State_ChangeLevelMP()
 	{
 		Steam3Server().NotifyOfLevelChange();
 
-#ifndef SWDS
+#ifndef DEDICATED
 		// start progress bar immediately for multiplayer level transitions
 		EngineVGui()->EnabledProgressBarForNextLoad();
 #endif
@@ -516,7 +516,7 @@ void CHostState::State_Run( float frameTime )
 
 	case HS_LOAD_GAME:
 	case HS_NEW_GAME:
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		SCR_BeginLoadingPlaque();
 #endif
 		// FALL THROUGH INTENTIONALLY TO SHUTDOWN
@@ -548,13 +548,13 @@ void CHostState::State_GameShutdown()
 	{
 		Steam3Server().NotifyOfLevelChange();
 		g_pServerPluginHandler->LevelShutdown();
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 		audiosourcecache->LevelShutdown();
 #endif
 	}
 
 	GameShutdown();
-#ifndef SWDS
+#ifndef DEDICATED
 	saverestore->ClearSaveDir();
 #endif
 	Host_ShutdownServer();
@@ -579,7 +579,7 @@ void CHostState::State_Shutdown()
 {
 	CCS_Shutdown();
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	CL_EndMovie();
 #endif
 
@@ -688,7 +688,7 @@ bool CHostState::IsGameShuttingDown( void )
 
 void CHostState::RememberLocation()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	Assert( m_bRememberLocation );
 
 	m_vecLocation = MainViewOrigin();
@@ -717,7 +717,7 @@ void CHostState::OnClientConnected()
 		Cbuf_AddText( va( "setang_exact %f %f %f\n", m_angLocation.x, m_angLocation.y, m_angLocation.z ) );
 	}
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	if ( reload_materials.GetBool() )
 	{
 		// building cubemaps requires the materials to reload after map

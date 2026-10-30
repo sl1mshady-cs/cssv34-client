@@ -339,7 +339,7 @@ char *VOX_GetDirectory(char *szpath, int maxpath, char *psz)
 
 // get channel volume scale if word
 
-#ifndef SWDS
+#ifndef DEDICATED
 float VOX_GetChanVol(channel_t *ch)
 {
 	if ( !ch->pMixer )
@@ -1520,7 +1520,7 @@ void VOX_PrecacheSentenceGroup( IEngineSound *pSoundSystem, const char *pGroupNa
 // return number of words loaded
 void VOX_LoadSound( channel_t *pchan, const char *pszin )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	char		buffer[512];
 	int			i, cword;
 	char		pathbuffer[MAX_PATH];
@@ -1974,7 +1974,7 @@ void VOX_TouchSounds( CUtlDict< int, int >& list, CUtlRBTree< ccpair, int >& ccp
 // return number of words loaded
 void VOX_TouchSound( const char *pszin, CUtlDict< int, int >& filelist, CUtlRBTree< ccpair, int >& ccpairs, bool spewsentences )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	char		buffer[512];
 	int			i, cword;
 	char		pathbuffer[MAX_PATH];

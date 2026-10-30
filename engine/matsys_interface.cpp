@@ -51,7 +51,7 @@
 #include "materialsystem/itexture.h"
 
 extern IFileSystem *g_pFileSystem;
-#ifndef SWDS
+#ifndef DEDICATED
 #include "iregistry.h"
 #endif
 
@@ -174,7 +174,7 @@ void mat_hdr_level_Callback( IConVar *var, const char *pOldString, float flOldVa
 	// Can do any reloading that is necessary here upon change.
 	// FIXME: should check if there is actually going to be a change here (ie. are we able to run in HDR
 	// given the current map and hardware.
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( g_pMaterialSystemHardwareConfig->GetHardwareHDRType() != HDR_TYPE_NONE &&
          saverestore->IsValidSave() &&
 		 modelloader->LastLoadedMapHasHDRLighting() &&
@@ -411,14 +411,14 @@ static T OverrideVideoConfigFromCommandLine( const char *pCVarName, T curVal )
 //-----------------------------------------------------------------------------
 static void ReadMaterialSystemConfigFromRegistry( MaterialSystem_Config_t &config )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( IsX360() )
 		return;
 
 	ReadVideoConfigInt( "ScreenWidth", &config.m_VideoMode.m_Width );
 	ReadVideoConfigInt( "ScreenHeight", &config.m_VideoMode.m_Height );
 	config.SetFlag( MATSYS_VIDCFG_FLAGS_WINDOWED, ReadVideoConfigInt( "ScreenWindowed", 0 ) != 0 );
-#if defined( USE_SDL ) && !defined( SWDS )
+#if defined( USE_SDL ) && !defined( DEDICATED )
 	// Read the ScreenDisplayIndex and set sdl_displayindex if it's there.
 	ConVarRef conVar( "sdl_displayindex" );
 	if ( conVar.IsValid() )
@@ -440,7 +440,7 @@ static void ReadMaterialSystemConfigFromRegistry( MaterialSystem_Config_t &confi
 			}
 		}
 	}
-#endif // USE_SDL && !SWDS
+#endif // USE_SDL && !DEDICATED
 
 	// Special case...
 	const char *szMonitorGamma = ReadVideoConfigString( "ScreenMonitorGamma", "2.2" );
@@ -533,18 +533,18 @@ static void ReadMaterialSystemConfigFromRegistry( MaterialSystem_Config_t &confi
 //-----------------------------------------------------------------------------
 static void WriteMaterialSystemConfigToRegistry( const MaterialSystem_Config_t &config )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( IsX360() )
 		return;
 
-#if defined( USE_SDL ) && !defined( SWDS )
+#if defined( USE_SDL ) && !defined( DEDICATED )
 	// Save sdl_displayindex out to ScreenDisplayIndex.
 	ConVarRef conVar( "sdl_displayindex" );
 	if ( conVar.IsValid() && !UseVR() )
 	{
 		WriteVideoConfigInt( "ScreenDisplayIndex", conVar.GetInt() );
 	}
-#endif // USE_SDL && !SWDS
+#endif // USE_SDL && !DEDICATED
 	WriteVideoConfigInt( "ScreenWidth", config.m_VideoMode.m_Width );
 	WriteVideoConfigInt( "ScreenHeight", config.m_VideoMode.m_Height );
 	WriteVideoConfigInt( "ScreenWindowed", config.Windowed() );
@@ -624,7 +624,7 @@ static void OverrideMaterialSystemConfigFromCommandLine( MaterialSystem_Config_t
 		config.m_VideoMode.m_Height = CommandLine()->ParmValue( "-h", config.m_VideoMode.m_Height );
 	}
 
-#if defined( USE_SDL ) && !defined( SWDS )
+#if defined( USE_SDL ) && !defined( DEDICATED )
 	// If -displayindex was specified on the command line, then set sdl_displayindex.
 	if ( CommandLine()->FindParm( "-displayindex" ) )
 	{
@@ -649,7 +649,7 @@ static void OverrideMaterialSystemConfigFromCommandLine( MaterialSystem_Config_t
 			}
 		}
 	}
-#endif // USE_SDL && !SWDS
+#endif // USE_SDL && !DEDICATED
 
 	if ( CommandLine()->FindParm( "-resizing" ) )
 	{
@@ -729,7 +729,7 @@ void OverrideMaterialSystemConfig( MaterialSystem_Config_t &config )
 
 void HandleServerAllowColorCorrection()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !sv_allow_color_correction.GetBool() && mat_colorcorrection.GetInt() )
 	{
 		Warning( "mat_colorcorrection being forced to 0 due to sv_allow_color_correction=0.\n" );
@@ -757,7 +757,7 @@ void InitMaterialSystemConfig( bool bInEditMode )
 
 	MaterialSystem_Config_t config = *g_pMaterialSystemConfig;
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	// see if they've changed video card, or have no settings present
 	MaterialAdapterInfo_t driverInfo;
 	materials->GetDisplayAdapterInfo( materials->GetCurrentAdapter(), driverInfo );
@@ -809,7 +809,7 @@ void InitMaterialSystemConfig( bool bInEditMode )
 
 	UpdateMaterialSystemConfig();
 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	// write out the current vendor has been seen & registered
 	WriteVideoConfigInt( "VendorID", driverInfo.m_VendorID );
 	WriteVideoConfigInt( "DeviceID", driverInfo.m_DeviceID );
@@ -844,7 +844,7 @@ void UpdateMaterialSystemConfig( void )
 //-----------------------------------------------------------------------------
 void GetMaterialSystemConfigForBenchmarkUpload(KeyValues *dataToUpload)
 {
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 	// hardware info
 	MaterialAdapterInfo_t driverInfo;
 	materials->GetDisplayAdapterInfo( materials->GetCurrentAdapter(), driverInfo );
@@ -922,7 +922,7 @@ CON_COMMAND( mat_configcurrent, "show the current video control panel config for
 	PrintMaterialSystemConfig( config );
 }
 
-#if !defined(SWDS) && !defined( _X360 )
+#if !defined(DEDICATED) && !defined( _X360 )
 CON_COMMAND( mat_setvideomode, "sets the width, height, windowed state of the material system" )
 {
 	if ( args.ArgC() != 4 )
@@ -1161,7 +1161,7 @@ static ITexture *CreateResolvedFullFrameDepthTexture( void )
 //-----------------------------------------------------------------------------
 void InitWellKnownRenderTargets( void )
 {
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	if ( mat_debugalttab.GetBool() )
 	{
 		Warning( "mat_debugalttab: InitWellKnownRenderTargets\n" );
@@ -1264,7 +1264,7 @@ void InitWellKnownRenderTargets( void )
 //-----------------------------------------------------------------------------
 void ShutdownWellKnownRenderTargets( void )
 {
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	if ( IsX360() )
 	{
 		// cannot allowing RT's to reconstruct, causes other fatal problems
@@ -1346,7 +1346,7 @@ static void InitDebugMaterials( void )
 	}
 
 	g_materialEmpty = GL_LoadMaterial( "debug/debugempty", TEXTURE_GROUP_OTHER );
-#ifndef SWDS
+#ifndef DEDICATED
 	g_materialWireframe = GL_LoadMaterial( "debug/debugwireframe", TEXTURE_GROUP_OTHER );
 	g_materialTranslucentSingleColor = GL_LoadMaterial( "debug/debugtranslucentsinglecolor", TEXTURE_GROUP_OTHER );
 	g_materialTranslucentVertexColor = GL_LoadMaterial( "debug/debugtranslucentvertexcolor", TEXTURE_GROUP_OTHER );
@@ -1453,7 +1453,7 @@ static void ShutdownDebugMaterials( void )
 	}
 
 	GL_UnloadMaterial( g_materialEmpty );
-#ifndef SWDS
+#ifndef DEDICATED
 	GL_UnloadMaterial( g_pMaterialLightSprite );
 	GL_UnloadMaterial( g_pMaterialWireframeVertexColor );
 	GL_UnloadMaterial( g_pMaterialWireframeVertexColorIgnoreZ );
@@ -1574,7 +1574,7 @@ void InitMaterialSystem( void )
 
 	InitDebugMaterials();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	DispInfo_InitMaterialSystem();
 #endif
 
@@ -1592,7 +1592,7 @@ void ShutdownMaterialSystem( void )
 
 	ShutdownWellKnownRenderTargets();
 
-#ifndef SWDS
+#ifndef DEDICATED
 	DispInfo_ShutdownMaterialSystem();
 #endif
 }
@@ -1602,13 +1602,13 @@ void ShutdownMaterialSystem( void )
 //-----------------------------------------------------------------------------
 void ReleaseMaterialSystemObjects()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	DispInfo_ReleaseMaterialSystemObjects( host_state.worldmodel );
 
 	modelrender->ReleaseAllStaticPropColorData();
 #endif
 
-#ifndef SWDS
+#ifndef DEDICATED
 	WorldStaticMeshDestroy();
 #endif
 	g_LostVideoMemory = true;
@@ -1632,7 +1632,7 @@ void RestoreMaterialSystemObjects( int nChangeFlags )
 	{
 		if ( (nChangeFlags & MATERIAL_RESTORE_VERTEX_FORMAT_CHANGED) || materials->GetNumSortIDs() == 0 )
 		{
-#ifndef SWDS
+#ifndef DEDICATED
 			// Reload lightmaps, world meshes, etc. because we may have switched from bumped to unbumped
 			R_LoadWorldGeometry( true );
 #endif
@@ -1640,14 +1640,14 @@ void RestoreMaterialSystemObjects( int nChangeFlags )
 		else
 		{
 			modelloader->Map_LoadDisplacements( host_state.worldmodel, true );
-#ifndef SWDS
+#ifndef DEDICATED
 			WorldStaticMeshCreate();
 			// Gotta recreate the lightmaps
 			R_RedownloadAllLightmaps();
 #endif
 		}
 
-#ifndef SWDS
+#ifndef DEDICATED
 		// Need to re-figure out the env_cubemaps, so blow away the lightcache.
 		R_StudioInitLightingCache();
 		modelrender->RestoreAllStaticPropColorData();
@@ -1701,7 +1701,7 @@ void MaterialSystem_DestroySortinfo( void )
 {
 	if ( materialSortInfoArray )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		WorldStaticMeshDestroy();
 #endif
 		delete[] materialSortInfoArray;
@@ -1710,7 +1710,7 @@ void MaterialSystem_DestroySortinfo( void )
 }
 
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 // The amount to blend between basetexture and basetexture2 used to sit in lightmap
 // alpha, so we didn't care about the vertex color or vertex alpha. But now if they're
@@ -2319,4 +2319,4 @@ void SurfSetupSurfaceContext( SurfaceCtx_t& ctx, SurfaceHandle_t surfID )
 	}
 }
 
-#endif // SWDS
+#endif // DEDICATED

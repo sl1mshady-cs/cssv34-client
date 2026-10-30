@@ -68,7 +68,7 @@ void HandleServerAllowColorCorrection();
 
 void InitMaterialSystemConfig( bool bInEditMode );
 
-#ifndef SWDS
+#ifndef DEDICATED
 #	ifdef NEWMESH
 extern CUtlVector<IVertexBuffer *> g_WorldStaticMeshes;
 #	else

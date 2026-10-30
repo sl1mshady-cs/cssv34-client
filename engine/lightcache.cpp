@@ -889,7 +889,7 @@ static float LightIntensityAndDirectionAtPointOld( dworldlight_t* pLight,
 	// hack
 	if ( (1.f-pm.fraction) * dist > 8 )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		if (r_drawlightcache.GetInt() == 2)
 		{
 			CDebugOverlay::AddLineOverlay( mid, pm.endpos, 255, 0, 0, 255, true, 3 );
@@ -998,7 +998,7 @@ static float LightIntensityAndDirectionAtPointNew( dworldlight_t* pLight, lightz
 			// hit!
 			if ( dist > pSample->m_flHitDistance + 8  )		// shadow hit
 			{
-#ifndef SWDS
+#ifndef DEDICATED
 				if (r_drawlightcache.GetInt() == 2 )
 				{
 					CDebugOverlay::AddLineOverlay( mid, pLight->origin, 0, 0, 0, 255, true, 3 );
@@ -1008,7 +1008,7 @@ static float LightIntensityAndDirectionAtPointNew( dworldlight_t* pLight, lightz
 			}
 			else
 			{
-#ifndef SWDS
+#ifndef DEDICATED
 				if (r_drawlightcache.GetInt() == 2 )
 				{
 					CDebugOverlay::AddLineOverlay( mid, pLight->origin, 0, 255, 0, 255, true, 3 );
@@ -1037,7 +1037,7 @@ static float LightIntensityAndDirectionAtPointNew( dworldlight_t* pLight, lightz
 	}
 	if ( dist > flHitDistance + 8)
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		if (r_drawlightcache.GetInt() == 2 )
 		{
 			CDebugOverlay::AddLineOverlay( mid, pLight->origin, 255, 0, 0, 255, true, 3 );
@@ -1958,7 +1958,7 @@ static int FindRecentCacheEntryWithinRadius( int count, CacheInfo_t* pCache, con
 //-----------------------------------------------------------------------------
 static void DebugRenderLightcache( Vector &sampleOrigin, LightingState_t& lightingState, bool bDebugModel )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// draw the cache entry defined by the sampling origin
 	Vector cacheOrigin, cacheMins, cacheMaxs, lightMins, lightMaxs;
 	ComputeLightcacheBounds( sampleOrigin, &cacheMins, &cacheMaxs );

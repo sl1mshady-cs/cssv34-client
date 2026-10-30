@@ -117,7 +117,7 @@ static const char *GetTimestampString( void )
 	return string;
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 static ConVar con_trace( "con_trace", "0", FCVAR_MATERIAL_SYSTEM_THREAD, "Print console text to low level printout." );
 static ConVar con_notifytime( "con_notifytime","8", FCVAR_MATERIAL_SYSTEM_THREAD, "How long to display recent console text to the upper part of the game window" );
@@ -579,7 +579,7 @@ void Con_ClearNotify (void)
 	}
 }
 
-#endif // SWDS												
+#endif // DEDICATED												
 
 
 ConsoleLogManager::ConsoleLogManager()
@@ -748,7 +748,7 @@ void Con_DebugLog( const char *fmt, ...)
 
 static bool g_fIsDebugPrint = false;
 
-#ifndef SWDS
+#ifndef DEDICATED
 /*
 ================
 Con_Printf
@@ -917,7 +917,7 @@ void Con_Print( const char *msg )
 		return;
 	}
 
-#ifdef SWDS
+#ifdef DEDICATED
 	Msg( "%s", msg );
 #else
 	if ( sv.IsDedicated() )
@@ -960,7 +960,7 @@ void Con_Printf( const char *fmt, ... )
 		return;
 	}
 
-#ifdef SWDS
+#ifdef DEDICATED
 	Msg( "%s", msg );
 #else
 	if ( sv.IsDedicated() )
@@ -979,7 +979,7 @@ void Con_Printf( const char *fmt, ... )
 #endif
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : clr - 
@@ -1025,7 +1025,7 @@ void Con_DPrintf (const char *fmt, ...)
 	
 	g_fIsDebugPrint = true;
 
-#ifdef SWDS
+#ifdef DEDICATED
 	DevMsg( "%s", msg );
 #else
 	if ( sv.IsDedicated() )
@@ -1059,7 +1059,7 @@ void Con_SafePrintf (const char *fmt, ...)
 	Q_vsnprintf(msg,sizeof( msg ), fmt,argptr);
 	va_end (argptr);
 
-#ifndef SWDS
+#ifndef DEDICATED
 	bool		temp;
 	temp = scr_disabled_for_loading;
 	scr_disabled_for_loading = true;
@@ -1067,12 +1067,12 @@ void Con_SafePrintf (const char *fmt, ...)
 	g_fIsDebugPrint = true;
 	Con_Printf ("%s", msg);
 	g_fIsDebugPrint = false;
-#ifndef SWDS
+#ifndef DEDICATED
 	scr_disabled_for_loading = temp;
 #endif
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 bool Con_IsVisible()
 {
 	return (EngineVGui()->IsConsoleVisible());	
@@ -1550,7 +1550,7 @@ void CConPanel::Paint()
 {
 	VPROF( "CConPanel::Paint" );
 
-#if !defined( SWDS ) && !defined( DEDICATED )
+#if !defined( DEDICATED ) && !defined( DEDICATED )
 	if ( IsPC() && !g_ClientDLL->ShouldDrawDropdownConsole() )
 		return;
 #endif
@@ -1622,4 +1622,4 @@ static ConCommand hideconsole("hideconsole", Con_HideConsole_f, "Hide the consol
 static ConCommand showconsole("showconsole", Con_ShowConsole_f, "Show the console.", FCVAR_DONTRECORD );
 static ConCommand clear("clear", Con_Clear_f, "Clear all console output.", FCVAR_DONTRECORD );
 
-#endif // SWDS
+#endif // DEDICATED

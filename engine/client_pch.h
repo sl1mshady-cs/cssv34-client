@@ -51,7 +51,7 @@
 #include "proto_version.h"
 #include "sys.h"
 
-//#ifndef SWDS            these are all fine under linux now afaik
+//#ifndef DEDICATED            these are all fine under linux now afaik
 
 #include "vgui_basepanel.h"
 #include "vgui_baseui_interface.h"

@@ -374,7 +374,7 @@ static void Cbuf_ExecuteCommand( const CCommand &args, cmd_source_t source )
 	// execute the command line
 	const ConCommandBase *pCmd = Cmd_ExecuteCommand( args, source );
 
-#if !defined(SWDS) && !defined(_XBOX)
+#if !defined(DEDICATED) && !defined(_XBOX)
 	if ( pCmd && !pCmd->IsFlagSet( FCVAR_DONTRECORD ) )
 	{
 		demorecorder->RecordCommand( args.GetCommandString() );
@@ -988,7 +988,7 @@ const ConCommandBase *Cmd_ExecuteCommand( const CCommand &command, cmd_source_t 
 				{
 					g_pServerPluginHandler->SetCommandClient( cmd_source == src_client ? nClientSlot : -1 );
 
-#ifndef SWDS
+#ifndef DEDICATED
 					// Special processing for listen server player
 					if ( isServerCommand )
 					{
@@ -1080,7 +1080,7 @@ const ConCommandBase *Cmd_ExecuteCommand( const CCommand &command, cmd_source_t 
 void Cmd_ForwardToServer( const CCommand &args, bool bReliable )
 {
 	// YWB 6/3/98 Don't forward if this is a dedicated server
-#ifndef SWDS
+#ifndef DEDICATED
 	char str[1024];
 
 #ifndef _XBOX

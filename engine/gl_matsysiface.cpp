@@ -43,7 +43,7 @@ extern ConVar developer;
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-#ifndef SWDS
+#ifndef DEDICATED
 extern IMaterialSystem *materials;
 
 IMaterial*	g_materialWireframe;
@@ -746,7 +746,7 @@ void BuildBrushModelVertexArray(worldbrushdata_t *pBrushData, SurfaceHandle_t su
 		}
 	}
 }
-#endif // SWDS
+#endif // DEDICATED
 
 void CMSurfaceSortList::Init( int maxSortIDs, int minMaterialLists )
 {
@@ -931,7 +931,7 @@ void CMSurfaceSortList::GetSurfaceListForGroup( CUtlVector<msurface2_t *> &list,
 	}
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 IMaterial *GetMaterialAtCrossHair( void )
 {
 	Vector endPoint;

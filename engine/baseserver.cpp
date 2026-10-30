@@ -1022,7 +1022,7 @@ int CBaseServer::GetChallengeType(netadr_t &adr)
 	if ( AllowDebugDedicatedServerOutsideSteam() )
 		return PROTOCOL_HASHEDCDKEY;
 
-#ifndef SWDS	
+#ifndef DEDICATED	
 	// don't auth SP games or local mp games if steam isn't running
 	if ( Host_IsSinglePlayerGame() || ( !Steam3Client().SteamUser() && !IsDedicated() ))
 	{

@@ -77,13 +77,13 @@
 #include "tier1/fmtstr.h"
 #include "steam/steam_api.h"
 
-#ifndef SWDS
+#ifndef DEDICATED
 #include "sys_mainwind.h"
 #include "vgui/ISystem.h"
 #include "vgui_controls/Controls.h"
 #include "IGameUIFuncs.h"
 #include "cl_steamauth.h"
-#endif // SWDS
+#endif // DEDICATED
 
 #if defined(_WIN32)
 #include <eh.h>
@@ -115,7 +115,7 @@ ISourceVirtualReality *g_pSourceVR = NULL;
 ILauncherMgr *g_pLauncherMgr = NULL;
 #endif
 
-#ifndef SWDS
+#ifndef DEDICATED
 extern CreateInterfaceFn g_ClientFactory;
 #endif
 
@@ -143,7 +143,7 @@ void Host_ReadPreStartupConfiguration();
 //-----------------------------------------------------------------------------
 // ConVars and console commands
 //-----------------------------------------------------------------------------
-#ifndef SWDS
+#ifndef DEDICATED
 //-----------------------------------------------------------------------------
 // Purpose: exports an interface that can be used by the launcher to run the engine
 //			this is the exported function when compiled as a blob
@@ -153,14 +153,14 @@ void EXPORT F( IEngineAPI **api )
 	CreateInterfaceFn factory = Sys_GetFactoryThis();	// This silly construction is necessary to prevent the LTCG compiler from crashing.
 	*api = ( IEngineAPI * )(factory(VENGINE_LAUNCHER_API_VERSION, NULL));
 }
-#endif // SWDS
+#endif // DEDICATED
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void ClearIOStates( void )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( g_ClientDLL ) 
 	{
 		g_ClientDLL->IN_ClearStates();
@@ -191,7 +191,7 @@ const char *GetModDirFromPath( const char *pszPath )
 //-----------------------------------------------------------------------------
 // Purpose: Main entry
 //-----------------------------------------------------------------------------
-#ifndef SWDS
+#ifndef DEDICATED
 #include "gl_matsysiface.h"
 #endif
 
@@ -910,7 +910,7 @@ static eSteamInfoInit Sys_TryInitSteamInfo( void *pvAPI, SteamInfVersionInfo_t& 
 	return initState;
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 //-----------------------------------------------------------------------------
 //
@@ -1050,7 +1050,7 @@ void CEngineAPI::Disconnect()
 {
 	DisconnectMDLCacheNotify();
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	TRACESHUTDOWN( Steam3Client().Shutdown() );
 #endif
 
@@ -1095,7 +1095,7 @@ void CEngineAPI::SetStartupInfo( StartupInfo_t &info )
 	// Copy off all the startup info
 	m_StartupInfo = info;
 
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	// turn on the Steam3 API early so we can query app data up front
 	TRACEINIT( Steam3Client().Activate(), Steam3Client().Shutdown() );
 #endif
@@ -1178,7 +1178,7 @@ InitReturnVal_t CEngineAPI::Init()
 	m_bRunningSimulation = false;
 
 	// Initialize the FPU control word
-#if defined(WIN32) && !defined( SWDS ) && !defined( _X360 ) && !defined (__arm__) && !defined(PLATFORM_WINDOWS_PC64)
+#if defined(WIN32) && !defined( DEDICATED ) && !defined( _X360 ) && !defined (__arm__) && !defined(PLATFORM_WINDOWS_PC64)
 	_asm
 	{
 		fninit
@@ -1924,7 +1924,7 @@ int CEngineAPI::Run()
 	return RunListenServer();
 #endif
 }
-#endif // SWDS
+#endif // DEDICATED
 
 bool g_bUsingLegacyAppSystems = false;
 
@@ -1959,7 +1959,7 @@ bool CModAppSystemGroup::AddLegacySystems()
 //-----------------------------------------------------------------------------
 bool CModAppSystemGroup::Create()
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !IsServerOnly() )
 {
 		if ( !ClientDLL_Load() )
@@ -1972,7 +1972,7 @@ bool CModAppSystemGroup::Create()
 
 	IClientDLLSharedAppSystems *clientSharedSystems = 0;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !IsServerOnly() )
 	{
 		clientSharedSystems = ( IClientDLLSharedAppSystems * )g_ClientFactory( CLIENT_DLL_SHARED_APPSYSTEMS, NULL );
@@ -2102,7 +2102,7 @@ int CModAppSystemGroup::Main()
 		int64 nStartTime = ETWBegin( engineLoadMessage );
 		if ( eng->Load( false, host_parms.basedir ) )					
 		{
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 			ETWEnd( engineLoadMessage, nStartTime );
 			toolframework->ServerInit( g_ServerFactory );
 
@@ -2131,7 +2131,7 @@ void CModAppSystemGroup::Destroy()
 {
 	// unload game and client .dlls
 	ServerDLL_Unload();
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( !IsServerOnly() )
 	{
 		ClientDLL_Unload();
@@ -2413,7 +2413,7 @@ bool CDedicatedServerAPI::ModInit( ModInfo_t &info )
 
 	// Setup the material system config record, CreateGameWindow depends on it
 	// (when we're running stand-alone)
-#ifndef SWDS
+#ifndef DEDICATED
 	InitMaterialSystemConfig( true );						// !!should this be called standalone or not?
 #endif
 
@@ -2483,7 +2483,7 @@ void CDedicatedServerAPI::UpdateHostname(char *pszHostname, int maxlen)
 	}
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 class CGameUIFuncs : public IGameUIFuncs
 {

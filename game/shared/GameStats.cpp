@@ -12,7 +12,7 @@
 #include "tier1/utlbuffer.h"
 #include "fmtstr.h"
 
-#ifndef SWDS
+#ifndef DEDICATED
 #include "iregistry.h"
 #endif
 
@@ -536,7 +536,7 @@ bool CBaseGameStats::UploadStatsFileNOW( void )
 	CBGSDriver.m_tLastUpload = curtime;
 
 	// Update the registry
-#ifndef SWDS
+#ifndef DEDICATED
 	IRegistry *reg = InstanceRegistry( "Steam" );
 	Assert( reg );
 	reg->WriteInt( GetStatUploadRegistryKeyName(), CBGSDriver.m_tLastUpload );
@@ -703,7 +703,7 @@ bool CBaseGameStats_Driver::Init()
 	if ( StatsTrackingIsFullyEnabled() )
 	{
 		// FIXME: Load m_tLastUpload from registry and save it back out, too
-#ifndef SWDS
+#ifndef DEDICATED
 		IRegistry *reg = InstanceRegistry( "Steam" );
 		Assert( reg );
 		m_tLastUpload = reg->ReadInt( gamestats->GetStatUploadRegistryKeyName(), 0 );

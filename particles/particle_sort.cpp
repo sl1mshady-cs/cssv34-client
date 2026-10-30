@@ -166,7 +166,7 @@ void CParticleCollection::GenerateSortedIndexList( Vector vecCamera, CParticleVi
 	}
 #endif
 
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( bSorted )
 	{
 		// sort the output in place

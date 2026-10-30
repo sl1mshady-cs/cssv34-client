@@ -36,7 +36,7 @@ CreateInterfaceFn ClientDLL_GetFactory( void );
 //-----------------------------------------------------------------------------
 void DebugDrawPhysCollide( const CPhysCollide *pCollide, IMaterial *pMaterial, matrix3x4_t& transform, const color32 &color, bool drawAxes );
 
-#ifndef SWDS
+#ifndef DEDICATED
 extern IBaseClientDLL *g_ClientDLL;
 #endif
 

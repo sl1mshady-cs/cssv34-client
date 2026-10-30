@@ -13,7 +13,7 @@
 #include "MapReslistGenerator.h"
 #include "DownloadListGenerator.h"
 #include "soundchars.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #endif
 
@@ -230,7 +230,7 @@ int CGameServer::PrecacheModel( char const *name, int flags, model_t *model /*=N
 		if ( bLoadNow )
 		{
 			slot->SetModel( modelloader->GetModelForName( name, IModelLoader::FMODELLOADER_SERVER ) );
-#ifndef SWDS
+#ifndef DEDICATED
 			EngineVGui()->UpdateProgressBar(PROGRESS_PRECACHE); 
 #endif
 			MapReslistGenerator().OnModelPrecached(name);

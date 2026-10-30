@@ -53,9 +53,9 @@ private:
 	unsigned char m_arbTicketData[ 1024 ];
 };
 
-#ifndef SWDS
+#ifndef DEDICATED
 // singleton accessor
 CSteam3Client &Steam3Client();
-#endif // SWDS
+#endif // DEDICATED
 
 #endif // CL_STEAMUAUTH_H

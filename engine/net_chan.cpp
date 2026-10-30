@@ -773,7 +773,7 @@ bool CNetChan::CanPacket () const
 
 bool CNetChan::IsPlayback( void ) const
 {
-#if !defined(SWDS) && !defined(_XBOX)
+#if !defined(DEDICATED) && !defined(_XBOX)
 	return demoplayer->IsPlayingBack();
 #else
 	return false;
@@ -842,7 +842,7 @@ void CNetChan::FlowNewPacket(int flow, int seqnr, int acknr, int nChoked, int nD
 	}
 	else
 	{
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 		Assert( demoplayer->IsPlayingBack() || seqnr > pflow->currentindex );
 #endif
 	}
@@ -1984,7 +1984,7 @@ bool CNetChan::ProcessMessages( bf_read &buf  )
 		}
 	}
 
-#if !defined(SWDS) && !defined(_XBOX)
+#if !defined(DEDICATED) && !defined(_XBOX)
 	// all messages could be parsed, write packet to demo file
 	if ( m_DemoRecorder && !demoplayer->IsPlayingBack() )
 	{
@@ -1998,7 +1998,7 @@ bool CNetChan::ProcessMessages( bf_read &buf  )
 
 void CNetChan::ProcessPlayback( void )
 {
-#if !defined(SWDS) && !defined(_XBOX)
+#if !defined(DEDICATED) && !defined(_XBOX)
 	netpacket_t * packet;
 
 	while ( ( packet = demoplayer->ReadPacket() ) != NULL )
@@ -2480,7 +2480,7 @@ void CNetChan::ProcessPacket( netpacket_t * packet, bool bHasHeader )
 // tell message handler that packet is completely parsed
 	m_MessageHandler->PacketEnd();
 
-#if !defined(SWDS) && !defined(_XBOX)
+#if !defined(DEDICATED) && !defined(_XBOX)
 // tell demo system that packet is completely parsed
 	if ( m_DemoRecorder && !demoplayer->IsPlayingBack() )
 	{

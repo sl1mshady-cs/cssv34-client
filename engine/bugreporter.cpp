@@ -89,7 +89,7 @@
 #include "materialsystem/imaterialsystemhardwareconfig.h"
 #include "FindSteamServers.h"
 #include "vstdlib/random.h"
-#ifndef SWDS
+#ifndef DEDICATED
 #include "cl_steamauth.h"
 #endif
 

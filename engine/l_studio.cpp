@@ -162,7 +162,7 @@ void UpdateStudioRenderConfig( void )
 
 void R_InitStudio( void )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	R_StudioInitLightingCache();
 #endif
 }
@@ -1162,7 +1162,7 @@ void CModelRender::SnapCurrentLightingState( ModelInstance_t &inst, LightingStat
 		}
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	inst.m_flLightingTime = cl.GetTime();
 #endif
 }
@@ -1184,7 +1184,7 @@ void CModelRender::TimeAverageAmbientLight( LightingState_t &actualLightingState
 		vecDelta *= flAttenFactor;
 		inst.m_CurrentLightingState.r_boxcolor[i] = pLightingState->r_boxcolor[i] - vecDelta;
 
-#if defined( VISUALIZE_TIME_AVERAGE ) && !defined( SWDS )
+#if defined( VISUALIZE_TIME_AVERAGE ) && !defined( DEDICATED )
 		if ( pLightingOrigin )
 		{
 			Vector vecDir = vec3_origin;
@@ -1229,7 +1229,7 @@ LightingState_t *CModelRender::TimeAverageLightingState( ModelInstanceHandle_t h
 	if ( r_lightaverage.GetInt() == 0 )
 		return pLightingState;
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 	float flInterpFactor = r_lightinterp.GetFloat();
 	if ( flInterpFactor == 0 )
@@ -1354,7 +1354,7 @@ LightingState_t *CModelRender::TimeAverageLightingState( ModelInstanceHandle_t h
 		inst.m_CurrentLightingState.locallight[i] = pSourceLight[i];
 		inst.m_flLightIntensity[i] = s_WorldLights[i].intensity;
 
-#if defined( VISUALIZE_TIME_AVERAGE ) && !defined( SWDS )
+#if defined( VISUALIZE_TIME_AVERAGE ) && !defined( DEDICATED )
 		Vector vecColor = pSourceLight[i]->intensity;
 		float flMax = max( vecColor.x, vecColor.y );
 		flMax = max( flMax, vecColor.z );
@@ -1395,7 +1395,7 @@ void CModelRender::StudioSetupLighting( const DrawModelState_t &state, const Vec
 	if ( m_bSuppressEngineLighting )
 		return;
 
-#ifndef SWDS
+#ifndef DEDICATED
 	ITexture *pEnvCubemapTexture = NULL;
 	LightingState_t lightingState;
 
@@ -1730,7 +1730,7 @@ void CModelRender::StudioSetupLighting( const DrawModelState_t &state, const Vec
 // FIXME: a duplicate of what's in CEngineTool::GetLightingConditions
 int GetLightingConditions( const Vector &vecLightingOrigin, Vector *pColors, int nMaxLocalLights, LightDesc_t *pLocalLights, ITexture *&pEnvCubemapTexture )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	LightcacheGetDynamic_Stats stats;
 	LightingState_t state;
 	pEnvCubemapTexture = NULL;
@@ -1764,7 +1764,7 @@ int GetLightingConditions( const Vector &vecLightingOrigin, Vector *pColors, int
 // FIXME: a duplicate of what's in CCDmeMdlRenderable<T>::SetUpLighting and CDmeEmitter::SetUpLighting
 void CModelRender::SetupLighting( const Vector &vecCenter )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Set up lighting conditions
 	Vector vecAmbient[6];
 	Vector4D vecAmbient4D[6];
@@ -1847,7 +1847,7 @@ matrix3x4_t* CModelRender::SetupModelState( IClientRenderable *pRenderable )
 		return NULL;
 
 	matrix3x4_t *pBoneMatrices = NULL;
-#ifndef SWDS
+#ifndef DEDICATED
 	// Set up skinning state
 	Assert ( pRenderable );
 	{
@@ -1878,7 +1878,7 @@ static CUtlVector<ModelDebugOverlayData_t> s_SavedModelInfo;
 
 void DrawModelDebugOverlay( const DrawModelInfo_t& info, const DrawModelResults_t &results, const Vector &origin, float r = 1.0f, float g = 1.0f, float b = 1.0f )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	float alpha = 1;
 	if( r_drawmodelstatsoverlaydistance.GetFloat() == 1 )
 	{
@@ -2005,7 +2005,7 @@ void DrawSavedModelDebugOverlays( void )
 
 void CModelRender::DebugDrawLightingOrigin( const DrawModelState_t& state, const ModelRenderInfo_t &pInfo )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// determine light origin in world space
 	Vector illumPosition;
 	Vector lightOrigin;
@@ -2088,7 +2088,7 @@ void CModelRender::DebugDrawLightingOrigin( const DrawModelState_t& state, const
 //-----------------------------------------------------------------------------
 void CModelRender::DrawModelExecute( const DrawModelState_t &state, const ModelRenderInfo_t &pInfo, matrix3x4_t *pBoneToWorld )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	bool bShadowDepth = (pInfo.flags & STUDIO_SHADOWDEPTHTEXTURE) != 0;
 	bool bSSAODepth = ( pInfo.flags & STUDIO_SSAODEPTHTEXTURE ) != 0;
 
@@ -2360,7 +2360,7 @@ bool CModelRender::DrawModelSetup( ModelRenderInfo_t &pInfo, DrawModelState_t *p
 {
 	*ppBoneToWorldOut = NULL;
 
-#ifdef SWDS
+#ifdef DEDICATED
 	return false;
 #endif
 
@@ -2483,7 +2483,7 @@ bool CModelRender::DrawModelSetup( ModelRenderInfo_t &pInfo, DrawModelState_t *p
 
 int	CModelRender::DrawModelEx( ModelRenderInfo_t &pInfo )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	DrawModelState_t state;
 
 	matrix3x4_t tmpmat;
@@ -2512,7 +2512,7 @@ int	CModelRender::DrawModelEx( ModelRenderInfo_t &pInfo )
 
 int	CModelRender::DrawModelExStaticProp( ModelRenderInfo_t &pInfo )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	bool bShadowDepth = ( pInfo.flags & STUDIO_SHADOWDEPTHTEXTURE ) != 0;
 
 #if _DEBUG
@@ -2803,7 +2803,7 @@ inline int FindModel( const CUtlVector<rmodel_t> &list, const model_t *pModel )
 ConVar r_staticprop_lod("r_staticprop_lod", "-1");
 int CModelRender::DrawStaticPropArrayFast( StaticPropRenderInfo_t *pProps, int count, bool bShadowDepth )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	MDLCACHE_CRITICAL_SECTION_( g_pMDLCache );
 	CMatRenderContextPtr pRenderContext( materials );
 	const int MAX_OBJECTS = 1024;
@@ -3174,9 +3174,9 @@ int CModelRender::DrawStaticPropArrayFast( StaticPropRenderInfo_t *pProps, int c
 	pRenderContext->MatrixMode( MATERIAL_MODEL );
 	pRenderContext->PopMatrix();
 	return drawnCount;
-#else // SWDS
+#else // DEDICATED
 	return 0;
-#endif // SWDS
+#endif // DEDICATED
 }
 
 //-----------------------------------------------------------------------------
@@ -3184,7 +3184,7 @@ int CModelRender::DrawStaticPropArrayFast( StaticPropRenderInfo_t *pProps, int c
 //-----------------------------------------------------------------------------
 matrix3x4_t* CModelRender::DrawModelShadowSetup( IClientRenderable *pRenderable, int body, int skin, DrawModelInfo_t *pInfo, matrix3x4_t *pCustomBoneToWorld )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	DrawModelInfo_t &info = *pInfo;
 	static ConVar r_shadowlod("r_shadowlod", "-1");
 	static ConVar r_shadowlodbias("r_shadowlodbias", "2");
@@ -3265,7 +3265,7 @@ matrix3x4_t* CModelRender::DrawModelShadowSetup( IClientRenderable *pRenderable,
 
 void CModelRender::DrawModelShadow( IClientRenderable *pRenderable, const DrawModelInfo_t &info, matrix3x4_t *pBoneToWorld )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	// Needed because we don't call SetupWeights
 	g_pStudioRender->SetEyeViewTarget( info.m_pStudioHdr, info.m_Body, vec3_origin );
 
@@ -3487,7 +3487,7 @@ void CModelRender::ComputeModelVertexLighting( IHandleEntity *pProp,
 	mstudiomodel_t *pModel, OptimizedModel::ModelLODHeader_t *pVtxLOD,
 	matrix3x4_t& matrix, Vector4D *pTempMem, color24 *pLighting )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( IsX360() )
 		return;
 
@@ -4025,7 +4025,7 @@ bool CModelRender::UpdateStaticPropColorData( IHandleEntity *pProp, ModelInstanc
 {
 	MDLCACHE_CRITICAL_SECTION_( g_pMDLCache );
 
-#ifndef SWDS
+#ifndef DEDICATED
 	// find or allocate color meshes
 	CColorMeshData *pColorMeshData = FindOrCreateStaticPropColorData( handle );
 	if ( !pColorMeshData )
@@ -4263,7 +4263,7 @@ bool CModelRender::UpdateStaticPropColorData( IHandleEntity *pProp, ModelInstanc
 //-----------------------------------------------------------------------------
 void CModelRender::DestroyStaticPropColorData( ModelInstanceHandle_t handle )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( handle == MODEL_INSTANCE_INVALID )
 		return;
 
@@ -4291,7 +4291,7 @@ void CModelRender::ReleaseAllStaticPropColorData( void )
 
 void CModelRender::RestoreAllStaticPropColorData( void )
 {
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	if ( !host_state.worldmodel )
 		return;
 
@@ -4342,7 +4342,7 @@ ModelInstanceHandle_t CModelRender::CreateInstance( IClientRenderable *pRenderab
 		instance.m_AmbientLightingState.r_boxcolor[i].x = 1.0;
 	}
 
-#ifndef SWDS
+#ifndef DEDICATED
 	instance.m_FirstShadow = g_pShadowMgr->InvalidShadowIndex();
 #endif
 
@@ -4424,7 +4424,7 @@ LightCacheHandle_t CModelRender::GetStaticLighting( ModelInstanceHandle_t handle
 //-----------------------------------------------------------------------------
 bool CModelRender::RecomputeStaticLighting( ModelInstanceHandle_t handle )
 {
-#ifndef SWDS
+#ifndef DEDICATED
 	if ( handle == MODEL_INSTANCE_INVALID )
 	{
 		return false;
@@ -4592,7 +4592,7 @@ void CModelRender::DestroyInstance( ModelInstanceHandle_t handle )
 		return;
 
 	g_pStudioRender->DestroyDecalList( m_ModelInstances[handle].m_DecalHandle );
-#ifndef SWDS
+#ifndef DEDICATED
 	g_pShadowMgr->RemoveAllShadowsFromModel( handle );
 #endif
 

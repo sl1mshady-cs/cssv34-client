@@ -23,7 +23,7 @@
 #include <wctype.h>
 #endif
 
-#ifndef SWDS
+#ifndef DEDICATED
 #include <vgui_controls/Controls.h>
 #include <vgui/ILocalize.h>
 #endif
@@ -256,7 +256,7 @@ void CCvarUtilities::SetDirect( ConVar *var, const char *value )
 	if ( var->IsFlagSet( FCVAR_PRINTABLEONLY ) )
 	{
 		wchar_t unicode[ 512 ];
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( sv.IsDedicated() )
 		{
 			// Dedicated servers don't have g_pVGuiLocalize, so fall back
@@ -302,7 +302,7 @@ void CCvarUtilities::SetDirect( ConVar *var, const char *value )
 			newUnicode[ ( sizeof( newUnicode ) / sizeof( wchar_t ) ) - 1 ] = L'\0';
 		}
 
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( sv.IsDedicated() )
 		{
 			V_UnicodeToUTF8( newUnicode, szNew, sizeof( szNew ) );
@@ -362,7 +362,7 @@ bool CCvarUtilities::IsCommand( const CCommand &args )
 
 	if ( v->IsFlagSet( FCVAR_SPONLY ) )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		// Connected to server?
 		if ( cl.IsConnected() )
 		{
@@ -378,7 +378,7 @@ bool CCvarUtilities::IsCommand( const CCommand &args )
 
 	if ( v->IsFlagSet( FCVAR_NOT_CONNECTED ) )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		// Connected to server?
 		if ( cl.IsConnected() )
 		{
@@ -400,7 +400,7 @@ bool CCvarUtilities::IsCommand( const CCommand &args )
 	if ( v->IsFlagSet( FCVAR_CHEAT ) )
 	{
 		if ( !Host_IsSinglePlayerGame() && !CanCheat() 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 			&& !cl.ishltv
 #if defined( REPLAY_ENABLED )
 			&& !cl.isreplay
@@ -417,7 +417,7 @@ bool CCvarUtilities::IsCommand( const CCommand &args )
 	// Text invoking the command was typed into the console, decide what to do with it
 	//  if this is a replicated ConVar, except don't worry about restrictions if playing a .dem file
 	if ( v->IsFlagSet( FCVAR_REPLICATED ) 
-#if !defined(SWDS)
+#if !defined(DEDICATED)
 		&& !demoplayer->IsPlayingBack()
 #endif
 		)
@@ -494,7 +494,7 @@ bool CCvarUtilities::IsValidToggleCommand( const char *cmd )
 
 	if ( v->IsFlagSet( FCVAR_SPONLY ) )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		// Connected to server?
 		if ( cl.IsConnected() )
 		{
@@ -510,7 +510,7 @@ bool CCvarUtilities::IsValidToggleCommand( const char *cmd )
 
 	if ( v->IsFlagSet( FCVAR_NOT_CONNECTED ) )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		// Connected to server?
 		if ( cl.IsConnected() )
 		{
@@ -532,7 +532,7 @@ bool CCvarUtilities::IsValidToggleCommand( const char *cmd )
 	if ( v->IsFlagSet( FCVAR_CHEAT ) )
 	{
 		if ( !Host_IsSinglePlayerGame() && !CanCheat() 
-#if !defined(SWDS) && !defined(_XBOX)
+#if !defined(DEDICATED) && !defined(_XBOX)
 			&& !demoplayer->IsPlayingBack() 
 #endif
 			)
@@ -545,7 +545,7 @@ bool CCvarUtilities::IsValidToggleCommand( const char *cmd )
 	// Text invoking the command was typed into the console, decide what to do with it
 	//  if this is a replicated ConVar, except don't worry about restrictions if playing a .dem file
 	if ( v->IsFlagSet( FCVAR_REPLICATED ) 
-#if !defined(SWDS) && !defined(_XBOX)
+#if !defined(DEDICATED) && !defined(_XBOX)
 		&& !demoplayer->IsPlayingBack()
 #endif
 		)

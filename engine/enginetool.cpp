@@ -34,7 +34,7 @@
 #include "gl_rmain.h"
 #include "vprof_telemetry.h"
 
-#ifndef SWDS
+#ifndef DEDICATED
 #include "vgui_baseui_interface.h"
 #endif
 
@@ -430,7 +430,7 @@ bool CEngineTool::IsGamePaused()
 
 bool CEngineTool::IsConsoleVisible()
 {
-#ifdef SWDS
+#ifdef DEDICATED
 	return false;
 #else
 	return EngineVGui()->IsConsoleVisible();

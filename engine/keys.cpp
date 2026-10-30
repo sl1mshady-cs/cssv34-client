@@ -174,7 +174,7 @@ CON_COMMAND_F( unbindall, "Unbind all keys.", FCVAR_DONTRECORD )
 	}
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 CON_COMMAND_F( escape, "Escape key pressed.", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
 	EngineVGui()->HideGameUI();
@@ -516,7 +516,7 @@ bool Key_CheckDoneTrapping( ButtonCode_t& code )
 	return true;
 }
 
-#ifndef SWDS
+#ifndef DEDICATED
 
 //-----------------------------------------------------------------------------
 // Filter out trapped keys
@@ -552,12 +552,12 @@ static bool HandleToolKey( const InputEvent_t &event )
 	return toolsys && toolsys->TrapKey( (ButtonCode_t)event.m_nData, ( event.m_nType != IE_ButtonReleased ) );
 }
 
-#endif // !SWDS
+#endif // !DEDICATED
 
 //-----------------------------------------------------------------------------
 // Lets vgui have a whack at key events
 //-----------------------------------------------------------------------------
-#ifndef SWDS
+#ifndef DEDICATED
 static bool HandleVGuiKey( const InputEvent_t &event )
 {
 	bool bDown = event.m_nType != IE_ButtonReleased;
@@ -591,7 +591,7 @@ static bool HandleClientKey( const InputEvent_t &event )
 //-----------------------------------------------------------------------------
 // Lets the engine have a whack at key events
 //-----------------------------------------------------------------------------
-#ifndef SWDS
+#ifndef DEDICATED
 static bool HandleEngineKey( const InputEvent_t &event )
 {
 	bool bDown = event.m_nType != IE_ButtonReleased;
@@ -607,7 +607,7 @@ static bool HandleEngineKey( const InputEvent_t &event )
 	}
 
 	// Allow the client to handle mouse wheel events while the game has focus, without having to bind keys.
-#if !defined( SWDS )
+#if !defined( DEDICATED )
 	if ( ( code == MOUSE_WHEEL_UP || code == MOUSE_WHEEL_DOWN ) && g_pClientReplay )
 	{
 		g_ClientDLL->IN_OnMouseWheeled( code == MOUSE_WHEEL_UP ? 1 : -1 );
@@ -657,13 +657,13 @@ static bool HandleEngineKey( const InputEvent_t &event )
 	Cbuf_AddText( "\n" );
 	return true;
 }
-#endif // !SWDS
+#endif // !DEDICATED
 
 
 //-----------------------------------------------------------------------------
 // Helper function to make sure key down/key up events go to the right places
 //-----------------------------------------------------------------------------
-#ifndef SWDS
+#ifndef DEDICATED
 typedef bool (*FilterKeyFunc_t)( const InputEvent_t &event );
 
 static bool FilterKey( const InputEvent_t &event, KeyUpTarget_t target, FilterKeyFunc_t func )
@@ -702,7 +702,7 @@ static bool FilterKey( const InputEvent_t &event, KeyUpTarget_t target, FilterKe
 
 	return bFiltered;
 }
-#endif // !SWDS
+#endif // !DEDICATED
 
 
 //-----------------------------------------------------------------------------
@@ -710,7 +710,7 @@ static bool FilterKey( const InputEvent_t &event, KeyUpTarget_t target, FilterKe
 //-----------------------------------------------------------------------------
 void Key_Event( const InputEvent_t &event )
 {
-#ifdef SWDS
+#ifdef DEDICATED
 	return;
 #else
 	ASSERT_NO_REENTRY();

@@ -65,7 +65,7 @@ CUtlLinkedList<CDTIRecvTable*, int> g_DTIRecvTables;
 
 void DTI_Init()
 {
-#if ( defined( IS_WINDOWS_PC ) && (! defined( SWDS ) ) )
+#if ( defined( IS_WINDOWS_PC ) && (! defined( DEDICATED ) ) )
 	extern IVEngineClient *engineClient;
 	if ( CommandLine()->FindParm( "-dti" ) && !g_bDTIEnabled )
 	{

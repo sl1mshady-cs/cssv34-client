@@ -2033,7 +2033,7 @@ int NET_SendTo( bool verbose, SOCKET s, const char FAR * buf, int len, const str
 	// Don't send anything out in VCR mode.. it just annoys other people testing in multiplayer.
 	if ( VCRGetMode() != VCR_Playback )
 	{
-#ifndef SWDS
+#ifndef DEDICATED
 		if ( ( CL_IsHL2Demo() || CL_IsPortalDemo() ) && !net_dedicated )
 		{
 			Error( " " );
@@ -3013,13 +3013,13 @@ void NET_RunFrame( double flRealtime )
 	RPTServer().RunFrame();
 #endif // ENABLE_RPT
 
-#ifndef SWDS
+#ifndef DEDICATED
 	RCONClient().RunFrame();
 #ifdef ENABLE_RPT
 	RPTClient().RunFrame();
 #endif // ENABLE_RPT
 
-#endif // SWDS
+#endif // DEDICATED
 
 	master->RunFrame();
 
