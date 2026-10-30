@@ -12,7 +12,7 @@ Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client/relea
 ---
 
 # Features:
-- Android (armeabi-v7a), Windows (x86, x64), Linux (i386, amd64) support
+- Android (arm64-v8a, armeabi-v7a), Windows (x86, x64), Linux (i386, amd64; **not tested**) support
 - Modern toolchains support
 - Fixed many undefined behaviours
 - Touch support( even on windows/linux/osx )
