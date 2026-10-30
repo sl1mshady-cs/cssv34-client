@@ -19,7 +19,7 @@ jobs:
     - name: Set up MSVC environment
       uses: ilammy/msvc-dev-cmd@v1
       with:
-        arch: x64
+        arch: x86
 
     # Prebuilt libjpeg/libpng/speex were compiled with /GL by another MSVC
     # version -> C1047 with LTO. Rebuild them here from the same sources.
