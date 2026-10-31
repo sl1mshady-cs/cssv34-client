@@ -99,8 +99,6 @@ jobs:
       with:
         arch: x64
 
-    - name: Change directory
-
     # Prebuilt libjpeg/libpng/speex were compiled with /GL by another MSVC
     # version -> C1047 with LTO. Rebuild them here from the same sources.
     - name: Rebuild libjpeg, libpng, speex for LTO
