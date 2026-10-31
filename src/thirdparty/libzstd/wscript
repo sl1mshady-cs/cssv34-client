@@ -13,7 +13,7 @@ def options(opt):
 
 def configure(conf):
     conf.load('gas')
-	conf.define('ZSTD_STATIC_LINKING_ONLY', 1)
+    conf.define('ZSTD_STATIC_LINKING_ONLY', 1)
 
 def build(bld):
     source = [
