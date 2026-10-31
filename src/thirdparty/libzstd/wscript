@@ -39,7 +39,6 @@ def build(bld):
 		"compress/zstd_opt.c",
 		"compress/zstd_preSplit.c",
 		"decompress/huf_decompress.c",
-		#"decompress/huf_decompress_amd64.S",
 		"decompress/zstd_ddict.c",
 		"decompress/zstd_decompress.c",
 		"decompress/zstd_decompress_block.c",
@@ -60,6 +59,9 @@ def build(bld):
     defines = []
     cflags = []
     libs = []
+
+	if bld.env.DEST_OS != 'android':
+		source += ["decompress/huf_decompress_amd64.S"]
 
     if bld.env.DEST_OS == 'android':
         libs += ['ANDROID_SUPPORT']
