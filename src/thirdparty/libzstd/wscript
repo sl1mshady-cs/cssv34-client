@@ -12,6 +12,7 @@ def options(opt):
 	return
 
 def configure(conf):
+    conf.load('gas')
 	conf.define('ZSTD_STATIC_LINKING_ONLY', 1)
 
 def build(bld):
@@ -74,7 +75,7 @@ def build(bld):
         source    = source,
         target    = PROJECT_NAME,
         name      = PROJECT_NAME,
-        features  = 'c cxx',
+        features  = 'c cxx asm',
         includes  = includes,
         defines   = defines,
         use       = libs,
