@@ -165,6 +165,7 @@ int	_V_stricmp( const char *s1, const char *s2 )
 		return 0;
 
 #if 0
+// this breaks string comparison on POSIX systems, but WHY?
 //#ifdef POSIX
 //	if ( s1 == NULL )
 //		return -1;
