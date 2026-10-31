@@ -173,7 +173,7 @@ jobs:
 
     - name: Build android-armv7a
       run: |
-        chmod +x waf
+        chmod +x src/waf
         chmod +x src/scripts/build-android-armv7a.sh
         ./src/scripts/build-android-armv7a.sh
 
@@ -196,7 +196,7 @@ jobs:
 
     - name: Build android-arm64
       run: |
-        chmod +x waf
+        chmod +x src/waf
         chmod +x src/scripts/build-android-arm64.sh
         ./src/scripts/build-android-arm64.sh
 
@@ -219,7 +219,7 @@ jobs:
 
     - name: Build srcds-linux
       run: |
-        chmod +x waf
+        chmod +x src/waf
         chmod +x src/scripts/srcds-linux.sh
         ./src/scripts/srcds-linux.sh
 
