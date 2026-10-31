@@ -121,7 +121,7 @@ int Voice_AddIncomingData(
 
 //! Call this to reserve a voice channel for the specified entity to talk into.
 //! \return A channel index for use with Voice_AddIncomingData or VOICE_CHANNEL_ERROR on error.
-int Voice_AssignChannel(int nEntity, bool bProximity );
+int Voice_AssignChannel(int nEntity);
 
 //! Call this to get the channel index that the specified entity is talking into.
 //! \return A channel index for use with Voice_AddIncomingData or VOICE_CHANNEL_ERROR if the entity isn't talking.
