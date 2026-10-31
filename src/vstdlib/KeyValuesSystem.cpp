@@ -225,6 +225,7 @@ HKeySymbol CKeyValuesSystem::GetSymbolForString( const char *name, bool bCreate 
 {
 	if ( !name )
 	{
+		Msg("!name\n");
 		return (-1);
 	}
 
@@ -237,6 +238,7 @@ HKeySymbol CKeyValuesSystem::GetSymbolForString( const char *name, bool bCreate 
 	{
 		if (!stricmp(name, (char *)m_Strings.GetBase() + item->stringIndex ))
 		{
+			Msg("found string index (fast): %p\n", item->stringIndex);
 			return (HKeySymbol)item->stringIndex;
 		}
 
@@ -246,6 +248,7 @@ HKeySymbol CKeyValuesSystem::GetSymbolForString( const char *name, bool bCreate 
 		{
 			if ( !bCreate )
 			{
+				Msg("not found\n");
 				// not found
 				return -1;
 			}
@@ -268,6 +271,7 @@ HKeySymbol CKeyValuesSystem::GetSymbolForString( const char *name, bool bCreate 
 			}
 			item->stringIndex = pString - (char *)m_Strings.GetBase();
 			strcpy(pString, name);
+			Msg("found: %p\n", item->stringIndex);
 			return (HKeySymbol)item->stringIndex;
 		}
 
