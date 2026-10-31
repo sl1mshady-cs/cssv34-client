@@ -61,7 +61,7 @@ def build(bld):
     cflags = []
     libs = []
     
-    if bld.env.DEST_OS != 'android':
+    if bld.env.DEST_OS not in ['android', 'win32']:
         source += ["decompress/huf_decompress_amd64.S"]
         
     if bld.env.DEST_OS == 'android':
