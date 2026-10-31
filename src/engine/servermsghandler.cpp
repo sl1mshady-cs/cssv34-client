@@ -535,7 +535,7 @@ bool CClientState::ProcessVoiceData( SVC_VoiceData *msg )
 	if ( nChannel == VOICE_CHANNEL_ERROR )
 	{
 		// Create a channel in the voice engine and a channel in the sound engine for this guy.
-		nChannel = Voice_AssignChannel( iEntity, false );
+		nChannel = Voice_AssignChannel( iEntity );
 		if ( nChannel == VOICE_CHANNEL_ERROR )
 		{
 			// If they used -nosound, then it's not a problem.
