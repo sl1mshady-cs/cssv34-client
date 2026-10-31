@@ -28,10 +28,10 @@ jobs:
       run: |
         $ErrorActionPreference = 'Stop'
         $root = $PWD.Path
-        $out  = "$root\lib\win32"
+        $out  = "$root\src\lib\win32"
         $cf   = @('/nologo','/c','/O2','/MT','/GL','/W0','/DNDEBUG','/D_CRT_SECURE_NO_WARNINGS')
         function Build-Lib([string]$name, [string[]]$srcs, [string[]]$extra) {
-          $obj = "$root\ltolibs\$name"
+          $obj = "$root\src\ltolibs\$name"
           New-Item -ItemType Directory -Force $obj | Out-Null
           & cl @cf @extra "/Fo$obj\" @srcs
           if ($LASTEXITCODE -ne 0) { throw "cl failed for $name" }
@@ -42,37 +42,37 @@ jobs:
         }
 
         # libjpeg 9a
-        $j = "$root\thirdparty\libjpeg"
+        $j = "$root\src\thirdparty\libjpeg"
         $jsrc = 'jmemnobs jaricom jcapimin jcapistd jcarith jccoefct jccolor jcdctmgr jchuff jcinit jcmainct jcmarker jcmaster jcomapi jcparam jcprepct jcsample jctrans jdapimin jdapistd jdarith jdatadst jdatasrc jdcoefct jdcolor jddctmgr jdhuff jdinput jdmainct jdmarker jdmaster jdmerge jdpostct jdsample jdtrans jerror jfdctflt jfdctfst jfdctint jidctflt jidctfst jidctint jquant1 jquant2 jutils jmemmgr'.Split(' ') | ForEach-Object { "$j\$_.c" }
         Build-Lib 'libjpeg' $jsrc @("/I$j")
 
         # libpng 1.6.38
-        $p = "$root\thirdparty\libpng"
+        $p = "$root\src\thirdparty\libpng"
         $psrc = 'png pngerror pngget pngmem pngpread pngread pngrio pngrtran pngrutil pngset pngtrans pngwio pngwrite pngwtran pngwutil'.Split(' ') | ForEach-Object { "$p\$_.c" }
         Build-Lib 'libpng' $psrc @("/I$p", "/I$root\thirdparty\zlib")
 
         # speex 1.2.1 (same version as the old prebuilt speex.lib)
         Invoke-WebRequest 'https://github.com/xiph/speex/archive/refs/tags/Speex-1.2.1.tar.gz' -OutFile "$root\speex.tgz"
-        tar -xzf "$root\speex.tgz" -C "$root\ltolibs"
-        $s = "$root\ltolibs\speex-Speex-1.2.1"
-        Copy-Item "$root\engine\voice_codecs\speex\speex\speex_config_types.h" "$s\include\speex\" -Force
+        tar -xzf "$root\src\speex.tgz" -C "$root\src\ltolibs"
+        $s = "$root\src\ltolibs\speex-Speex-1.2.1"
+        Copy-Item "$root\src\engine\voice_codecs\speex\speex\speex_config_types.h" "$s\include\speex\" -Force
         $ssrc = (Get-ChildItem "$s\libspeex\*.c" | Where-Object { $_.Name -notlike 'test*' }).FullName
         Build-Lib 'speex' $ssrc @('/DHAVE_CONFIG_H', "/I$s\win32", "/I$s\include", "/I$s\libspeex")
 
     - name: Build windows-x86 (release)
       run: |
-        python waf configure -T release -4 --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=./win32_build
+        python waf configure -T release -4 --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win32_release
         python waf install
 
     - name: Pack game and debug symbols
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force pdb | Out-Null
-        $names = Get-ChildItem win32_build -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
+        $names = Get-ChildItem ../game/win32_release -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
         Get-ChildItem build -Recurse -Filter *.pdb | Where-Object { $names -contains $_.BaseName } | ForEach-Object { Copy-Item $_.FullName pdb\ -Force }
         Get-ChildItem pdb | Format-Table Name, Length
         7z a -mx9 cssv34_win32_pdb.7z .\pdb\*
-        7z a -tzip cssv34_win32_optimized.zip .\win32_build\*
+        7z a -tzip cssv34_win32_optimized.zip ..\game\win32_release\*
 
     - name: Upload Windows artifacts
       uses: actions/upload-artifact@v4
@@ -106,10 +106,10 @@ jobs:
       run: |
         $ErrorActionPreference = 'Stop'
         $root = $PWD.Path
-        $out  = "$root\lib\win32\amd64"
+        $out  = "$root\src\lib\win32\amd64"
         $cf   = @('/nologo','/c','/O2','/MT','/GL','/W0','/DNDEBUG','/D_CRT_SECURE_NO_WARNINGS')
         function Build-Lib([string]$name, [string[]]$srcs, [string[]]$extra) {
-          $obj = "$root\ltolibs\$name"
+          $obj = "$root\src\ltolibs\$name"
           New-Item -ItemType Directory -Force $obj | Out-Null
           & cl @cf @extra "/Fo$obj\" @srcs
           if ($LASTEXITCODE -ne 0) { throw "cl failed for $name" }
@@ -120,37 +120,37 @@ jobs:
         }
 
         # libjpeg 9a
-        $j = "$root\thirdparty\libjpeg"
+        $j = "$root\src\thirdparty\libjpeg"
         $jsrc = 'jmemnobs jaricom jcapimin jcapistd jcarith jccoefct jccolor jcdctmgr jchuff jcinit jcmainct jcmarker jcmaster jcomapi jcparam jcprepct jcsample jctrans jdapimin jdapistd jdarith jdatadst jdatasrc jdcoefct jdcolor jddctmgr jdhuff jdinput jdmainct jdmarker jdmaster jdmerge jdpostct jdsample jdtrans jerror jfdctflt jfdctfst jfdctint jidctflt jidctfst jidctint jquant1 jquant2 jutils jmemmgr'.Split(' ') | ForEach-Object { "$j\$_.c" }
         Build-Lib 'libjpeg' $jsrc @("/I$j")
 
         # libpng 1.6.38
-        $p = "$root\thirdparty\libpng"
+        $p = "$root\src\thirdparty\libpng"
         $psrc = 'png pngerror pngget pngmem pngpread pngread pngrio pngrtran pngrutil pngset pngtrans pngwio pngwrite pngwtran pngwutil'.Split(' ') | ForEach-Object { "$p\$_.c" }
         Build-Lib 'libpng' $psrc @("/I$p", "/I$root\thirdparty\zlib")
 
         # speex 1.2.1 (same version as the old prebuilt speex.lib)
         Invoke-WebRequest 'https://github.com/xiph/speex/archive/refs/tags/Speex-1.2.1.tar.gz' -OutFile "$root\speex.tgz"
         tar -xzf "$root\speex.tgz" -C "$root\ltolibs"
-        $s = "$root\ltolibs\speex-Speex-1.2.1"
-        Copy-Item "$root\engine\voice_codecs\speex\speex\speex_config_types.h" "$s\include\speex\" -Force
+        $s = "$root\src\ltolibs\speex-Speex-1.2.1"
+        Copy-Item "$root\src\engine\voice_codecs\speex\speex\speex_config_types.h" "$s\include\speex\" -Force
         $ssrc = (Get-ChildItem "$s\libspeex\*.c" | Where-Object { $_.Name -notlike 'test*' }).FullName
         Build-Lib 'speex' $ssrc @('/DHAVE_CONFIG_H', "/I$s\win32", "/I$s\include", "/I$s\libspeex")
 
     - name: Build windows-amd64 (release)
       run: |
-        python waf configure -T release --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=./win64_build
+        python waf configure -T release --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win64_release
         python waf install
 
     - name: Pack game and debug symbols
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force pdb | Out-Null
-        $names = Get-ChildItem win64_build -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
+        $names = Get-ChildItem ../game/win64_release -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
         Get-ChildItem build -Recurse -Filter *.pdb | Where-Object { $names -contains $_.BaseName } | ForEach-Object { Copy-Item $_.FullName pdb\ -Force }
         Get-ChildItem pdb | Format-Table Name, Length
         7z a -mx9 cssv34_win64_pdb.7z .\pdb\*
-        7z a -tzip cssv34_win64_optimized.zip .\win64_build\*
+        7z a -tzip cssv34_win64_optimized.zip ..\game\win64_release\*
 
     - name: Upload Windows artifacts
       uses: actions/upload-artifact@v4
@@ -174,8 +174,8 @@ jobs:
     - name: Build android-armv7a
       run: |
         chmod +x waf
-        chmod +x scripts/build-android-armv7a.sh
-        ./scripts/build-android-armv7a.sh
+        chmod +x src/scripts/build-android-armv7a.sh
+        ./src/scripts/build-android-armv7a.sh
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -197,8 +197,8 @@ jobs:
     - name: Build android-arm64
       run: |
         chmod +x waf
-        chmod +x scripts/build-android-arm64.sh
-        ./scripts/build-android-arm64.sh
+        chmod +x src/scripts/build-android-arm64.sh
+        ./src/scripts/build-android-arm64.sh
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -220,8 +220,8 @@ jobs:
     - name: Build srcds-linux
       run: |
         chmod +x waf
-        chmod +x scripts/srcds-linux.sh
-        ./scripts/srcds-linux.sh
+        chmod +x src/scripts/srcds-linux.sh
+        ./src/scripts/srcds-linux.sh
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
