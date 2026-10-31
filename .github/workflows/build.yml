@@ -26,6 +26,8 @@ jobs:
     - name: Rebuild libjpeg, libpng, speex for LTO
       shell: pwsh
       run: |
+        cd src
+
         $ErrorActionPreference = 'Stop'
         $root = $PWD.Path
         $out  = "$root\lib\win32"
@@ -58,29 +60,34 @@ jobs:
         Copy-Item "$root\engine\voice_codecs\speex\speex\speex_config_types.h" "$s\include\speex\" -Force
         $ssrc = (Get-ChildItem "$s\libspeex\*.c" | Where-Object { $_.Name -notlike 'test*' }).FullName
         Build-Lib 'speex' $ssrc @('/DHAVE_CONFIG_H', "/I$s\win32", "/I$s\include", "/I$s\libspeex")
+        cd ..
 
     - name: Build windows-x86 (release)
       run: |
+        cd src
         python waf configure -T release -4 --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win32_release
         python waf install
+        cd ..
 
     - name: Pack game and debug symbols
       shell: pwsh
       run: |
+        cd src
         New-Item -ItemType Directory -Force pdb | Out-Null
         $names = Get-ChildItem ../game/win32_release -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
         Get-ChildItem build -Recurse -Filter *.pdb | Where-Object { $names -contains $_.BaseName } | ForEach-Object { Copy-Item $_.FullName pdb\ -Force }
         Get-ChildItem pdb | Format-Table Name, Length
         7z a -mx9 cssv34_win32_pdb.7z .\pdb\*
         7z a -tzip cssv34_win32_optimized.zip ..\game\win32_release\*
+        cd ..
 
     - name: Upload Windows artifacts
       uses: actions/upload-artifact@v4
       with:
         name: windows_build
         path: |
-          cssv34_win32_optimized.zip
-          cssv34_win32_pdb.7z
+          src/cssv34_win32_optimized.zip
+          src/cssv34_win32_pdb.7z
         if-no-files-found: error
         retention-days: 7
         
@@ -169,8 +176,8 @@ jobs:
       with:
         name: windows_build
         path: |
-          cssv34_win64_optimized.zip
-          cssv34_win64_pdb.7z
+          src/cssv34_win64_optimized.zip
+          src/cssv34_win64_pdb.7z
         if-no-files-found: error
         retention-days: 7
 
@@ -194,8 +201,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: android_armv7a_build
-        path: android_armv7a_build
+        name: android_armeabi-v7a_release
+        path: game/android_armeabi-v7a_release
         if-no-files-found: error
         retention-days: 7
         
@@ -219,8 +226,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: android_arm64_build
-        path: android_arm64_build
+        name: android_arm64_release
+        path: game/android_arm64_release
         if-no-files-found: error
         retention-days: 7
         
@@ -244,8 +251,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: srcds_linux
-        path: srcds_linux
+        name: srcds_linux_release
+        path: game/srcds_linux_release
         if-no-files-found: error
         retention-days: 7
 
