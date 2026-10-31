@@ -901,7 +901,7 @@ void Voice_Idle(float frametime)
 				{
 					// Start its audio.
 					pChannel->m_nViewEntityIndex = g_pSoundServices->GetViewEntity();
-					pChannel->m_nSoundGuid = VoiceSE_StartChannel( i, pChannel->m_iEntity, pChannel->m_bProximity, pChannel->m_nViewEntityIndex );
+					pChannel->m_nSoundGuid = VoiceSE_StartChannel(i, pChannel->m_iEntity, false, pChannel->m_nViewEntityIndex);
 					g_pSoundServices->OnChangeVoiceStatus(pChannel->m_iEntity, TRUE);
 					
 					VoiceSE_InitMouth(pChannel->m_iEntity);
@@ -1207,7 +1207,7 @@ int Voice_GetCompressedData(char *pchDest, int nCount, bool bFinal)
 // Input  : nEntity - entity number to assign to a channel.
 // Output : A channel index to which the entity has been assigned.
 //------------------------------------------------------------------------------
-int Voice_AssignChannel(int nEntity, bool bProximity)
+int Voice_AssignChannel(int nEntity)
 {
 	if(g_bInTweakMode)
 		return VOICE_CHANNEL_IN_TWEAK_MODE;
@@ -1242,7 +1242,6 @@ int Voice_AssignChannel(int nEntity, bool bProximity)
 
 	CVoiceChannel *pChannel = &g_VoiceChannels[iFree];
 	pChannel->Init(nEntity);
-	pChannel->m_bProximity = bProximity;
 	VoiceSE_StartOverdrive();
 
 	return iFree;
