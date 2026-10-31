@@ -269,7 +269,6 @@ public:
 
 	CVoiceChannel					*m_pNext;
 	
-	bool							m_bProximity;
 	int								m_nViewEntityIndex;
 	int								m_nSoundGuid;
 };
@@ -730,14 +729,7 @@ void Voice_EndChannel(int iChannel)
 		int iEnt = pChannel->m_iEntity;
 		pChannel->m_iEntity = -1;
 
-		if ( pChannel->m_bProximity == true )
-		{
-			VoiceSE_EndChannel( iChannel, iEnt );
-		}
-		else
-		{
-			VoiceSE_EndChannel( iChannel, pChannel->m_nViewEntityIndex );
-		}
+		VoiceSE_EndChannel( iChannel, pChannel->m_nViewEntityIndex );
 		
 		g_pSoundServices->OnChangeVoiceStatus( iEnt, false );
 		VoiceSE_CloseMouth( iEnt );
