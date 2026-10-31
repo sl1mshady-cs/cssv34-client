@@ -153,66 +153,63 @@ int	_V_wcslen(const char* file, int line, const wchar_t *pwch)
 {
 	return wcslen( pwch );
 }
-
-int	_V_stricmp( const char *s1, const char *s2 )
+int _V_stricmp(const char* s1, const char* s2)
 {
-	// It is not uncommon to compare a string to itself. Since stricmp
-	// is expensive and pointer comparison is cheap, this simple test
-	// can save a lot of cycles, and cache pollution.
-	// This also implicitly does the s1 and s2 both equal to NULL check
-	// that the POSIX code used to have.
-	if ( s1 == s2 )
+	if (s1 == s2)
+	{
+		Msg("[_V_stricmp] RESULT 0 (pointer eq)\n");
 		return 0;
+	}
 
 #ifdef POSIX
-	if ( s1 == NULL )
-		return -1;
-	if ( s2 == NULL )
-		return 1;
-	
-	return stricmp( s1, s2 );
-#else	
-	uint8 const *pS1 = ( uint8 const * ) s1;
-	uint8 const *pS2 = ( uint8 const * ) s2;
-	for(;;)
+	if (s1 == NULL) { Msg("[_V_stricmp] RESULT -1 (s1 NULL)\n"); return -1; }
+	if (s2 == NULL) { Msg("[_V_stricmp] RESULT 1 (s2 NULL)\n"); return 1; }
+
+	int result = stricmp(s1, s2);
+	Msg("[_V_stricmp] RESULT %d (POSIX strcasecmp)\n", result);
+	return result;
+#else
+	uint8 const* pS1 = (uint8 const*)s1;
+	uint8 const* pS2 = (uint8 const*)s2;
+	int iter = 0;
+	for (;;)
 	{
-		int c1 = *( pS1++ );
-		int c2 = *( pS2++ );
-		if ( c1 == c2 )
+		int c1 = *(pS1++);
+		int c2 = *(pS2++);
+		Msg("[_V_stricmp]  it%d.a c1=0x%02x('%c') c2=0x%02x('%c')\n",
+			iter, c1, (c1 >= 32 && c1 < 127) ? c1 : '.', c2, (c2 >= 32 && c2 < 127) ? c2 : '.');
+		if (c1 == c2)
 		{
-			if ( !c1 ) return 0;
+			if (!c1) { Msg("[_V_stricmp] RESULT 0 (both NUL)\n"); return 0; }
 		}
 		else
 		{
-			if ( ! c2 )
-			{
-				return c1 - c2;
-			}
-			c1 = FastASCIIToLower( c1 );
-			c2 = FastASCIIToLower( c2 );
-			if ( c1 != c2 )
-			{
-				return c1 - c2;
-			}
+			if (!c2) { int r = c1 - c2; Msg("[_V_stricmp] RESULT %d (c2=NUL)\n", r); return r; }
+			c1 = FastASCIIToLower(c1);
+			c2 = FastASCIIToLower(c2);
+			if (c1 != c2) { int r = c1 - c2; Msg("[_V_stricmp] RESULT %d (mismatch)\n", r); return r; }
 		}
-		c1 = *( pS1++ );
-		c2 = *( pS2++ );
-		if ( c1 == c2 )
+
+		c1 = *(pS1++);
+		c2 = *(pS2++);
+		Msg("[_V_stricmp]  it%d.b c1=0x%02x('%c') c2=0x%02x('%c')\n",
+			iter, c1, (c1 >= 32 && c1 < 127) ? c1 : '.', c2, (c2 >= 32 && c2 < 127) ? c2 : '.');
+		if (c1 == c2)
 		{
-			if ( !c1 ) return 0;
+			if (!c1) { Msg("[_V_stricmp] RESULT 0 (both NUL)\n"); return 0; }
 		}
 		else
 		{
-			if ( ! c2 )
-			{
-				return c1 - c2;
-			}
-			c1 = FastASCIIToLower( c1 );
-			c2 = FastASCIIToLower( c2 );
-			if ( c1 != c2 )
-			{
-				return c1 - c2;
-			}
+			if (!c2) { int r = c1 - c2; Msg("[_V_stricmp] RESULT %d (c2=NUL)\n", r); return r; }
+			c1 = FastASCIIToLower(c1);
+			c2 = FastASCIIToLower(c2);
+			if (c1 != c2) { int r = c1 - c2; Msg("[_V_stricmp] RESULT %d (mismatch)\n", r); return r; }
+		}
+
+		if (++iter > 512)
+		{
+			Msg("[_V_stricmp] RESULT 0 (iter overflow!)\n");
+			return 0;
 		}
 	}
 #endif
