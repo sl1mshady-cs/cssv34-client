@@ -1436,7 +1436,7 @@ int VoiceTweak_StartVoiceTweakMode()
 
 	Voice_EndAllChannels();
 	Voice_RecordStart(NULL, NULL, NULL);
-	Voice_AssignChannel(TWEAKMODE_ENTITYINDEX, false );
+	Voice_AssignChannel(TWEAKMODE_ENTITYINDEX );
 	g_bInTweakMode = true;
 	InitMixerControls();
 
