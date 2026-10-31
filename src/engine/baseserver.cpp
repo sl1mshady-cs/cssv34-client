@@ -969,7 +969,7 @@ void CBaseServer::ReplyChallenge(netadr_t &adr, int clientChallenge )
 #if !defined( NO_STEAM ) //#ifndef _XBOX
 	if ( authprotocol == PROTOCOL_STEAM )
 	{
-		msg.WriteShort( 0 ); //  steam2 encryption key not there anymore
+		msg.WriteShort( 9 ); //  steam2 encryption key not there anymore
 		CSteamID steamID = Steam3Server().GetGSSteamID();
 		uint64 unSteamID = steamID.ConvertToUint64();
 		msg.WriteBytes( &unSteamID, sizeof(unSteamID) );
