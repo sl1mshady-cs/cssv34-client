@@ -176,7 +176,7 @@ jobs:
       with:
         name: win64_release
         path: |
-          game/cssv34_win64_optimized.zip
+          src/cssv34_win64_optimized.zip
           src/cssv34_win64_pdb.7z
         if-no-files-found: error
         retention-days: 7
@@ -257,7 +257,7 @@ jobs:
         retention-days: 7
 
   release:
-    needs: [build-windows-x86, build-windows-amd64, build-android-armv7a, build-windows-x86, build-android-arm64, build-linux-srcds]
+    needs: [build-windows-x86, build-windows-amd64, build-android-armv7a, build-android-arm64, build-linux-srcds]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
