@@ -49,7 +49,7 @@ jobs:
         # libpng 1.6.38
         $p = "$root\src\thirdparty\libpng"
         $psrc = 'png pngerror pngget pngmem pngpread pngread pngrio pngrtran pngrutil pngset pngtrans pngwio pngwrite pngwtran pngwutil'.Split(' ') | ForEach-Object { "$p\$_.c" }
-        Build-Lib 'libpng' $psrc @("/I$p", "/I$root\thirdparty\zlib")
+        Build-Lib 'libpng' $psrc @("/I$p", "/I$root\src\thirdparty\zlib")
 
         # speex 1.2.1 (same version as the old prebuilt speex.lib)
         Invoke-WebRequest 'https://github.com/xiph/speex/archive/refs/tags/Speex-1.2.1.tar.gz' -OutFile "$root\speex.tgz"
