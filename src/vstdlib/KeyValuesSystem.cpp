@@ -237,6 +237,7 @@ HKeySymbol CKeyValuesSystem::GetSymbolForString( const char *name, bool bCreate 
 	hash_item_t *item = &m_HashTable[hash];
 	while (1)
 	{
+		Msg("stricmp(%s, %s)\n", name, (char*)m_Strings.GetBase() + item->stringIndex);
 		if (!stricmp(name, (char *)m_Strings.GetBase() + item->stringIndex ))
 		{
 			Msg("found string index (fast): %p }\n", item->stringIndex);
