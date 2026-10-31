@@ -266,37 +266,37 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: win32_release
-        path: release_files/windows_x86
+        path: release_files
 
     - name: Download Windows x64 artifacts
       uses: actions/download-artifact@v4
       with:
         name: win64_release
-        path: release_files/windows_x64
+        path: release_files
 
     - name: Download Android armv7a artifacts
       uses: actions/download-artifact@v4
       with:
         name: android_armv7a_release
-        path: release_files/android_armv7a_release
+        path: release_files
 
     - name: Download Android arm64 artifacts
       uses: actions/download-artifact@v4
       with:
         name: android_arm64_release
-        path: release_files/android_arm64_build
+        path: release_files
 
     - name: Download Linux x64 SRCDS artifacts
       uses: actions/download-artifact@v4
       with:
         name: linux_srcds_release
-        path: release_files/linux_srcds
+        path: release_files
 
     - name: Pack Android and Linux builds
       run: |
         cd release_files
-        zip -r cssv34_android_armv7a.zip android_armv7a_build
-        zip -r cssv34_android_arm64.zip android_arm64_build
+        zip -r cssv34_android_armv7a.zip android_armv7a
+        zip -r cssv34_android_arm64.zip android_arm64
         zip -r cssv34_linux_srcds.zip linux_srcds
 
     - name: Publish release
