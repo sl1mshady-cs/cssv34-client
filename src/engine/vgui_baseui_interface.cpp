@@ -54,6 +54,7 @@
 #include "cl_pluginhelpers.h"
 #include "cl_main.h" // CL_IsHL2Demo()
 #include "cl_steamauth.h"
+#include "../uisystem/uisystem.h"
 
 // interface to gameui dll
 #include <GameUI/IGameUI.h>
@@ -118,9 +119,8 @@ extern CreateInterfaceFn g_AppSystemFactory;
 
 // functions to reference GameUI and GameConsole functions, from GameUI.dll
 IGameUI *staticGameUIFuncs = NULL;
+IUISystem* staticUISystemFuncs = NULL;
 IGameConsole *staticGameConsole = NULL;
-
-//Rml::Context* g_pRmlContext = nullptr;
 
 // cache some of the state we pass through to matsystemsurface, for visibility
 bool s_bWindowsInputEnabled = true;
@@ -398,7 +398,9 @@ private:
 	int m_iNumFactories;
 
 	CSysModule *m_hStaticGameUIModule;
+	CSysModule *m_hStaticUISystemModule;
 	CreateInterfaceFn m_GameUIFactory;
+	CreateInterfaceFn m_UISystemFactory;
 
 	// top level VGUI2 panel
 	CStaticPanel *staticPanel;
@@ -566,6 +568,24 @@ bool CEngineVGui::SetVGUIDirectories()
 //-----------------------------------------------------------------------------
 void CEngineVGui::Init()
 {
+	m_hStaticUISystemModule = g_pFileSystem->LoadModule("uisystem", "EXECUTABLE_PATH");
+	m_UISystemFactory = Sys_GetFactory(m_hStaticUISystemModule);
+	if (!m_UISystemFactory)
+	{
+		Error("Could not load: %s\n", "uisystem");
+	}
+
+	staticUISystemFuncs = (IUISystem *)m_UISystemFactory(UISYSTEM_INTERFACE_VERSION, NULL);
+	if (!staticUISystemFuncs)
+	{
+		Error("Could not get IUISystem interface %s from %s\n", UISYSTEM_INTERFACE_VERSION, "uisystem");
+	}
+
+	staticUISystemFuncs->Start(&g_AppSystemFactory, 1);
+	IUIPanel* pan = staticUISystemFuncs->CreatePanel(staticUISystemFuncs->GetTopPanel());
+	pan->SetDocument("test_document.rml");
+	pan->SetVisible(true);
+
 	g_bVGUIDisabled = !!CommandLine()->FindParm("-novgui");
 	if (g_bVGUIDisabled) return;
 
@@ -916,6 +936,7 @@ extern bool g_bUsingLegacyAppSystems;
 //-----------------------------------------------------------------------------
 void CEngineVGui::Shutdown()
 {
+	staticUISystemFuncs->Stop();
 	if (g_bVGUIDisabled) return;
 	if ( IsPC() && CL_IsHL2Demo() ) // if they are playing the demo then open the storefront on shutdown
 	{
@@ -1745,92 +1766,96 @@ void CEngineVGui::Paint( PaintMode_t mode )
 
 	g_ClientDLL->DrawUI();
 
-	if (g_bVGUIDisabled) return;
-
-	if ( !staticPanel )
-		return;
-
-	// setup the base panel to cover the screen
-	vgui::VPANEL pVPanel = vgui::surface()->GetEmbeddedPanel();
-	if ( !pVPanel )
-		return;
-
-	bool drawVgui = r_drawvgui.GetBool();
-
-	// Don't draw the console at all if vgui is off during a time demo
-	if ( demoplayer->IsPlayingTimeDemo() && !drawVgui )
+	if (!g_bVGUIDisabled)
 	{
-		return;
+
+		if (!staticPanel)
+			return;
+
+		// setup the base panel to cover the screen
+		vgui::VPANEL pVPanel = vgui::surface()->GetEmbeddedPanel();
+		if (!pVPanel)
+			return;
+
+		bool drawVgui = r_drawvgui.GetBool();
+
+		// Don't draw the console at all if vgui is off during a time demo
+		if (demoplayer->IsPlayingTimeDemo() && !drawVgui)
+		{
+			return;
+		}
+
+		if (!drawVgui || m_bNoShaderAPI)
+		{
+			return;
+		}
+
+		// draw from the main panel down
+		vgui::Panel* panel = staticPanel;
+
+		// Force engine's root panel (staticPanel) to be full screen size
+		{
+			int x, y, w, h;
+			CMatRenderContextPtr pRenderContext(materials);
+			pRenderContext->GetViewport(x, y, w, h);
+			panel->SetBounds(0, 0, w, h); // ignore x and y here because the viewport takes care of that
+		}
+
+		panel->Repaint();
+
+		toolframework->VGui_PreRenderAllTools(mode);
+
+		// Paint both ( backward compatibility support )
+
+		// It's either the full screen, or just the client .dll stuff
+		if (mode & PAINT_UIPANELS)
+		{
+			// Hide the client .dll, and paint everything else
+			bool saveVisible = staticClientDLLPanel->IsVisible();
+			bool saveToolsVisible = staticClientDLLToolsPanel->IsVisible();
+			staticClientDLLPanel->SetVisible(false);
+			staticClientDLLToolsPanel->SetVisible(false);
+
+			vgui::surface()->PaintTraverseEx(pVPanel, true);
+
+			staticClientDLLPanel->SetVisible(saveVisible);
+			staticClientDLLToolsPanel->SetVisible(saveToolsVisible);
+		}
+
+		if (mode & PAINT_INGAMEPANELS)
+		{
+			bool bSaveVisible = vgui::ipanel()->IsVisible(pVPanel);
+			vgui::ipanel()->SetVisible(pVPanel, false);
+
+			// Remove the client .dll from the main hierarchy so that popups will only paint for the client .dll here
+			// NOTE: Disconnect each surface one at a time so that we don't draw popups twice
+
+			// Paint the client .dll only
+			vgui::VPANEL ingameRoot = staticClientDLLPanel->GetVPanel();
+			vgui::VPANEL saveParent = vgui::ipanel()->GetParent(ingameRoot);
+			vgui::ipanel()->SetParent(ingameRoot, 0);
+			vgui::surface()->PaintTraverseEx(ingameRoot, true);
+			vgui::ipanel()->SetParent(ingameRoot, saveParent);
+
+			// Overlay the client .dll tools next
+			vgui::VPANEL ingameToolsRoot = staticClientDLLToolsPanel->GetVPanel();
+			vgui::VPANEL saveToolParent = vgui::ipanel()->GetParent(ingameToolsRoot);
+			vgui::ipanel()->SetParent(ingameToolsRoot, 0);
+			vgui::surface()->PaintTraverseEx(ingameToolsRoot, true);
+			vgui::ipanel()->SetParent(ingameToolsRoot, saveToolParent);
+
+			vgui::ipanel()->SetVisible(pVPanel, bSaveVisible);
+		}
+
+		if (mode & PAINT_CURSOR)
+		{
+			vgui::surface()->PaintSoftwareCursor();
+		}
+
+		toolframework->VGui_PostRenderAllTools(mode);
 	}
 
-	if ( !drawVgui || m_bNoShaderAPI )
-	{
-		return;
-	}
-
-	// draw from the main panel down
-	vgui::Panel *panel = staticPanel;
-
-	// Force engine's root panel (staticPanel) to be full screen size
-	{
-		int x, y, w, h;
-		CMatRenderContextPtr pRenderContext( materials );
-		pRenderContext->GetViewport( x, y, w, h );
-		panel->SetBounds(0, 0, w, h); // ignore x and y here because the viewport takes care of that
-	}
-
-	panel->Repaint();
-
-	toolframework->VGui_PreRenderAllTools( mode );
-
-	// Paint both ( backward compatibility support )
-
-	// It's either the full screen, or just the client .dll stuff
-	if ( mode & PAINT_UIPANELS )
-	{
-		// Hide the client .dll, and paint everything else
-		bool saveVisible = staticClientDLLPanel->IsVisible();
-		bool saveToolsVisible = staticClientDLLToolsPanel->IsVisible();
-		staticClientDLLPanel->SetVisible( false );
-		staticClientDLLToolsPanel->SetVisible( false );
-
-		vgui::surface()->PaintTraverseEx(pVPanel, true );
-
-		staticClientDLLPanel->SetVisible( saveVisible );
-		staticClientDLLToolsPanel->SetVisible( saveToolsVisible );
-	}
-	
-	if ( mode & PAINT_INGAMEPANELS )
-	{
-		bool bSaveVisible = vgui::ipanel()->IsVisible( pVPanel );
-		vgui::ipanel()->SetVisible( pVPanel, false );
-
-		// Remove the client .dll from the main hierarchy so that popups will only paint for the client .dll here
-		// NOTE: Disconnect each surface one at a time so that we don't draw popups twice
-
-		// Paint the client .dll only
-		vgui::VPANEL ingameRoot = staticClientDLLPanel->GetVPanel();
-		vgui::VPANEL saveParent = vgui::ipanel()->GetParent( ingameRoot );
-		vgui::ipanel()->SetParent( ingameRoot, 0 );
-		vgui::surface()->PaintTraverseEx( ingameRoot, true );
-		vgui::ipanel()->SetParent( ingameRoot, saveParent );
-
-		// Overlay the client .dll tools next
-		vgui::VPANEL ingameToolsRoot = staticClientDLLToolsPanel->GetVPanel();
-		vgui::VPANEL saveToolParent = vgui::ipanel()->GetParent( ingameToolsRoot );
-		vgui::ipanel()->SetParent( ingameToolsRoot, 0 );
-		vgui::surface()->PaintTraverseEx( ingameToolsRoot, true );
-		vgui::ipanel()->SetParent( ingameToolsRoot, saveToolParent );
-
-		vgui::ipanel()->SetVisible( pVPanel, bSaveVisible );
-	}
-
-	if ( mode & PAINT_CURSOR )
-	{
-		vgui::surface()->PaintSoftwareCursor();
-	}
-
-	toolframework->VGui_PostRenderAllTools( mode );
+	staticUISystemFuncs->Draw();
 }
 
 bool CEngineVGui::IsDebugSystemVisible( void )
