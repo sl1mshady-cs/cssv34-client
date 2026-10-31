@@ -62,10 +62,10 @@ jobs:
         Build-Lib 'speex' $ssrc @('/DHAVE_CONFIG_H', "/I$s\win32", "/I$s\include", "/I$s\libspeex")
         cd ..
 
-    - name: Build windows-x86 (release)
+    - name: Build
       run: |
         cd src
-        python waf configure -T release -4 --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win32_release
+        python waf configure -T release --32bits --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win32
         python waf install
         cd ..
 
@@ -74,17 +74,17 @@ jobs:
       run: |
         cd src
         New-Item -ItemType Directory -Force pdb | Out-Null
-        $names = Get-ChildItem ../game/win32_release -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
+        $names = Get-ChildItem ../game/win32 -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
         Get-ChildItem build -Recurse -Filter *.pdb | Where-Object { $names -contains $_.BaseName } | ForEach-Object { Copy-Item $_.FullName pdb\ -Force }
         Get-ChildItem pdb | Format-Table Name, Length
         7z a -mx9 cssv34_win32_pdb.7z .\pdb\*
-        7z a -tzip cssv34_win32_optimized.zip ..\game\win32_release\*
+        7z a -tzip cssv34_win32_optimized.zip ..\game\win32\*
         cd ..
 
-    - name: Upload Windows artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: windows_build
+        name: win32_release
         path: |
           src/cssv34_win32_optimized.zip
           src/cssv34_win32_pdb.7z
@@ -148,11 +148,11 @@ jobs:
         
         cd ..
 
-    - name: Build windows-amd64 (release)
+    - name: Build
       run: |
         cd src
 
-        python waf configure -T release --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win64_release
+        python waf configure -T release --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win64
         python waf install
         
         cd ..
@@ -163,26 +163,26 @@ jobs:
         cd src
 
         New-Item -ItemType Directory -Force pdb | Out-Null
-        $names = Get-ChildItem ../game/win64_release -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
+        $names = Get-ChildItem ../game/win64 -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
         Get-ChildItem build -Recurse -Filter *.pdb | Where-Object { $names -contains $_.BaseName } | ForEach-Object { Copy-Item $_.FullName pdb\ -Force }
         Get-ChildItem pdb | Format-Table Name, Length
         7z a -mx9 cssv34_win64_pdb.7z .\pdb\*
-        7z a -tzip cssv34_win64_optimized.zip ..\game\win64_release\*
+        7z a -tzip cssv34_win64_optimized.zip ..\game\win64\*
         
         cd ..
 
-    - name: Upload Windows artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: windows_build
+        name: win64_release
         path: |
-          src/cssv34_win64_optimized.zip
+          game/cssv34_win64_optimized.zip
           src/cssv34_win64_pdb.7z
         if-no-files-found: error
         retention-days: 7
 
   build-android-armv7a:
-    name: armeabi-v7a Android Build
+    name: Android armeabi-v7a Build
     runs-on: ubuntu-latest
 
     steps:
@@ -190,7 +190,7 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Build android-armv7a
+    - name: Build
       run: |
         cd src
         chmod +x waf
@@ -201,13 +201,13 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: android_armeabi-v7a_release
-        path: game/android_armeabi-v7a_release
+        name: android_armv7a_release
+        path: game/android_armv7a
         if-no-files-found: error
         retention-days: 7
         
   build-android-arm64:
-    name: arm64-v8a Android Build
+    name: Android arm64-v8a Build
     runs-on: ubuntu-latest
 
     steps:
@@ -215,7 +215,7 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Build android-arm64
+    - name: Build
       run: |
         cd src
         chmod +x waf
@@ -227,12 +227,12 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: android_arm64_release
-        path: game/android_arm64_release
+        path: game/android_arm64
         if-no-files-found: error
         retention-days: 7
         
   build-linux-srcds:
-    name: srcds Linux Build
+    name: Linux amd64 SRCDS Build
     runs-on: ubuntu-latest
 
     steps:
@@ -240,51 +240,64 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Build srcds-linux
+    - name: Build
       run: |
         cd src
         chmod +x waf
-        chmod +x scripts/srcds-linux.sh
-        ./scripts/srcds-linux.sh
+        chmod +x scripts/build-linux-srcds.sh
+        ./scripts/build-linux-srcds.sh
         cd ..
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: srcds_linux_release
-        path: game/srcds_linux_release
+        name: linux_srcds_release
+        path: game/linux_srcds
         if-no-files-found: error
         retention-days: 7
 
   release:
-    needs: [build-windows-amd64, build-android-armv7a, build-windows-x86, build-android-arm64]
+    needs: [build-windows-x86, build-windows-amd64, build-android-armv7a, build-windows-x86, build-android-arm64, build-linux-srcds]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
-    - name: Download Windows artifacts
+    - name: Download Windows x86 artifacts
       uses: actions/download-artifact@v4
       with:
-        name: windows_build
-        path: release_files
+        name: win32_release
+        path: release_files/windows_x86
 
-    - name: Download Android artifacts
+    - name: Download Windows x64 artifacts
       uses: actions/download-artifact@v4
       with:
-        name: android_armv7a_build
-        path: release_files/android_armv7a_build
+        name: win64_release
+        path: release_files/windows_x64
 
-    - name: Download Android (arm64) artifacts
+    - name: Download Android armv7a artifacts
       uses: actions/download-artifact@v4
       with:
-        name: android_arm64_build
+        name: android_armv7a_release
+        path: release_files/android_armv7a_release
+
+    - name: Download Android arm64 artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: android_arm64_release
         path: release_files/android_arm64_build
 
-    - name: Pack Android build
+    - name: Download Linux x64 SRCDS artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: linux_srcds_release
+        path: release_files/linux_srcds
+
+    - name: Pack Android and Linux builds
       run: |
         cd release_files
         zip -r cssv34_android_armv7a.zip android_armv7a_build
         zip -r cssv34_android_arm64.zip android_arm64_build
+        zip -r cssv34_linux_srcds.zip linux_srcds
 
     - name: Publish release
       uses: softprops/action-gh-release@v2
@@ -298,3 +311,4 @@ jobs:
           release_files/cssv34_win32_pdb.7z
           release_files/cssv34_android_armv7a.zip
           release_files/cssv34_android_arm64.zip
+          release_files/cssv34_linux_srcds.zip

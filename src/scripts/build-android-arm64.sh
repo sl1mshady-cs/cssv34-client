@@ -20,5 +20,5 @@ cd ..
 yes | sdkmanager --licenses > /dev/null 2>&1
 sdkmanager "platform-tools" "platforms;android-21" "build-tools;34.0.0" > /dev/null 2>&1
 
-./waf configure -T release --android=aarch64,clang,23 --togles --disable-warns --enable-speex --enable-opus --build-games=cstrike --prefix=../game/android_arm64_release &&
+./waf configure -T release --android=aarch64,clang,23 --togles --disable-warns --enable-speex --enable-opus --build-games=cstrike --prefix=../game/android_arm64 &&
 ./waf install
