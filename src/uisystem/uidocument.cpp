@@ -1,6 +1,21 @@
 #include "uidocument_internal.h"
+#include "uisystem_internal.h"
 
-void CUIPanel::SetVisible(bool state)
+CUIDocument::CUIDocument(UIState ctx)
+{
+	m_bIsVisible = false;
+	m_pDocument = nullptr;
+	m_pContext = uisys.StateToContext(ctx);
+}
+
+CUIDocument::CUIDocument(Rml::Context* ctx)
+{
+	m_bIsVisible = false;
+	m_pDocument = nullptr;
+	m_pContext = ctx; 
+}
+
+void CUIDocument::SetVisible(bool state)
 {
 	if (m_pDocument == nullptr)
 	{
@@ -16,25 +31,20 @@ void CUIPanel::SetVisible(bool state)
 	else
 		m_pDocument->Hide();
 
-	for (int i = 0; i < GetChildCount(); ++i)
-	{
-		GetChild(i)->SetVisible(state);
-	}
-
 	m_bIsVisible = state;
 }
 
-bool CUIPanel::IsVisible()
+bool CUIDocument::IsVisible()
 {
 	return m_bIsVisible;
 }
 
-void CUIPanel::ToggleVisiblity()
+void CUIDocument::ToggleVisiblity()
 {
 	SetVisible(!IsVisible());
 }
 
-void CUIPanel::SetDocument(const char* doc)
+void CUIDocument::SetDocument(const char* doc)
 {
 	if (m_pDocument)
 	{
@@ -42,67 +52,20 @@ void CUIPanel::SetDocument(const char* doc)
 		m_pDocument = nullptr;
 	}
 
-	m_pDocument = GetGlobalContext()->LoadDocument(doc);
+	m_pDocument = m_pContext->LoadDocument(doc);
 
 	if (!m_pDocument)
 	{
-		Warning("failed to load document from %s\n", doc);
+		Warning("Failed to load document from %s\n", doc);
 		return;
 	}
 }
 
-void CUIPanel::RequestFocus()
-{
-	m_pDocument->Focus();
-}
-
-IUIPanel* CUIPanel::GetParent()
-{
-	return m_pParent;
-}
-
-void CUIPanel::SetParent(IUIPanel* parent)
-{
-	m_pParent = parent;
-	if (parent)
-		parent->AddChild(this);
-}
-
-int CUIPanel::GetChildCount()
-{
-	return m_Child.Count();
-}
-
-IUIPanel* CUIPanel::GetChild(int i)
-{
-	if (i < 0 || i >= GetChildCount())
-	{
-		return nullptr;
-	}
-
-	return m_Child[i];
-}
-
-void CUIPanel::AddChild(IUIPanel* child)
-{
-	m_Child.AddToTail(child);
-}
-
-void CUIPanel::RemoveChild(IUIPanel* child)
-{
-	m_Child.FindAndFastRemove(child);
-}
-
-void CUIPanel::Close()
+void CUIDocument::Close()
 {
 	if (m_pDocument)
 	{
 		m_pDocument->Close();
 		m_pDocument = nullptr;
-	}
-
-	for (int i = 0; i < GetChildCount(); ++i)
-	{
-		GetChild(i)->Close();
 	}
 }

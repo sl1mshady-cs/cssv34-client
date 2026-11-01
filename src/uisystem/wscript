@@ -20,8 +20,10 @@ def build(bld):
     source = [
         'uidocument.cpp',
         'uifileinterface.cpp',
+        'uihelpers.cpp',
         'uirenderinterface.cpp',
         'uisystem.cpp',
+        'mainmenu.cpp',
         'uisysteminterface.cpp'
     ]
 

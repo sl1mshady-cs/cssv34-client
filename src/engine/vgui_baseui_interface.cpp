@@ -582,10 +582,6 @@ void CEngineVGui::Init()
 	}
 
 	staticUISystemFuncs->Start(&g_AppSystemFactory, 1);
-	IUIPanel* pan = staticUISystemFuncs->CreatePanel(staticUISystemFuncs->GetTopPanel());
-	pan->SetDocument("test_document.rml");
-	pan->SetVisible(true);
-
 	g_bVGUIDisabled = !!CommandLine()->FindParm("-novgui");
 	if (g_bVGUIDisabled) return;
 
@@ -1312,6 +1308,8 @@ LoadingProgressDescription_t &GetProgressDescription(int eProgress)
 //-----------------------------------------------------------------------------
 void CEngineVGui::OnLevelLoadingStarted()
 {
+	staticUISystemFuncs->OnLevelLoadingStarted();
+
 	if (g_bVGUIDisabled) return;
 
 	if (!staticGameUIFuncs)
@@ -1368,6 +1366,8 @@ void CEngineVGui::OnLevelLoadingStarted()
 //-----------------------------------------------------------------------------
 void CEngineVGui::OnLevelLoadingFinished()
 {
+	staticUISystemFuncs->OnLevelLoadingFinished(gfExtendedError, gszDisconnectReason, gszExtendedDisconnectReason);
+
 	if (g_bVGUIDisabled) return;
 
 	if (!staticGameUIFuncs)
@@ -1448,6 +1448,8 @@ void CEngineVGui::OnLevelLoadingFinished()
 //-----------------------------------------------------------------------------
 void CEngineVGui::ShowErrorMessage()
 {
+	staticUISystemFuncs->OnLevelLoadingFinished(gfExtendedError, gszDisconnectReason, gszExtendedDisconnectReason);
+
 	if (g_bVGUIDisabled) return;
 
 	if (!staticGameUIFuncs || !gfExtendedError)
@@ -1525,6 +1527,8 @@ void CEngineVGui::UpdateProgressBar(LevelLoadingProgress_e progress)
 
 	m_eLastProgressPoint = progress;
 
+	staticUISystemFuncs->UpdateProgressBar(flPerc, desc.pszDesc);
+
 	if (g_bVGUIDisabled) return;
 
 	if ( staticGameUIFuncs->UpdateProgressBar( flPerc, desc.pszDesc ) )
@@ -1540,13 +1544,15 @@ void CEngineVGui::UpdateProgressBar(LevelLoadingProgress_e progress)
 //-----------------------------------------------------------------------------
 void CEngineVGui::UpdateCustomProgressBar( float progress, const wchar_t *desc )
 {
+	char ansi[1024];
+	g_pVGuiLocalize->ConvertUnicodeToANSI( desc, ansi, sizeof( ansi ) );
+
+	staticUISystemFuncs->UpdateProgressBar(progress, ansi);
+
 	if (g_bVGUIDisabled) return;
 
 	if (!staticGameUIFuncs)
 		return;
-
-	char ansi[1024];
-	g_pVGuiLocalize->ConvertUnicodeToANSI( desc, ansi, sizeof( ansi ) );
 
 	if ( staticGameUIFuncs->UpdateProgressBar( progress, ansi ) )
 	{
@@ -1558,6 +1564,8 @@ void CEngineVGui::UpdateCustomProgressBar( float progress, const wchar_t *desc )
 
 void CEngineVGui::StartCustomProgress()
 {
+	staticUISystemFuncs->OnLevelLoadingStarted();
+
 	if (g_bVGUIDisabled) return;
 
 	if (!staticGameUIFuncs)
@@ -1570,6 +1578,7 @@ void CEngineVGui::StartCustomProgress()
 
 void CEngineVGui::FinishCustomProgress()
 {
+	staticUISystemFuncs->OnLevelLoadingFinished( false, "", "");
 	if (g_bVGUIDisabled) return;
 
 	if (!staticGameUIFuncs)
@@ -1586,6 +1595,8 @@ void CEngineVGui::SetProgressBias( float bias )
 
 void CEngineVGui::UpdateProgressBar( float progress )
 {
+	staticUISystemFuncs->UpdateProgressBar(progress, "");
+
 	if (g_bVGUIDisabled) return;
 
 	if ( !staticGameUIFuncs )
@@ -1956,6 +1967,8 @@ void CEngineVGui::NotifyOfServerConnect(const char *pchGame, int IP, int connect
 //-----------------------------------------------------------------------------
 void CEngineVGui::NotifyOfServerDisconnect()
 {
+	staticUISystemFuncs->OnDisconnectedFromServer();
+
 	if (g_bVGUIDisabled) return;
 
 	if (!staticGameUIFuncs)

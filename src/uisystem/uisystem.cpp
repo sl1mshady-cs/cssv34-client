@@ -1,80 +1,39 @@
-#include "uisystem.h"
-#include "tier1/utlvector.h"
-#include <RmlUi/Core.h>
-#include <RmlUi/Lua/Lua.h>
-#include <tier1/interface.h>
-#include <tier1/tier1.h>
-#include <tier2/tier2.h>
-#include <materialsystem/imaterialsystem.h>
-#include <materialsystem/imaterial.h>
-#include <RmlUi/Core.h>
-#include <RmlUi/Lua/Lua.h>
-#include "inputsystem/iinputsystem.h"
-#include "uidocument_internal.h"
-#include "uifileinterface.h"
-#include "uirenderinterface.h"
-#include "uisysteminterface.h"
-
-class CUISystem : public IUISystem
-{
-public:
-	virtual bool Start(CreateInterfaceFn* factorylist, int nFactories);
-	virtual void Draw();
-	virtual void Stop();
-	virtual IUIPanel* GetTopPanel();
-	virtual IUIPanel* CreatePanel(IUIPanel* parent);
-	virtual void DestroyPanel(IUIPanel* parent);
-private:
-    void LoadFont(const char* name);
-    int m_iLastWidth;
-    int m_iLastHeight;
-    int m_nLastInputPollCount = 0;
-
-    Rml::Input::KeyIdentifier ButtonCodeToRmlKeyID(ButtonCode_t code);
-    bool InputHandleInputEvent(const InputEvent_t& event);
-    bool DispatchEventToContext(Rml::Context& context, const InputEvent_t& event);
-};
-
-Rml::Context* g_pGlobalContext;
-Rml::Context* GetGlobalContext()
-{
-    return g_pGlobalContext;
-}
+#include "uisystem_internal.h"
+#include "uihelpers.h"
+#include <cdll_int.h>
+#include "mainmenu.h"
 
 CUISystem uisys;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CUISystem, IUISystem, UISYSTEM_INTERFACE_VERSION, uisys);
 
 IMaterial* g_pDefaultUIMaterial = nullptr;
 
-inline int MouseIndexFromCode(ButtonCode_t code)
+IVEngineClient* engine = nullptr;
+
+Rml::Context* g_pMainMenuCtx = nullptr;
+Rml::Context* g_pLoadingDialogCtx = nullptr;
+Rml::Context* g_pPauseMenuCtx = nullptr;
+Rml::Context* g_pInGameCtx = nullptr;
+Rml::Context* g_pDialogCtx = nullptr;
+
+Rml::Context* CUISystem::StateToContext(UIState ctx)
 {
-    const int index = code - MOUSE_LEFT;
-    return (index < 0 || index > 2) ? 0 : index;
-}
-
-inline bool FingerToPixels(const InputEvent_t& event, int& outX, int& outY)
-{
-    if (!g_pMaterialSystem)
-        return false;
-
-    int w = 0, h = 0;
-    g_pMaterialSystem->GetBackBufferDimensions(w, h);
-
-    float nx = 0.f, ny = 0.f;
-    std::memcpy(&nx, &event.m_nData2, sizeof(nx));
-    std::memcpy(&ny, &event.m_nData3, sizeof(ny));
-
-    outX = static_cast<int>(w * nx);
-    outY = static_cast<int>(h * ny);
-    return true;
+    if (ctx == InMainMenu) return g_pMainMenuCtx;
+    else if (ctx == InLoadingDialog) return g_pLoadingDialogCtx;
+    else if (ctx == InPauseMenu) return g_pPauseMenuCtx;
+    else if (ctx == InGame) return g_pInGameCtx;
+    else return nullptr;
 }
 
 bool CUISystem::Start(CreateInterfaceFn* factorylist, int nFactories)
 {
+    m_CurrentUIState = InMainMenu;
 	ConnectTier1Libraries(factorylist, nFactories);
 	ConnectTier2Libraries(factorylist, nFactories);
 
-	if (!g_pMaterialSystem || !g_pFullFileSystem || !g_pInputSystem)
+    engine = (IVEngineClient*)(*factorylist)(VENGINE_CLIENT_INTERFACE_VERSION, nullptr);
+
+	if (!g_pMaterialSystem || !g_pFullFileSystem || !g_pInputSystem || !engine)
 	{
 		Error("RmlUI can't get some required interfaces to function\n");
 		return false;
@@ -104,9 +63,50 @@ bool CUISystem::Start(CreateInterfaceFn* factorylist, int nFactories)
 
     float scale = sqrt(scaleX * scaleY);
 
-    g_pGlobalContext = Rml::CreateContext("UISystem", Rml::Vector2i(m_iLastWidth, m_iLastHeight));
-    g_pGlobalContext->SetDensityIndependentPixelRatio(scale);
-    g_pGlobalContext->SetDimensions(Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+    g_pMainMenuCtx = Rml::CreateContext("Main Menu", Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+    g_pMainMenuCtx->SetDensityIndependentPixelRatio(scale);
+    g_pMainMenuCtx->SetDimensions(Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+
+    g_pLoadingDialogCtx = Rml::CreateContext("Loading Dialog", Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+    g_pLoadingDialogCtx->SetDensityIndependentPixelRatio(scale);
+    g_pLoadingDialogCtx->SetDimensions(Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+
+    g_pPauseMenuCtx = Rml::CreateContext("Pause Menu", Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+    g_pPauseMenuCtx->SetDensityIndependentPixelRatio(scale);
+    g_pPauseMenuCtx->SetDimensions(Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+
+    g_pInGameCtx = Rml::CreateContext("InGame Menu", Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+    g_pInGameCtx->SetDensityIndependentPixelRatio(scale);
+    g_pInGameCtx->SetDimensions(Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+
+    g_pDialogCtx = Rml::CreateContext("UISystem Dialogs", Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+    g_pDialogCtx->SetDensityIndependentPixelRatio(scale);
+    g_pDialogCtx->SetDimensions(Rml::Vector2i(m_iLastWidth, m_iLastHeight));
+
+    Rml::DataModelConstructor cons = g_pDialogCtx->CreateDataModel("uisystem");
+
+    cons.Bind("title", &m_TitleStr);
+    cons.Bind("contents", &m_ContentsStr);
+    cons.Bind("result", &m_DialogResult);
+    cons.Bind("show_ok_btn", &m_bDialogBtnOk);
+    cons.Bind("show_cancel_btn", &m_bDialogBtnCancel);
+    cons.Bind("show_abort_btn", &m_bDialogBtnAbort);
+    cons.Bind("show_retry_btn", &m_bDialogBtnRetry);
+
+    Rml::DataModelConstructor cons2 = StateToContext(InLoadingDialog)->CreateDataModel("loading_dialog");
+
+    cons2.Bind("progress", &m_flProgress);
+    cons2.Bind("progress_desc", &m_flProgressDesc);
+    cons2.Bind("map", &m_strMapName);
+
+    m_pLoadingDialogDoc = CreateDocument(InLoadingDialog);
+    m_pLoadingDialogDoc->SetDocument("loading_dialog.rml");
+    m_pLoadingDialogDoc->SetVisible(false);
+
+    m_UISystemModel = cons.GetModelHandle();
+    m_LoadingDialogModel = cons2.GetModelHandle();
+
+    mainmenu.Init();
 
     return true;
 }
@@ -125,8 +125,18 @@ void CUISystem::Draw()
         float scaleY = m_iLastHeight / 768.0f;
 
         float scale = sqrt(scaleX * scaleY);
-        g_pGlobalContext->SetDensityIndependentPixelRatio(scale);
-        g_pGlobalContext->SetDimensions(Rml::Vector2i(nw, nh));
+
+        StateToContext(InGame)->SetDensityIndependentPixelRatio(scale);
+        StateToContext(InPauseMenu)->SetDensityIndependentPixelRatio(scale);
+        StateToContext(InLoadingDialog)->SetDensityIndependentPixelRatio(scale);
+        StateToContext(InMainMenu)->SetDensityIndependentPixelRatio(scale);
+        g_pDialogCtx->SetDensityIndependentPixelRatio(scale);
+
+        StateToContext(InGame)->SetDimensions(Rml::Vector2i(nw, nh));
+        StateToContext(InPauseMenu)->SetDimensions(Rml::Vector2i(nw, nh));
+        StateToContext(InLoadingDialog)->SetDimensions(Rml::Vector2i(nw, nh));
+        StateToContext(InMainMenu)->SetDimensions(Rml::Vector2i(nw, nh));
+        g_pDialogCtx->SetDimensions(Rml::Vector2i(nw, nh));
     }
 
     int nPollCount = g_pInputSystem->GetPollCount();
@@ -145,8 +155,22 @@ void CUISystem::Draw()
         }
     }
 
-    g_pGlobalContext->Update();
-    g_pGlobalContext->Render();
+    mainmenu.Think();
+
+    StateToContext(m_CurrentUIState)->Update();
+    StateToContext(m_CurrentUIState)->Render();
+
+    if (m_pDialogDoc != nullptr)
+    {
+        g_pDialogCtx->Update();
+        g_pDialogCtx->Render();
+
+        if (m_DialogResult != NoDialog && m_DialogResult != NoAction)
+        {
+            Msg("Dialog Result: %i\n", m_DialogResult);
+            CloseDialog();
+        }
+    }
 }
 
 Rml::Input::KeyIdentifier CUISystem::ButtonCodeToRmlKeyID(ButtonCode_t code)
@@ -240,40 +264,40 @@ Rml::Input::KeyIdentifier CUISystem::ButtonCodeToRmlKeyID(ButtonCode_t code)
 
 void CUISystem::Stop()
 {
+    mainmenu.Shutdown();
+
     if (g_pDefaultUIMaterial)
     {
         g_pDefaultUIMaterial->DecrementReferenceCount();
         g_pDefaultUIMaterial = nullptr;
     }
 
-    for (int i = 0; i < GetTopPanel()->GetChildCount(); ++i)
-    {
-        // change it later, loading invalid document also closes previous
-        GetTopPanel()->GetChild(i)->SetDocument("some non-existent file");
-    }
-
-    Rml::RemoveContext("UISystem");
+    Rml::RemoveContext(StateToContext(InGame)->GetName());
+    Rml::RemoveContext(StateToContext(InMainMenu)->GetName());
+    Rml::RemoveContext(StateToContext(InPauseMenu)->GetName());
+    Rml::RemoveContext(StateToContext(InLoadingDialog)->GetName());
+    Rml::RemoveContext(g_pDialogCtx->GetName());
 
     Rml::Shutdown();
 }
 
-IUIPanel* CUISystem::GetTopPanel()
+IUIDocument* CUISystem::CreateDocument(UIState ctx)
 {
-    static CUIPanel topPanel;
-    return (IUIPanel*)&topPanel;
+    IUIDocument* doc = new CUIDocument(ctx);
+    return doc;
 }
 
-IUIPanel* CUISystem::CreatePanel(IUIPanel* parent)
+
+IUIDocument* CUISystem::CreateDocument(Rml::Context* ctx)
 {
-    IUIPanel* panel = new CUIPanel();
-    panel->SetParent(parent);
-    return panel;
+    IUIDocument* doc = new CUIDocument(ctx);
+    return doc;
 }
 
-void CUISystem::DestroyPanel(IUIPanel* parent)
+void CUISystem::DestroyDocument(IUIDocument* doc)
 {
-    parent->SetDocument("some non-existent file");
-    delete parent;
+    doc->Close();
+    delete doc;
 }
 
 void CUISystem::LoadFont(const char* name)
@@ -315,8 +339,28 @@ bool CUISystem::InputHandleInputEvent(const InputEvent_t& event)
     //    if (listener)
    //         listener->OnInputEvent(event);
    // }
+    
+    if (m_pDialogDoc != nullptr)
+    {
+        return DispatchEventToContext(*g_pDialogCtx, event);
+    }
 
-    return DispatchEventToContext(*g_pGlobalContext, event);
+    if (event.m_nType == IE_ButtonPressed)
+    {
+        if (event.m_nData == KEY_ESCAPE && engine->IsInGame())
+        {
+            if (m_CurrentUIState == InGame)
+            {
+                ChangeUIState(InPauseMenu);
+            }
+            else
+            {
+                ChangeUIState(InGame);
+            }
+        }
+    }
+
+    return DispatchEventToContext(*StateToContext(m_CurrentUIState), event);
 }
 
 bool CUISystem::DispatchEventToContext(Rml::Context& context, const InputEvent_t& event)
@@ -398,4 +442,97 @@ bool CUISystem::DispatchEventToContext(Rml::Context& context, const InputEvent_t
     default:
         return false;
     }
+}
+
+Rml::DataModelConstructor CUISystem::CreateDataModel(UIState ctx, const char* name)
+{
+    return StateToContext(ctx)->CreateDataModel(name);
+}
+
+void CUISystem::ChangeUIState(UIState state)
+{
+    Msg("ChangeUIState: %s -> %s\n",
+        StateToContext(m_CurrentUIState)->GetName(),
+        StateToContext(state)->GetName()
+    );
+    m_CurrentUIState = state;
+}
+
+UIState CUISystem::GetUIState()
+{
+    return m_CurrentUIState;
+}
+
+void CUISystem::ShowDialog(const char* title, const char* name, DialogButtons btns)
+{
+    if (!m_pDialogDoc)
+    {
+        m_pDialogDoc = CreateDocument(g_pDialogCtx);
+        m_pDialogDoc->SetDocument("uisystemdialog.rml");
+    }
+
+    m_TitleStr = title;
+    m_ContentsStr = name;
+    m_bDialogBtnOk = (btns & DIALOG_BTN_OK);
+    m_bDialogBtnCancel = (btns & DIALOG_BTN_CANCEL);
+    m_bDialogBtnAbort = (btns & DIALOG_BTN_ABORT);
+    m_bDialogBtnRetry = (btns & DIALOG_BTN_RETRY);
+    m_DialogResult = NoAction;
+    m_UISystemModel.DirtyAllVariables();
+
+    m_pDialogDoc->SetVisible(true);
+}
+
+DialogResult CUISystem::GetDialogResult()
+{
+    DialogResult prev_result = m_DialogResult;
+
+    m_DialogResult = NoAction;
+
+    return prev_result;
+}
+
+void CUISystem::CloseDialog()
+{
+    m_pDialogDoc->Close();
+    m_pDialogDoc = nullptr;
+}
+
+void CUISystem::OnLevelLoadingStarted(bool bShowProgressDialog)
+{
+    ChangeUIState(InLoadingDialog);
+    m_flProgress = 0.0f;
+    m_flProgressDesc = "";
+    m_strMapName = "de_dust2";
+    m_LoadingDialogModel.DirtyAllVariables();
+    m_pLoadingDialogDoc->SetVisible(true);
+}
+
+void CUISystem::OnLevelLoadingFinished(bool bError, const char* failureReason, const char* extendedReason)
+{
+    if (bError)
+    {
+        ChangeUIState(InMainMenu);
+        ShowDialog("#RmlUi_Load_Error", failureReason, DIALOG_BTN_OK);
+        m_LoadingDialogModel.DirtyAllVariables();
+    }
+    else
+    {
+        ChangeUIState(InGame);
+    }
+    m_pLoadingDialogDoc->SetVisible(false);
+}
+
+void CUISystem::UpdateProgressBar(float flProgress, const char* desc)
+{
+    m_flProgress = flProgress;
+    if (desc != nullptr) {
+        m_flProgressDesc = desc;
+    }
+    m_LoadingDialogModel.DirtyAllVariables();
+}
+
+void CUISystem::OnDisconnectedFromServer()
+{
+    ChangeUIState(InMainMenu);
 }

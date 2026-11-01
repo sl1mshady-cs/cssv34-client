@@ -1,28 +1,20 @@
-#include "uisystem.h"
+#pragma once
+#include "uisystem_internal.h"
 #include "tier1/utlvector.h"
 #include <RmlUi/Core.h>
 
-class CUIPanel : public IUIPanel
+class CUIDocument : public IUIDocument
 {
 public:
-	CUIPanel() { m_bIsVisible = false; m_pParent = nullptr; m_pDocument = nullptr; }
+	CUIDocument(UIState ctx);
+	CUIDocument(Rml::Context* ctx);
 	virtual void SetVisible(bool state);
 	virtual void ToggleVisiblity();
 	virtual void SetDocument(const char* doc);
-	virtual void RequestFocus();
-	virtual IUIPanel* GetParent();
-	virtual void SetParent(IUIPanel* parent);
-	virtual int GetChildCount();
-	virtual IUIPanel* GetChild(int i);
 	virtual bool IsVisible();
-	virtual void AddChild(IUIPanel* child);
-	virtual void RemoveChild(IUIPanel* child);
 	virtual void Close();
 private:
 	bool m_bIsVisible;
-	IUIPanel* m_pParent;
-	CUtlVector<IUIPanel*> m_Child;
 	Rml::ElementDocument* m_pDocument;
+	Rml::Context* m_pContext;
 };
-
-extern Rml::Context* GetGlobalContext();
