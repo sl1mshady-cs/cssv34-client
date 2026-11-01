@@ -287,7 +287,10 @@ void CMaster::ReplyInfo( const netadr_t &adr )
 		buf.WriteString(pchGameType);
 	}
 
-	NET_SendPacket(nullptr, NS_SERVER, adr, buf.GetData(), buf.GetNumBytesWritten());
+	sockaddr to;
+	adr.ToSockadr(&to);
+
+	sendto(m_nSocket, (const char*)buf.GetData(), buf.GetNumBytesWritten(), 0, &to, sizeof(to));
 }
 
 newgameserver_t &CMaster::ProcessInfo(bf_read &buf)
@@ -379,7 +382,7 @@ bool CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 			sockaddr to;
 			packet->from.ToSockadr(&to);
 
-			NET_SendPacket(nullptr, NS_SERVER, packet->from, msg.GetData(), msg.GetNumBytesWritten());
+			sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 
 			break;
 		}
@@ -465,8 +468,10 @@ bool CMaster::ProcessConnectionlessPacket( netpacket_t *packet )
 				msg.WriteString(va("\\gamedir\\%s", COM_GetModDirectory()));
 
 				netadr_t adr(MASTER_SERVER);
+				sockaddr to;
+				adr.ToSockadr(&to);
 
-				NET_SendPacket(nullptr, NS_CLIENT, adr, msg.GetData(), msg.GetNumBytesWritten());
+				sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 			}
 
 			break;
@@ -527,7 +532,10 @@ void CMaster::RequestServerInfo( const netadr_t &adr )
 	msg.WriteString( A2S_KEY_STRING );
 	m_serversRequestTime.Insert(adr.GetIPHostByteOrder()+adr.GetPort(), Plat_FloatTime());
 
-	NET_SendPacket(nullptr, NS_CLIENT, adr, msg.GetData(), msg.GetNumBytesWritten());
+	sockaddr to;
+	adr.ToSockadr(&to);
+
+	sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 }
 
 void CMaster::RetryServersInfoRequest()
@@ -566,7 +574,10 @@ void CMaster::PingServer(uint32 unIP, uint16 usPort, IServerPingResponse* pReque
 		m_serversRequestTime[index] = Plat_FloatTime();
 	}
 
-	NET_SendPacket(nullptr, NS_CLIENT, adr, msg.GetData(), msg.GetNumBytesWritten());
+	sockaddr to;
+	adr.ToSockadr(&to);
+
+	sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 }
 
 void CMaster::PlayerDetails(uint32 unIP, uint16 usPort, IServerPlayersResponse* pRequestServersResponse)
@@ -585,7 +596,10 @@ void CMaster::PlayerDetails(uint32 unIP, uint16 usPort, IServerPlayersResponse* 
 	msg.WriteByte(A2S_PLAYER);
 	msg.WriteLong(-1);
 
-	NET_SendPacket(nullptr, NS_CLIENT, adr, msg.GetData(), msg.GetNumBytesWritten());
+	sockaddr to;
+	adr.ToSockadr(&to);
+
+	sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 }
 
 void CMaster::RemoveResponse(IServerPingResponse* resp, IServerPlayersResponse* resp2)
@@ -648,8 +662,10 @@ void CMaster::RequestInternetServerList(const char *gamedir, IServerListResponse
 	msg.WriteString(va("\\gamedir\\%s", COM_GetModDirectory()));
 
 	netadr_t adr(MASTER_SERVER);
+	sockaddr to;
+	adr.ToSockadr(&to);
 
-	NET_SendPacket(nullptr, NS_CLIENT, adr, msg.GetData(), msg.GetNumBytesWritten());
+	sendto(m_nSocket, (const char*)msg.GetData(), msg.GetNumBytesWritten(), 0, &to, sizeof(to));
 }
 
 void CMaster::RequestLANServerList(const char* gamedir, IServerListResponse* response)
