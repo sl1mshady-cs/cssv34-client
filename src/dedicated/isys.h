@@ -8,6 +8,11 @@
 #define ISYS_H
 #ifdef _WIN32
 #pragma once
+
+#ifdef LoadLibrary
+#undef LoadLibrary
+#endif
+
 #endif
 
 #include "interface.h"

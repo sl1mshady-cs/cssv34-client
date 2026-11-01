@@ -369,13 +369,14 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/src/__build__
+/game
 /src/build
 /src/waf3-2.0.26-84a26fddc7f40e4e4f00569f36be455a/waflib
 /src/.lock-waf_win32_build
 /src/.lock-waf_win32_build
 
 # Excludes
+!/game/readme.txt
 !/src/devtools/bin/vpc*
 !/src/devtools/*
 !/src/dx9sdk/lib/amd64/*.exe
@@ -386,7 +387,7 @@ FodyWeavers.xsd
 !/dx9sdk/lib/x86/*.lib
 !/src/thirdparty/*
 !/src/tier0/deskey/*
-!/src/lib/public/ati_compress_mt_vc8.lib
+!/src/lib/win32/x86/ati_compress_mt_vc8.lib
 !/src/lib/win32/x86/*.lib
 !/src/lib/win32/x86/*.pdb
 !/src/lib/win32/x86/*.obj
@@ -397,4 +398,3 @@ FodyWeavers.xsd
 !/src/lib/win32/amd64/*.dll
 !/src/lib/android/aarch64/*.a
 !/src/lib/android/arm/*.a
-/src/win64_build

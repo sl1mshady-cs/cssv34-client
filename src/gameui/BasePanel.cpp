@@ -346,7 +346,7 @@ public:
 		int heightProportional = scheme()->GetProportionalScaledValue(height);
 		
 		// Prevent too big spaces between menu items
-		if ((heightProportional * 10 / height) >= 30)
+		if (((heightProportional ? heightProportional : 1) * 10 / (height ? height : 1)) >= 30)
 			heightProportional *= 0.85;
 
 		if( IsProportional() )

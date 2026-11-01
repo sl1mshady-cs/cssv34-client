@@ -743,11 +743,7 @@ CPackedStoreFileHandle CPackedStore::OpenFile( char const *pFileName )
 
 			CPackedStoreFileHandle dictFile = OpenFile(tempFileName);
 
-			if (!dictFile || dictFile.m_nFileSize <= 0)
-			{
-				Warning("Failed to open DDict '%s' from '%s.vpk'\n", tempFileName, V_UnqualifiedFileName(m_pszFileBaseName));
-			}
-			else
+			if ( dictFile && dictFile.m_nFileSize > 0 )
 			{
 				CUtlVector<uint8> dictBytes;
 				dictBytes.SetCount(dictFile.m_nFileSize);

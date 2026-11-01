@@ -18,7 +18,6 @@
 #include "tier1/strtools.h"
 #include "tier0/icommandline.h"
 #include "idedicatedexports.h"
-#include "vgui/vguihelpers.h"
 #include "appframework/AppFramework.h"
 #include "filesystem_init.h"
 #include "tier2/tier2.h"
@@ -41,9 +40,6 @@ int ProcessConsoleInput( void );
 bool NET_Init( void );
 void NET_Shutdown( void );
 const char *UTIL_GetBaseDir( void );
-#ifdef _WIN32
-bool g_bVGui = false;
-#endif
 
 #if defined ( _WIN32 )
 #include "console/TextConsoleWin32.h"
@@ -51,10 +47,6 @@ CTextConsoleWin32 console;
 #else
 #include "console/TextConsoleUnix.h"
 CTextConsoleUnix console;
-#endif
-
-#ifdef _WIN32
-extern char *gpszCvars;
 #endif
 
 #define DEFAULT_DS_GAMEDIR	"cstrike"
@@ -80,24 +72,6 @@ public:
 CVCRHelpers g_VCRHelpers;
 
 static CNonFatalLoggingResponsePolicy s_NonFatalLoggingResponsePolicy;
-
-//-----------------------------------------------------------------------------
-// Run a single VGUI frame. if bFinished is true, run VGUIFinishedConfig() first.
-//-----------------------------------------------------------------------------
-static bool DoRunVGUIFrame( bool bFinished = false )
-{
-#ifdef _WIN32
-	if ( g_bVGui )
-	{
-		if ( bFinished )
-			VGUIFinishedConfig();
-		RunVGUIFrame();
-		return true;
-	}
-#endif
-
-	return false;
-}
 
 //-----------------------------------------------------------------------------
 // Handle the VCRHook PeekMessage loop.
@@ -143,23 +117,12 @@ static bool HandleVCRHook()
 //-----------------------------------------------------------------------------
 void RunServer( void )
 {
-#ifdef _WIN32
-	if(gpszCvars)
-	{
-		engine->AddConsoleText(gpszCvars);
-	}
-#endif
-
 	// Run 2 engine frames first to get the engine to load its resources.
 	for ( int i = 0; i < 2; i++ )
 	{
-		DoRunVGUIFrame();
 		if ( !engine->RunFrame() )
 			return;
 	}
-
-	// Run final VGUI frame.
-	DoRunVGUIFrame( true );
 
 	int bDone = false;
 	while ( !bDone )
@@ -168,8 +131,7 @@ void RunServer( void )
 		if ( HandleVCRHook() )
 			break;
 
-		if ( !DoRunVGUIFrame() )
-			ProcessConsoleInput();
+		ProcessConsoleInput();
 
 		if ( !engine->RunFrame() )
 			bDone = true;
@@ -186,25 +148,9 @@ void RunServer( void )
 static bool ConsoleStartup( )
 {
 #ifdef _WIN32
-	if ( g_bVGui )
+	if (!console.Init())
 	{
-		RunVGUIFrame();
-
-		// Run the config screen
-		while (VGUIIsInConfig()	&& VGUIIsRunning())
-			RunVGUIFrame();
-
-		if ( VGUIIsStopping() )
-			return false;
-
-		return true;
-	}
-	else
-	{
-		if ( !console.Init() )
-		{
-			return false;	 
-		}
+		return false;
 	}
 #endif // _WIN32
 
@@ -283,11 +229,6 @@ bool CDedicatedAppSystemGroup::PreInit( )
 	if ( !NET_Init() )
 		return false;
 
-#ifdef _WIN32
-	// Disable VGUI for now
-	g_bVGui = false; 
-#endif
-
 	CreateInterfaceFn factory = GetFactory();
 	IInputSystem *inputsystem = (IInputSystem *)factory( INPUTSYSTEM_INTERFACE_VERSION, NULL );
 	if ( inputsystem )
@@ -295,17 +236,8 @@ bool CDedicatedAppSystemGroup::PreInit( )
 		inputsystem->SetConsoleTextMode( true );
 	}
 
-#ifdef _WIN32
-	if ( g_bVGui )
-	{
-		StartVGUI( GetFactory() );
-	}
-	else
-#endif
-	{
-		if ( !sys->CreateConsoleWindow() )
-			return false;
-	}
+	if ( !sys->CreateConsoleWindow() )
+		return false;
 
 	return true;
 }
@@ -314,11 +246,6 @@ int CDedicatedAppSystemGroup::Main( )
 {
 	if ( !ConsoleStartup() )
 		return -1;
-
-#ifdef _WIN32
-	if ( g_bVGui )
-		RunVGUIFrame();
-#endif
 
 	// Set up mod information
 	ModInfo_t info;
@@ -342,11 +269,6 @@ int CDedicatedAppSystemGroup::Main( )
 //-----------------------------------------------------------------------------
 void CDedicatedAppSystemGroup::PostShutdown()
 {
-#ifdef _WIN32
-	if ( g_bVGui )
-		StopVGUI();
-#endif
-
 	sys->DestroyConsoleWindow();
 	console.ShutDown();
 	NET_Shutdown();

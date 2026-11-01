@@ -22,7 +22,6 @@
 #include "inputsystem/iinputsystem.h"
 #include "SteamAppStartup.h"
 #include "console/textconsole.h"
-#include "vgui/vguihelpers.h"
 #include "appframework/appframework.h"
 #include "materialsystem/imaterialsystem.h"
 #include "istudiorender.h"
@@ -37,7 +36,6 @@
 #include "filesystem/IQueuedLoader.h"
 
 extern CTextConsoleWin32 console;
-extern bool g_bVGui;
 
 //-----------------------------------------------------------------------------
 // Purpose: Implements OS Specific layer ( loosely )
@@ -97,7 +95,7 @@ void CSys::Sleep( int msec )
 //-----------------------------------------------------------------------------
 long CSys::LoadLibrary( char *lib )
 {
-	void *hDll = ::LoadLibrary( lib );
+	void *hDll = ::LoadLibraryA( lib );
 	return (long)hDll;
 }
 
@@ -183,14 +181,7 @@ void CSys::UpdateStatus( int force )
 //-----------------------------------------------------------------------------
 void CSys::ConsoleOutput (char *string)
 {
-	if ( g_bVGui )
-	{
-		VGUIPrintf( string );
-	}
-	else
-	{
-		console.Print(string);
-	}
+	console.Print(string);
 }
 
 //-----------------------------------------------------------------------------
@@ -272,7 +263,6 @@ bool CSys::LoadModules( CDedicatedAppSystemGroup *pAppSystemGroup )
 		{ "datacache.dll",			DATACACHE_INTERFACE_VERSION },
 		{ "datacache.dll",			MDLCACHE_INTERFACE_VERSION },
 		{ "datacache.dll",			STUDIO_DATA_CACHE_INTERFACE_VERSION },
-		{ "vgui2.dll",				VGUI_IVGUI_INTERFACE_VERSION },
 		{ "engine.dll",				VENGINE_HLDS_API_VERSION },
 		{ "dedicated.dll",			QUEUEDLOADER_INTERFACE_VERSION },
 		{ "", "" }	// Required to terminate the list
@@ -295,14 +285,14 @@ bool CSys::LoadModules( CDedicatedAppSystemGroup *pAppSystemGroup )
 bool NET_Init( void )
 {
 	// Startup winock
-	WORD version = MAKEWORD( 1, 1 );
+	WORD version = MAKEWORD( 2, 2 );
 	WSADATA wsaData;
 
 	int err = WSAStartup( version, &wsaData );
 	if ( err != 0 )
 	{
 		char msg[ 256 ];
-		Q_snprintf( msg, sizeof( msg ), "Winsock 1.1 unavailable...\n" );
+		Q_snprintf( msg, sizeof( msg ), "Winsock 2.2 unavailable...\n" );
 		sys->Printf( "%s", msg );
 		Plat_DebugString( msg );
 		return false;

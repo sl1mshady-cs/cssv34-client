@@ -179,6 +179,7 @@ bool CFontManager::SetFontGlyphSet(HFont font, const char *windowsFontName, int 
 		}
 	}
 
+#if 0
 	// Handle general substitution
 	for (int i = 0; g_FontSubstitutionTable[i].src != NULL; i++)
 	{
@@ -194,6 +195,7 @@ bool CFontManager::SetFontGlyphSet(HFont font, const char *windowsFontName, int 
 			break;
 		}
 	}
+#endif
 
 	font_t *winFont = CreateOrFindWin32Font( pchFontName, tall, weight, blur, scanlines, flags );
 
