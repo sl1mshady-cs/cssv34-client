@@ -2158,6 +2158,7 @@ int main(int argc, char **argv)
 		mypack.HashEverything();
 		mypack.Write();
 	}
+#ifdef VPK_ENABLE_SIGNING
 	else if ( V_strcmp( pszCommand, "checkhash" ) == 0 )
 	{
 		if ( argc != 3 )
@@ -2168,7 +2169,6 @@ int main(int argc, char **argv)
 
 		CheckHashes( argv[2] );
 	}
-#ifdef VPK_ENABLE_SIGNING
 	else if ( V_strcmp( pszCommand, "generate_keypair" ) == 0 )
 	{
 		if ( argc != 3 )

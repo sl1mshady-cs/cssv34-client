@@ -100,7 +100,6 @@ projects={
 		'unicode',
 		'video',
 		'uisystem',
-		'kv1to3',
 	],
 	'tests': [
 		'appframework',
@@ -158,6 +157,25 @@ projects={
 		'vstdlib',
 		'vtf',
 		'stub_steam'
+	],
+	"tools": [
+		'tier0',
+		'tier1',
+		'tier2',
+		'tier3',
+		'vstdlib',
+		'vpklib',
+		'filesystem',
+		'thirdparty/libzstd',
+		'kv3lib',
+		'kv1to3',
+		'utils/vpk',
+		#'utils/vice',
+		#'utils/vrad',
+		#'utils/vrad_launcher',
+		#'utils/vvis',
+		#'utils/vvis_launcher',
+		#'utils/vbsp'
 	]
 }
 
@@ -190,6 +208,7 @@ def run_test(self, fragment, msg):
 
 def define_platform(conf):
 	conf.env.DEDICATED = conf.options.DEDICATED
+	conf.env.TOOLS = conf.options.TOOLS
 	conf.env.TESTS = conf.options.TESTS
 	conf.env.TOGLES = conf.options.TOGLES
 	conf.env.GL = conf.options.GL and not conf.options.TESTS and not conf.options.DEDICATED
@@ -303,6 +322,9 @@ def options(opt):
 
 	grp.add_option('-d', '--dedicated', action = 'store_true', dest = 'DEDICATED', default = False,
 		help = 'build dedicated server [default: %default]')
+
+	grp.add_option('-t', '--tools', action = 'store_true', dest = 'TOOLS', default = False,
+		help = 'build tools [default: %default]')
 
 	grp.add_option('--tests', action = 'store_true', dest = 'TESTS', default = False,
 		help = 'build unit tests [default: %default]')
@@ -651,10 +673,16 @@ def configure(conf):
 		conf.env.CXX.insert(0, 'ccache')
 
 	if conf.options.TESTS:
+		print("building tests")
 		conf.add_subproject(projects['tests'])
 	elif conf.options.DEDICATED:
+		print("building dedicated")
 		conf.add_subproject(projects['dedicated'])
+	elif conf.options.TOOLS:
+		print("building tools")
+		conf.add_subproject(projects['tools'])
 	else:
+		print("building game")
 		conf.add_subproject(projects['game'])
 
 def build(bld):
@@ -679,6 +707,8 @@ def build(bld):
 		bld.add_subproject(projects['tests'])
 	elif bld.env.DEDICATED:
 		bld.add_subproject(projects['dedicated'])
+	elif bld.env.TOOLS:
+		bld.add_subproject(projects['tools'])
 	else:
 		if bld.env.TOGLES:
 			projects['game'] += ['togles']
