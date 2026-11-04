@@ -142,21 +142,26 @@ void CClientModManager::FillConVarUpdateMsg(NET_SetConVar* cvarMsg)
 // Fill clc_RespondCvarValue
 void CClientModManager::FillRespondCvarValue(SVC_GetCvarValue* inMsg, CLC_RespondCvarValue& returnMsg) 
 {
-	if (!cm_enabled.GetBool())
+	if (!cm_enabled.GetBool()) {
+		Msg("[ClientModManager] Not sending, cm_enabled = 0\n");
 		return;
+	}
 
 	if (!strcmp(inMsg->m_szCvarName, "~clientmod"))
 	{
+		Msg("[ClientModManager] Sending ~clientmod = %s\n", client_major_version);
 		returnMsg.m_eStatusCode = eQueryCvarValueStatus_ValueIntact;
 		returnMsg.m_szCvarValue = client_major_version;
 	}
 	else if (!strcmp(inMsg->m_szCvarName, "_client_version"))
 	{
+		Msg("[ClientModManager] Sending _client_version = %s\n", client_version);
 		returnMsg.m_eStatusCode = eQueryCvarValueStatus_ValueIntact;
 		returnMsg.m_szCvarValue = client_version;
 	}
 	else if (!strcmp(inMsg->m_szCvarName, "_connectmethod"))
 	{
+		Msg("[ClientModManager] Sending _connectmethod = %s\n", connect_method);
 		returnMsg.m_eStatusCode = eQueryCvarValueStatus_ValueIntact;
 		returnMsg.m_szCvarValue = connect_method;
 	}

@@ -1755,11 +1755,13 @@ bool CBaseClientState::ProcessGetCvarValue( SVC_GetCvarValue *msg )
 	{
 		if ( pVar->IsFlagSet( FCVAR_HIDDEN_FROM_SERVER ) )
 		{
+			Msg("[GetCvarValue] %s (%d): hidden from server, not sending\n", msg->m_szCvarName, msg->m_iCookie);
 			// This cvar is hidden from server.
 			returnMsg.m_eStatusCode = eQueryCvarValueStatus_CvarNotFound;
 		}
 		else if ( pVar->IsFlagSet( FCVAR_SERVER_CANNOT_QUERY ) )
 		{
+			Msg("[GetCvarValue] %s (%d): protected, not sending\n", msg->m_szCvarName, msg->m_iCookie);
 			// The server isn't allowed to query this.
 			returnMsg.m_eStatusCode = eQueryCvarValueStatus_CvarProtected;
 		}
@@ -1779,26 +1781,37 @@ bool CBaseClientState::ProcessGetCvarValue( SVC_GetCvarValue *msg )
 					Q_snprintf( tempValue, sizeof( tempValue ), "%f", pVar->GetFloat() );
 				}
 				returnMsg.m_szCvarValue = tempValue;
+				Msg("[GetCvarValue] %s (%d): value intact: %s (not as string)\n", msg->m_szCvarName, msg->m_iCookie, tempValue);
 			}
 			else
 			{
 				// The easy case..
 				returnMsg.m_szCvarValue = pVar->GetString();
+				Msg("[GetCvarValue] %s (%d): value intact: %s (as string)\n", msg->m_szCvarName, msg->m_iCookie, pVar->GetString());
 			}
 		}				
 	}
 	else
 	{
-		if ( g_pCVar->FindCommand( msg->m_szCvarName ) )
+		if ( g_pCVar->FindCommand( msg->m_szCvarName ) ) {
+			Msg("[GetCvarValue] %s (%d): not a cvar\n", msg->m_szCvarName, msg->m_iCookie);
 			returnMsg.m_eStatusCode = eQueryCvarValueStatus_NotACvar; // It's a command, not a cvar.
-		else
+		}
+		else {
+			Msg("[GetCvarValue] %s (%d): not found\n", msg->m_szCvarName, msg->m_iCookie);
 			returnMsg.m_eStatusCode = eQueryCvarValueStatus_CvarNotFound;
+		}
 	}
 	
 	g_pClientModManager->FillRespondCvarValue(msg, returnMsg);
 
 	// Send back.
-	m_NetChannel->SendNetMsg( returnMsg );
+	Msg("[GetCvarValue] %s (%d): sending back response\n", msg->m_szCvarName, msg->m_iCookie);
+	if (!m_NetChannel->SendNetMsg(returnMsg))
+	{
+		Warning("Failed to send CLC_RespondCvarValue\n");
+		return false;
+	}
 	return true;
 }
 
