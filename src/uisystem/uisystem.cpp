@@ -452,8 +452,8 @@ Rml::DataModelConstructor CUISystem::CreateDataModel(UIState ctx, const char* na
 void CUISystem::ChangeUIState(UIState state)
 {
     Msg("ChangeUIState: %s -> %s\n",
-        StateToContext(m_CurrentUIState)->GetName(),
-        StateToContext(state)->GetName()
+        StateToContext(m_CurrentUIState)->GetName().c_str(),
+        StateToContext(state)->GetName().c_str()
     );
     m_CurrentUIState = state;
 }
