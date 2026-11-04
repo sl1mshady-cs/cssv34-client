@@ -8,7 +8,7 @@ import sys
 import os
 
 VERSION = '1.0'
-APPNAME = 'source-engine'
+APPNAME = 'cssv34-client'
 top = '.'
 
 FT2_CHECK='''extern "C" {
@@ -163,12 +163,13 @@ projects={
 		'tier1',
 		'tier2',
 		'tier3',
+		'mathlib',
 		'vstdlib',
 		'vpklib',
 		'filesystem',
 		'thirdparty/libzstd',
 		'kv3lib',
-		'kv1to3',
+		'utils/kv1to3',
 		'utils/vpk',
 		#'utils/vice',
 		#'utils/vrad',

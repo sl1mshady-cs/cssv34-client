@@ -24,6 +24,8 @@ static bool s_bBeVerbose = false;
 static bool s_bMakeMultiChunk = false;
 static bool s_bUseSteamPipeFriendlyBuilder = false;
 static int s_iMultichunkSize = k_nVPKDefaultChunkSize / ( 1024 * 1024 );
+static int s_iCompressionLevel = 0;
+static bool s_bUsingDictionaryCompression = false;
 const int k_nVPKDefaultChunkAlign = 1;
 static int s_iChunkAlign = k_nVPKDefaultChunkAlign;
 static CUtlString s_sPrivateKeyFile;
@@ -102,6 +104,12 @@ static void PrintArgSummaryAndExit( int iReturnCode = 1 )
 	printf(
 		"  -c <size>\n"
 		"         Use specified chunk size (in MB).  Default is %d.\n", k_nVPKDefaultChunkSize / ( 1024 * 1024 ) );
+	printf(
+		"  -C <level>\n"
+		"         Compression level 1 - 22\n"
+		"         Fast algorithm - 7 - -1\n"
+		"  -D\n"
+		"         Using dictionary compression.\n" );
 	printf(
 		"  -a <align>\n"
 		"         Align files within chunk on n-byte boundary.  Default is %d.\n", k_nVPKDefaultChunkAlign );
@@ -423,7 +431,6 @@ VPKBuilder::~VPKBuilder()
 
 void VPKBuilder::BuildOldSchoolFromInputKeys()
 {
-
 	// Just add them in order
 	FOR_EACH_VEC( m_vecNewFiles, i )
 	{
@@ -1884,8 +1891,22 @@ static void DroppedDirectory( const char *pszDirectoryArg )
 
 	// Make the VPK
 	char szActualFileName[MAX_PATH];
-	CPackedStore mypack( szVPKPath, szActualFileName, g_pFullFileSystem, true );
+	CPackedStore mypack( szVPKPath, szActualFileName, g_pFullFileSystem, true, (s_iCompressionLevel != 0) );
 	mypack.SetWriteChunkSize( s_iMultichunkSize * 1024*1024 );
+
+	// Setup compression level and compression dictionary
+	if ( s_iCompressionLevel != 0 )
+	{
+		mypack.SetCompressionLevel( s_iCompressionLevel );
+		printf( "Setup compression level %i.\n", s_iCompressionLevel );
+	}
+
+	char szDictName[MAX_PATH];
+	if ( s_bUsingDictionaryCompression )
+	{
+		printf("Setup dictionary compression.\n");
+		V_snprintf(szDictName, MAX_PATH, "%s.dict", szDirectory );
+	}
 
 	// !KLUDGE! Create keyvalues object, since that's what the builder uses
 	printf( "Finding files and creating temporary control file...\n" );
@@ -1903,6 +1924,21 @@ static void DroppedDirectory( const char *pszDirectoryArg )
 		if ( *pszDestPath == '/' || *pszDestPath == '\\' )
 			++pszDestPath;
 		pFileKey->SetString( "destpath", pszDestPath );
+	}
+
+	if (s_bUsingDictionaryCompression)
+	{
+		printf( "Loading compression dictionary %s...\n", szDictName );
+		CUtlBuffer buf;
+		CInputFile file(szDictName);
+
+		if ( !file.m_FileHandle )
+		{
+			Error( "Failed to open compression dictionary.\n" );
+		}
+
+		file.ReadFile(buf);
+		mypack.SetCompressionDictionary( buf.Base(), buf.TellPut(), s_iCompressionLevel );
 	}
 
 	VPKBuilder builder( mypack );
@@ -1978,6 +2014,29 @@ int main(int argc, char **argv)
 					fprintf( stderr, "Invalid chunk size %s\n", argv[nCurArg] );
 					exit( 1 );
 				}
+			}
+			break;
+
+			case 'C':
+			{
+				nCurArg++;
+				if ( nCurArg >= argc )
+				{
+					fprintf( stderr, "Expected argument after %s\n", argv[nCurArg-1] );
+					exit( 1 );
+				}
+				s_iCompressionLevel = V_atoi( argv[nCurArg] );
+				if ( s_iCompressionLevel < -1 || s_iCompressionLevel > 22 )
+				{
+					fprintf( stderr, "Invalid compression level %s\n", argv[nCurArg] );
+					exit( 1 );
+				}
+			}
+			break;
+
+			case 'D':
+			{
+				s_bUsingDictionaryCompression = true;
 			}
 			break;
 
@@ -2098,7 +2157,7 @@ int main(int argc, char **argv)
 			CPackedStoreFileHandle pData = mypack.OpenFile( argv[i] );
 			if ( pData )
 			{
-				printf( "extracting %s\n", argv[i] );
+				printf( "extracting %s %s\n", argv[i], pData.m_bDecoded ? "(COMPRESSED)" : "" );
 				COutputFile outF( argv[i] );
 				if ( !outF.IsOk() )
 				{

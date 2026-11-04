@@ -420,7 +420,7 @@ public:
 	void SetCompressionDictionary( const void* pData, uint32 nSize, int nLevel );
 
 	// Set compression level
-	void SetCompressionLevel( int nLevel );
+	void SetCompressionLevel( int nLevel ) { m_nCompressionLevel = nLevel ? nLevel : 4; }
 
 	int GetWriteChunkSize() const { return m_nWriteChunkSize; }
 
