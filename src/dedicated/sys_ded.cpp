@@ -23,7 +23,6 @@
 #include "tier2/tier2.h"
 #include "dedicated.h"
 #include "vstdlib/cvar.h"
-#include "inputsystem/iinputsystem.h"
 
 #ifdef _WIN32
 #include <windows.h> 
@@ -181,20 +180,7 @@ bool CDedicatedAppSystemGroup::Create( )
 	if ( !pSystem )
 		return false;
 
-	if ( sys->LoadModules( this ) )
-	{
-		// Find the input system and tell it to skip Steam Controller initialization (we have to set this flag before Init gets called on the
-		// input system). Dedicated server should skip controller initialization to avoid initializing Steam, because we don't want the user to be
-		// flagged as "playing" the game.
-		auto inputsystem = ( IInputSystem* )FindSystem( INPUTSYSTEM_INTERFACE_VERSION );
-		if ( inputsystem )
-		{
-			inputsystem->SetSkipControllerInitialization( true );
-		}
-
-		return true;
-	}
-	else
+	if ( !sys->LoadModules( this ) )
 	{
 		return false;
 	}
@@ -230,11 +216,6 @@ bool CDedicatedAppSystemGroup::PreInit( )
 		return false;
 
 	CreateInterfaceFn factory = GetFactory();
-	IInputSystem *inputsystem = (IInputSystem *)factory( INPUTSYSTEM_INTERFACE_VERSION, NULL );
-	if ( inputsystem )
-	{
-		inputsystem->SetConsoleTextMode( true );
-	}
 
 	if ( !sys->CreateConsoleWindow() )
 		return false;

@@ -19,7 +19,6 @@
 #include "tier0/dbg.h"
 #include "tier1/strtools.h"
 #include "tier0/icommandline.h"
-#include "inputsystem/iinputsystem.h"
 #include "SteamAppStartup.h"
 #include "console/textconsole.h"
 #include "appframework/appframework.h"
@@ -256,7 +255,6 @@ bool CSys::LoadModules( CDedicatedAppSystemGroup *pAppSystemGroup )
 	AppSystemInfo_t appSystems[] = 
 	{
 		{ "engine.dll",				CVAR_QUERY_INTERFACE_VERSION },	// NOTE: This one must be first!!
-		{ "inputsystem.dll",		INPUTSYSTEM_INTERFACE_VERSION },
 		{ "materialsystem.dll",		MATERIAL_SYSTEM_INTERFACE_VERSION },
 		{ "studiorender.dll",		STUDIO_RENDER_INTERFACE_VERSION },
 		{ "vphysics.dll",			VPHYSICS_INTERFACE_VERSION },
