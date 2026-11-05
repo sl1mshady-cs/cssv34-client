@@ -65,7 +65,8 @@ jobs:
     - name: Build
       run: |
         cd src
-        python waf configure -T release --32bits --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win32
+        python waf configure -T release --32bits --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win32
+        python waf build -j1
         python waf install
         cd ..
 
