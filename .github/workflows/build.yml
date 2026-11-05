@@ -63,10 +63,17 @@ jobs:
         cd ..
 
     - name: Build
+      shell: pwsh
       run: |
         cd src
+        $cores = (Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors
+        $jobs = [Math]::Max(1, [Math]::Floor($cores / 2))
+
+        Write-Host "Available CPU cores: $cores"
+        Write-Host "Waf parallel jobs: $jobs"
+        
         python waf configure -T release --32bits --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win32
-        python waf build -j1
+        python waf build "-j$jobs"
         python waf install
         cd ..
 
