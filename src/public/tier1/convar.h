@@ -117,9 +117,9 @@ public:
 	virtual	bool				IsCommand( void ) const;
 
 	// Check flag
-	virtual bool				IsFlagSet( int flag ) const;
+	virtual bool				IsFlagSet( uint64_t flag ) const;
 	// Set flag
-	virtual void				AddFlags( int flags );
+	virtual void				AddFlags( uint64_t flags );
 
 	// Return name of cvar
 	virtual const char			*GetName( void ) const;
@@ -162,7 +162,7 @@ private:
 	const char 					*m_pszHelpString;
 	
 	// ConVar flags
-	int							m_nFlags;
+	uint64_t							m_nFlags;
 
 protected:
 	// ConVars add themselves to this list for the executable. 
@@ -343,11 +343,11 @@ public:
 
 	virtual						~ConVar( void );
 
-	virtual bool				IsFlagSet( int flag ) const;
+	virtual bool				IsFlagSet( uint64_t flag ) const;
 	virtual const char*			GetHelpText( void ) const;
 	virtual bool				IsRegistered( void ) const;
 	virtual const char			*GetName( void ) const;
-	virtual void				AddFlags( int flags );
+	virtual void				AddFlags( uint64_t flags );
 	virtual	bool				IsCommand( void ) const;
 
 	// Install a change callback (there shouldn't already be one....)
@@ -502,7 +502,7 @@ public:
 
 	void Init( const char *pName, bool bIgnoreMissing );
 	bool IsValid() const;
-	bool IsFlagSet( int nFlags ) const;
+	bool IsFlagSet(uint64_t nFlags ) const;
 	IConVar *GetLinkedConVar();
 
 	// Get/Set value
@@ -533,7 +533,7 @@ private:
 //-----------------------------------------------------------------------------
 // Did we find an existing convar of that name?
 //-----------------------------------------------------------------------------
-FORCEINLINE_CVAR bool ConVarRef::IsFlagSet( int nFlags ) const
+FORCEINLINE_CVAR bool ConVarRef::IsFlagSet(uint64_t nFlags ) const
 {
 	return ( m_pConVar->IsFlagSet( nFlags ) != 0 );
 }

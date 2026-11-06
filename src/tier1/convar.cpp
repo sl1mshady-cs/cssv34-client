@@ -223,7 +223,7 @@ const char *ConCommandBase::GetName( void ) const
 // Input  : flag - 
 // Output : Returns true on success, false on failure.
 //-----------------------------------------------------------------------------
-bool ConCommandBase::IsFlagSet( int flag ) const
+bool ConCommandBase::IsFlagSet( uint64_t flag ) const
 {
 	return ( flag & m_nFlags ) ? true : false;
 }
@@ -232,7 +232,7 @@ bool ConCommandBase::IsFlagSet( int flag ) const
 // Purpose: 
 // Input  : flags - 
 //-----------------------------------------------------------------------------
-void ConCommandBase::AddFlags( int flags )
+void ConCommandBase::AddFlags( uint64_t flags )
 {
 	m_nFlags |= flags;
 
@@ -701,7 +701,7 @@ void ConVar::InstallChangeCallback( FnChangeCallback_t callback )
 	}
 }
 
-bool ConVar::IsFlagSet( int flag ) const
+bool ConVar::IsFlagSet( uint64_t flag ) const
 {
 	return ( flag & m_pParent->m_nFlags ) ? true : false;
 }
@@ -711,7 +711,7 @@ const char *ConVar::GetHelpText( void ) const
 	return m_pParent->m_pszHelpString;
 }
 
-void ConVar::AddFlags( int flags )
+void ConVar::AddFlags( uint64_t flags )
 {
 	m_pParent->m_nFlags |= flags;
 
