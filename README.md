@@ -12,7 +12,7 @@ Releases can be found [here](https://github.com/sl1mshady-cs/cssv34-client/relea
 ---
 
 # Features:
-- Android (armeabi-v7a), Windows (x86, x64), Linux (i386, amd64) support
+- Android (arm64-v8a, armeabi-v7a), Windows (x86, x64), Linux (i386, amd64; **not tested**) support
 - Modern toolchains support
 - Fixed many undefined behaviours
 - Touch support( even on windows/linux/osx )
@@ -38,7 +38,7 @@ Read [Build Instructions](https://github.com/sl1mshady-cs/cssv34-client/blob/mas
 
 # How to Run?
 
-- You need to download content. Download it from: [here](https://drive.google.com/file/d/1wzovBhjmJ_mDTpS3Lq89x57zhHTykgcN/view)
+- Content can be downloaded from releases tab: [Game and Dedicated Server Content](https://github.com/sl1mshady-cs/cssv34-client/releases/tag/content-v1.0)
 - Unpack this content into the output folder that you configurated.
 - Run hl2_launcher.exe with `-game cstrike` (you can create .bat file for it)
 

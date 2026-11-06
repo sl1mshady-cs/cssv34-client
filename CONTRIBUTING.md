@@ -119,6 +119,15 @@ Large pull requests that mix unrelated changes may be requested to split.
 
 ---
 
+## Commits
+
+All commits should follow [Conventional Commits](conventionalcommits.org) commit style
+Example:
+fix(engine): fixed split packet compression
+feat(voice): added ClientMod voice support
+
+---
+
 ## Testing
 
 Before submitting a PR, verify that:

@@ -1,42 +1,351 @@
 name: Build
 
-on: [push, pull_request, workflow_dispatch]
+on: [push, workflow_dispatch, pull_request]
+
+permissions:
+  contents: write
 
 jobs:
-  build-windows-amd64:
+  build-windows-x86:
+    name: Win32 Build
     runs-on: windows-latest
+    timeout-minutes: 300
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build windows-amd64
-      run: |
-        git submodule init && git submodule update
-        python waf configure -T release --enable-speex --enable-opus --build-games=cstrike --prefix=./win64_build
-        python waf install
-        
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v7.0.1
+    - uses: actions/checkout@v4
       with:
-        name: win64_build
-        path: win64_build
+        submodules: recursive
+
+    - name: Set up MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x86
+
+    # Prebuilt libjpeg/libpng/speex were compiled with /GL by another MSVC
+    # version -> C1047 with LTO. Rebuild them here from the same sources.
+    - name: Rebuild libjpeg, libpng, speex for LTO
+      shell: pwsh
+      run: |
+        cd src
+
+        $ErrorActionPreference = 'Stop'
+        $root = $PWD.Path
+        $out  = "$root\lib\win32"
+        $cf   = @('/nologo','/c','/O2','/MT','/GL','/W0','/DNDEBUG','/D_CRT_SECURE_NO_WARNINGS')
+        function Build-Lib([string]$name, [string[]]$srcs, [string[]]$extra) {
+          $obj = "$root\ltolibs\$name"
+          New-Item -ItemType Directory -Force $obj | Out-Null
+          & cl @cf @extra "/Fo$obj\" @srcs
+          if ($LASTEXITCODE -ne 0) { throw "cl failed for $name" }
+          $objs = (Get-ChildItem "$obj\*.obj").FullName
+          & lib /nologo /LTCG "/OUT:$out\$name.lib" @objs
+          if ($LASTEXITCODE -ne 0) { throw "lib failed for $name" }
+          Write-Host "$name.lib rebuilt from $($objs.Count) objects"
+        }
+
+        # libjpeg 9a
+        $j = "$root\thirdparty\libjpeg"
+        $jsrc = 'jmemnobs jaricom jcapimin jcapistd jcarith jccoefct jccolor jcdctmgr jchuff jcinit jcmainct jcmarker jcmaster jcomapi jcparam jcprepct jcsample jctrans jdapimin jdapistd jdarith jdatadst jdatasrc jdcoefct jdcolor jddctmgr jdhuff jdinput jdmainct jdmarker jdmaster jdmerge jdpostct jdsample jdtrans jerror jfdctflt jfdctfst jfdctint jidctflt jidctfst jidctint jquant1 jquant2 jutils jmemmgr'.Split(' ') | ForEach-Object { "$j\$_.c" }
+        Build-Lib 'libjpeg' $jsrc @("/I$j")
+
+        # libpng 1.6.38
+        $p = "$root\thirdparty\libpng"
+        $psrc = 'png pngerror pngget pngmem pngpread pngread pngrio pngrtran pngrutil pngset pngtrans pngwio pngwrite pngwtran pngwutil'.Split(' ') | ForEach-Object { "$p\$_.c" }
+        Build-Lib 'libpng' $psrc @("/I$p", "/I$root\thirdparty\zlib")
+
+        # speex 1.2.1 (same version as the old prebuilt speex.lib)
+        Invoke-WebRequest 'https://github.com/xiph/speex/archive/refs/tags/Speex-1.2.1.tar.gz' -OutFile "$root\speex.tgz"
+        tar -xzf "$root\speex.tgz" -C "$root\ltolibs"
+        $s = "$root\ltolibs\speex-Speex-1.2.1"
+        Copy-Item "$root\engine\voice_codecs\speex\speex\speex_config_types.h" "$s\include\speex\" -Force
+        $ssrc = (Get-ChildItem "$s\libspeex\*.c" | Where-Object { $_.Name -notlike 'test*' }).FullName
+        Build-Lib 'speex' $ssrc @('/DHAVE_CONFIG_H', "/I$s\win32", "/I$s\include", "/I$s\libspeex")
+        cd ..
+
+    - name: Build
+      shell: pwsh
+      run: |
+        cd src
+        $cores = (Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors
+        $jobs = [Math]::Max(1, [Math]::Floor($cores / 2))
+
+        Write-Host "Available CPU cores: $cores"
+        Write-Host "Waf parallel jobs: $jobs"
+        
+        python waf configure -T release --32bits --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win32
+        python waf build "-j$jobs"
+        python waf install
+        cd ..
+
+    - name: Pack game and debug symbols
+      shell: pwsh
+      run: |
+        cd src
+        New-Item -ItemType Directory -Force pdb | Out-Null
+        $names = Get-ChildItem ../game/win32 -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
+        Get-ChildItem build -Recurse -Filter *.pdb | Where-Object { $names -contains $_.BaseName } | ForEach-Object { Copy-Item $_.FullName pdb\ -Force }
+        Get-ChildItem pdb | Format-Table Name, Length
+        7z a -mx9 cssv34_win32_pdb.7z .\pdb\*
+        7z a -tzip cssv34_win32_optimized.zip ..\game\win32\*
+        cd ..
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: win32_release
+        path: |
+          src/cssv34_win32_optimized.zip
+          src/cssv34_win32_pdb.7z
         if-no-files-found: error
         retention-days: 7
         
+  build-windows-amd64:
+    name: Win64 Build
+    runs-on: windows-latest
+    timeout-minutes: 300
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set up MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    # Prebuilt libjpeg/libpng/speex were compiled with /GL by another MSVC
+    # version -> C1047 with LTO. Rebuild them here from the same sources.
+    - name: Rebuild libjpeg, libpng, speex for LTO
+      shell: pwsh
+      run: |
+        cd src
+
+        $ErrorActionPreference = 'Stop'
+        $root = $PWD.Path
+        $out  = "$root\lib\win32\amd64"
+        $cf   = @('/nologo','/c','/O2','/MT','/GL','/W0','/DNDEBUG','/D_CRT_SECURE_NO_WARNINGS')
+        function Build-Lib([string]$name, [string[]]$srcs, [string[]]$extra) {
+          $obj = "$root\ltolibs\$name"
+          New-Item -ItemType Directory -Force $obj | Out-Null
+          & cl @cf @extra "/Fo$obj\" @srcs
+          if ($LASTEXITCODE -ne 0) { throw "cl failed for $name" }
+          $objs = (Get-ChildItem "$obj\*.obj").FullName
+          & lib /nologo /LTCG "/OUT:$out\$name.lib" @objs
+          if ($LASTEXITCODE -ne 0) { throw "lib failed for $name" }
+          Write-Host "$name.lib rebuilt from $($objs.Count) objects"
+        }
+
+        # libjpeg 9a
+        $j = "$root\thirdparty\libjpeg"
+        $jsrc = 'jmemnobs jaricom jcapimin jcapistd jcarith jccoefct jccolor jcdctmgr jchuff jcinit jcmainct jcmarker jcmaster jcomapi jcparam jcprepct jcsample jctrans jdapimin jdapistd jdarith jdatadst jdatasrc jdcoefct jdcolor jddctmgr jdhuff jdinput jdmainct jdmarker jdmaster jdmerge jdpostct jdsample jdtrans jerror jfdctflt jfdctfst jfdctint jidctflt jidctfst jidctint jquant1 jquant2 jutils jmemmgr'.Split(' ') | ForEach-Object { "$j\$_.c" }
+        Build-Lib 'libjpeg' $jsrc @("/I$j")
+
+        # libpng 1.6.38
+        $p = "$root\thirdparty\libpng"
+        $psrc = 'png pngerror pngget pngmem pngpread pngread pngrio pngrtran pngrutil pngset pngtrans pngwio pngwrite pngwtran pngwutil'.Split(' ') | ForEach-Object { "$p\$_.c" }
+        Build-Lib 'libpng' $psrc @("/I$p", "/I$root\thirdparty\zlib")
+
+        # speex 1.2.1 (same version as the old prebuilt speex.lib)
+        Invoke-WebRequest 'https://github.com/xiph/speex/archive/refs/tags/Speex-1.2.1.tar.gz' -OutFile "$root\speex.tgz"
+        tar -xzf "$root\speex.tgz" -C "$root\ltolibs"
+        $s = "$root\ltolibs\speex-Speex-1.2.1"
+        Copy-Item "$root\engine\voice_codecs\speex\speex\speex_config_types.h" "$s\include\speex\" -Force
+        $ssrc = (Get-ChildItem "$s\libspeex\*.c" | Where-Object { $_.Name -notlike 'test*' }).FullName
+        Build-Lib 'speex' $ssrc @('/DHAVE_CONFIG_H', "/I$s\win32", "/I$s\include", "/I$s\libspeex")
+        
+        cd ..
+
+    - name: Build
+      run: |
+        cd src
+
+        python waf configure -T release --enable-lto --enable-speex --enable-opus --build-games=cstrike --prefix=../game/win64
+        python waf install
+        
+        cd ..
+
+    - name: Pack game and debug symbols
+      shell: pwsh
+      run: |
+        cd src
+
+        New-Item -ItemType Directory -Force pdb | Out-Null
+        $names = Get-ChildItem ../game/win64 -Recurse -Include *.dll,*.exe | ForEach-Object { $_.BaseName }
+        Get-ChildItem build -Recurse -Filter *.pdb | Where-Object { $names -contains $_.BaseName } | ForEach-Object { Copy-Item $_.FullName pdb\ -Force }
+        Get-ChildItem pdb | Format-Table Name, Length
+        7z a -mx9 cssv34_win64_pdb.7z .\pdb\*
+        7z a -tzip cssv34_win64_optimized.zip ..\game\win64\*
+        
+        cd ..
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: win64_release
+        path: |
+          src/cssv34_win64_optimized.zip
+          src/cssv34_win64_pdb.7z
+        if-no-files-found: error
+        retention-days: 7
+
   build-android-armv7a:
+    name: Android armeabi-v7a Build
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build android-armv7a
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Build
       run: |
+        cd src
         chmod +x waf
         chmod +x scripts/build-android-armv7a.sh
         ./scripts/build-android-armv7a.sh
+        cd ..
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v7.0.1
+      uses: actions/upload-artifact@v4
       with:
-        name: android_armv7a_build
-        path: android_armv7a_build
+        name: android_armv7a_release
+        path: game/android_armv7a
         if-no-files-found: error
         retention-days: 7
+        
+  build-android-arm64:
+    name: Android arm64-v8a Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Build
+      run: |
+        cd src
+        chmod +x waf
+        chmod +x scripts/build-android-arm64.sh
+        ./scripts/build-android-arm64.sh
+        cd ..
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: android_arm64_release
+        path: game/android_arm64
+        if-no-files-found: error
+        retention-days: 7
+        
+  build-linux-srcds:
+    name: Linux amd64 SRCDS Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Build
+      run: |
+        cd src
+        chmod +x waf
+        chmod +x scripts/build-linux-srcds.sh
+        ./scripts/build-linux-srcds.sh
+        cd ..
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux_srcds_release
+        path: game/linux_srcds
+        if-no-files-found: error
+        retention-days: 7
+        
+  build-windows-srcds:
+    name: Windows amd64 SRCDS Build
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        
+    - name: Set up MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Build
+      run: |
+        cd src
+        python waf configure -T release --dedicated --enable-speex --enable-opus --build-games=cstrike --prefix=../game/windows_srcds
+        python waf install
+        cd ..
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows_srcds_release
+        path: game/windows_srcds
+        if-no-files-found: error
+        retention-days: 7
+
+  release:
+    needs: [build-windows-x86, build-windows-amd64, build-android-armv7a, build-android-arm64, build-linux-srcds, build-windows-srcds]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download Windows x86 artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: win32_release
+        path: release_files
+
+    - name: Download Windows x64 artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: win64_release
+        path: release_files
+
+    - name: Download Android armv7a artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: android_armv7a_release
+        path: release_files
+
+    - name: Download Android arm64 artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: android_arm64_release
+        path: release_files
+
+    - name: Download Linux x64 SRCDS artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: linux_srcds_release
+        path: release_files
+
+    - name: Pack Android and Linux builds
+      run: |
+        cd release_files
+        zip -r cssv34_android_armv7a.zip android_armv7a
+        zip -r cssv34_android_arm64.zip android_arm64
+        zip -r cssv34_linux_srcds.zip linux_srcds
+
+    - name: Publish release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: ${{ github.ref_name }}
+        files: |
+          release_files/cssv34_win64_optimized.zip
+          release_files/cssv34_win64_pdb.7z
+          release_files/cssv34_win32_optimized.zip
+          release_files/cssv34_win32_pdb.7z
+          release_files/cssv34_android_armv7a.zip
+          release_files/cssv34_android_arm64.zip
+          release_files/cssv34_linux_srcds.zip
