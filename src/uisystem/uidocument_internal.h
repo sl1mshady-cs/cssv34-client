@@ -13,6 +13,7 @@ public:
 	virtual void SetDocument(const char* doc);
 	virtual bool IsVisible();
 	virtual void Close();
+	virtual Rml::ElementDocument* GetRmlDocument() { return m_pDocument; }
 private:
 	bool m_bIsVisible;
 	Rml::ElementDocument* m_pDocument;

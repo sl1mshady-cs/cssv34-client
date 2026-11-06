@@ -358,6 +358,10 @@ bool CUISystem::InputHandleInputEvent(const InputEvent_t& event)
                 ChangeUIState(InGame);
             }
         }
+        else if (event.m_nData == KEY_BACKQUOTE)
+        {
+
+        }
     }
 
     return DispatchEventToContext(*StateToContext(m_CurrentUIState), event);

@@ -13,6 +13,7 @@ public:
 	virtual void SetDocument(const char* doc) = 0;
 	virtual bool IsVisible() = 0;
 	virtual void Close() = 0;
+	virtual Rml::ElementDocument* GetRmlDocument() = 0;
 };
 
 enum UIState
