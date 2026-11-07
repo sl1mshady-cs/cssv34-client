@@ -1,11 +1,6 @@
 #include <uirenderinterface.h>
-#include <materialsystem/imesh.h>
-#include <materialsystem/imaterialsystem.h>
-#include <materialsystem/itexture.h>
-#include <materialsystem/imaterial.h>
-#include <materialsystem/imaterialvar.h>
-#include <vtf/vtf.h>
-#include <vector>
+#include <keyvalues.h>
+#include <uiimage.h>
 
 struct SourceCompiledMesh {
     std::vector<Rml::Vertex> vertices;
@@ -13,9 +8,45 @@ struct SourceCompiledMesh {
 };
 
 RenderInterface_SrcEng renderinterface;
-extern IMaterial* g_pDefaultUIMaterial;
 
-static const Rml::Matrix4f* g_pCurrentTransform = nullptr;
+static Rml::Matrix4f g_currentTransform;
+static bool          g_bTransformEnabled = false;
+
+void RenderInterface_SrcEng::Initialize()
+{
+    m_pUIMaterial = g_pMaterialSystem->FindMaterial("vgui/white", TEXTURE_GROUP_VGUI);
+    if (m_pUIMaterial) m_pUIMaterial->IncrementReferenceCount();
+}
+
+void RenderInterface_SrcEng::Shutdown()
+{
+    if (m_pUIMaterial)
+    {
+        m_pUIMaterial->DecrementReferenceCount();
+        m_pUIMaterial = nullptr;
+    }
+}
+
+void RenderInterface_SrcEng::BeginFrame(int w, int h)
+{
+    CMatRenderContextPtr pRenderContext(g_pMaterialSystem->GetRenderContext());
+
+    pRenderContext->MatrixMode(MATERIAL_VIEW);
+    pRenderContext->PushMatrix();
+    pRenderContext->LoadIdentity();
+
+    pRenderContext->Ortho(0.0f, (float)h, (float)w, 0.0f, -1.0f, 1.0f);
+    pRenderContext->CullMode(MATERIAL_CULLMODE_CW);
+}
+
+void RenderInterface_SrcEng::EndFrame()
+{
+    CMatRenderContextPtr pRenderContext(g_pMaterialSystem->GetRenderContext());
+    pRenderContext->CullMode(MATERIAL_CULLMODE_CCW);
+
+    pRenderContext->MatrixMode(MATERIAL_VIEW);
+    pRenderContext->PopMatrix();
+}
 
 Rml::CompiledGeometryHandle RenderInterface_SrcEng::CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices)
 {
@@ -34,9 +65,6 @@ void RenderInterface_SrcEng::RenderGeometry(Rml::CompiledGeometryHandle geometry
     if (!pCustomMesh || pCustomMesh->vertices.empty() || pCustomMesh->indices.empty())
         return;
 
-    if (!g_pDefaultUIMaterial)
-        return;
-
     CMatRenderContextPtr pRenderContext(g_pMaterialSystem->GetRenderContext());
 
     int vw = 0, vh = 0;
@@ -44,29 +72,16 @@ void RenderInterface_SrcEng::RenderGeometry(Rml::CompiledGeometryHandle geometry
     if (vw <= 0 || vh <= 0)
         return;
 
-    pRenderContext->MatrixMode(MATERIAL_VIEW);
-    pRenderContext->PushMatrix();
-    pRenderContext->LoadIdentity();
+    BeginFrame(vw, vh);
 
-    pRenderContext->MatrixMode(MATERIAL_PROJECTION);
-    pRenderContext->PushMatrix();
-    pRenderContext->LoadIdentity();
-
-    pRenderContext->Ortho(0.0f, (float)vh, (float)vw, 0.0f, -1.0f, 1.0f);
-
-    pRenderContext->MatrixMode(MATERIAL_MODEL);
-    pRenderContext->PushMatrix();
-    pRenderContext->LoadIdentity();
-
-    pRenderContext->CullMode(MATERIAL_CULLMODE_CW);
-
-    IMaterialVar* pBaseTextureVar = g_pDefaultUIMaterial->FindVar("$basetexture", nullptr);
+    IMaterialVar* pBaseTextureVar = m_pUIMaterial->FindVar("$basetexture", nullptr);
     if (pBaseTextureVar)
     {
         ITexture* pTexture = nullptr;
         if (texture)
         {
-            pTexture = reinterpret_cast<ITexture*>(texture);
+            CUIImage* img = reinterpret_cast<CUIImage*>(texture);
+            pTexture = img->GetSrcTexture();
         }
         else
         {
@@ -79,18 +94,12 @@ void RenderInterface_SrcEng::RenderGeometry(Rml::CompiledGeometryHandle geometry
             pBaseTextureVar->SetTextureValue(pTexture);
     }
 
-    pRenderContext->Bind(g_pDefaultUIMaterial);
+    pRenderContext->Bind(m_pUIMaterial);
 
     IMesh* pDynamicMesh = pRenderContext->GetDynamicMesh(true);
     if (!pDynamicMesh)
     {
-        pRenderContext->CullMode(MATERIAL_CULLMODE_CCW);
-        pRenderContext->MatrixMode(MATERIAL_MODEL);
-        pRenderContext->PopMatrix();
-        pRenderContext->MatrixMode(MATERIAL_PROJECTION);
-        pRenderContext->PopMatrix();
-        pRenderContext->MatrixMode(MATERIAL_VIEW);
-        pRenderContext->PopMatrix();
+        EndFrame();
         return;
     }
 
@@ -105,24 +114,23 @@ void RenderInterface_SrcEng::RenderGeometry(Rml::CompiledGeometryHandle geometry
     {
         Rml::Vector2f finalPos = rmlVertex.position + translation;
 
-        if (g_pCurrentTransform)
+        if (g_bTransformEnabled)
         {
-            Rml::Vector4f tp = (*g_pCurrentTransform) *
-                Rml::Vector4f(finalPos.x, finalPos.y, 0.0f, 1.0f);
-            meshBuilder.Position3f(tp.x, tp.y, tp.z);
-        }
-        else
-        {
-            meshBuilder.Position3f(finalPos.x, finalPos.y, 0.0f);
+            const float* m = g_currentTransform.data();
+            const float x = finalPos.x;
+            const float y = finalPos.y;
+
+            finalPos.x = m[0] * x + m[4] * y + m[12];
+            finalPos.y = m[1] * x + m[5] * y + m[13];
         }
 
+        meshBuilder.Position3f(finalPos.x, finalPos.y, 0.0f);
         meshBuilder.TexCoord2f(0, rmlVertex.tex_coord.x, rmlVertex.tex_coord.y);
         meshBuilder.Color4ub(
             rmlVertex.colour.red,
             rmlVertex.colour.green,
             rmlVertex.colour.blue,
             rmlVertex.colour.alpha);
-
         meshBuilder.AdvanceVertex();
     }
 
@@ -135,16 +143,7 @@ void RenderInterface_SrcEng::RenderGeometry(Rml::CompiledGeometryHandle geometry
     meshBuilder.End();
     pDynamicMesh->Draw();
 
-    pRenderContext->CullMode(MATERIAL_CULLMODE_CCW);
-
-    pRenderContext->MatrixMode(MATERIAL_MODEL);
-    pRenderContext->PopMatrix();
-
-    pRenderContext->MatrixMode(MATERIAL_PROJECTION);
-    pRenderContext->PopMatrix();
-
-    pRenderContext->MatrixMode(MATERIAL_VIEW);
-    pRenderContext->PopMatrix();
+    EndFrame();
 }
 
 
@@ -159,74 +158,25 @@ void RenderInterface_SrcEng::ReleaseGeometry(Rml::CompiledGeometryHandle geometr
 
 Rml::TextureHandle RenderInterface_SrcEng::LoadTexture(Rml::Vector2i& texture_dimensions, const Rml::String& source)
 {
-    ITexture* pTexture = g_pMaterialSystem->FindTexture(source.c_str(), TEXTURE_GROUP_VGUI);
-    if (!pTexture || pTexture->IsError())
+    CUIImage* img = new CUIImage(source.c_str());
+    if (img->GetSrcTexture())
     {
-        return 0;
+        texture_dimensions.x = img->GetSrcTexture()->GetActualWidth();
+        texture_dimensions.y = img->GetSrcTexture()->GetActualHeight();
     }
-
-    texture_dimensions.x = pTexture->GetActualWidth();
-    texture_dimensions.y = pTexture->GetActualHeight();
-
-    pTexture->IncrementReferenceCount();
-    return reinterpret_cast<Rml::TextureHandle>(pTexture);
+    return reinterpret_cast<Rml::TextureHandle>(img);
 }
-
-class CRmlTextureRegenerator : public ITextureRegenerator
-{
-private:
-    Rml::Span<const unsigned char> m_Source;
-public:
-    CRmlTextureRegenerator(Rml::Span<const unsigned char> source) : m_Source(source) {}
-
-    virtual void RegenerateTextureBits(ITexture* pTexture, IVTFTexture* pVTFTexture, Rect_t* pRect) override
-    {
-        unsigned char* pDestBits = pVTFTexture->ImageData(0, 0, 0);
-        if (pDestBits && m_Source.data())
-        {
-            int width = pTexture->GetActualWidth();
-            int height = pTexture->GetActualHeight();
-            std::memcpy(pDestBits, m_Source.data(), width * height * 4);
-        }
-    }
-
-    virtual void Release() override {}
-};
 
 Rml::TextureHandle RenderInterface_SrcEng::GenerateTexture(Rml::Span<const unsigned char> source, Rml::Vector2i source_dimensions)
 {
-    static int pUniqueTexId = 0;
-    char szTexName[64];
-    snprintf(szTexName, sizeof(szTexName), "rmlui_proc_tex_%d", pUniqueTexId++);
-
-    ITexture* pTexture = g_pMaterialSystem->CreateProceduralTexture(
-        szTexName,
-        TEXTURE_GROUP_VGUI,
-        source_dimensions.x,
-        source_dimensions.y,
-        IMAGE_FORMAT_RGBA8888,
-        TEXTUREFLAGS_NOMIP | TEXTUREFLAGS_NOLOD
-    );
-
-    if (!pTexture)
-        return 0;
-
-    CRmlTextureRegenerator regenerator(source);
-    pTexture->SetTextureRegenerator(&regenerator);
-    pTexture->Download();
-    pTexture->SetTextureRegenerator(nullptr);
-
-    pTexture->IncrementReferenceCount();
-    return reinterpret_cast<Rml::TextureHandle>(pTexture);
+    CUIImage* img = new CUIImage(source, source_dimensions);
+    return reinterpret_cast<Rml::TextureHandle>(img);
 }
 
 void RenderInterface_SrcEng::ReleaseTexture(Rml::TextureHandle texture)
 {
-    ITexture* pTexture = reinterpret_cast<ITexture*>(texture);
-    if (pTexture)
-    {
-        pTexture->DecrementReferenceCount();
-    }
+    CUIImage* img = (CUIImage*)texture;
+    delete img;
 }
 
 void RenderInterface_SrcEng::EnableScissorRegion(bool enable)
@@ -254,7 +204,15 @@ void RenderInterface_SrcEng::SetScissorRegion(Rml::Rectanglei region)
 
 void RenderInterface_SrcEng::SetTransform(const Rml::Matrix4f* transform)
 {
-    g_pCurrentTransform = transform;
+    if (transform)
+    {
+        g_currentTransform = *transform;
+        g_bTransformEnabled = true;
+    }
+    else
+    {
+        g_bTransformEnabled = false;
+    }
 }
 
 void RenderInterface_SrcEng::EnableClipMask(bool enable) {}

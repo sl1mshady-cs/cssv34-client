@@ -41,7 +41,8 @@ static Rml::String m_strVisibility = "local";
 static Rml::String m_strServerPassword = "";
 static Rml::String m_strMaxBots = "0";
 static Rml::String m_strDifficulty = "normal";
-static Rml::String m_strSelectedMap = "";          
+static Rml::String m_strSelectedMap = "";     
+static Rml::String m_strSettingsTab = "game";
 static void SyncState()
 {
     switch (menustate)
@@ -80,6 +81,7 @@ void MainMenu::Init()
     cons.Bind("max_bots", &m_strMaxBots);
     cons.Bind("difficulty", &m_strDifficulty);
     cons.Bind("selected_map", &m_strSelectedMap);
+    cons.Bind("settings_tab", &m_strSettingsTab);
     
     cons.BindEventCallback("goto",
         [](Rml::DataModelHandle handle, Rml::Event&, const Rml::VariantList& args)
@@ -186,53 +188,64 @@ void MainMenu::Init()
         });
 
         cons.BindEventCallback("start_server",
-        [](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&)
-        {
-            if (!engine) return;
-
-            if (m_strSelectedMap.empty())
+            [](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&)
             {
-                Warning("MainMenu: no map selected\n");
-                return;
-            }
+                if (!engine) return;
 
-            int maxPlayers = atoi(m_strMaxPlayers.c_str());
-            if (maxPlayers < 1)  maxPlayers = 1;
-            if (maxPlayers > 32) maxPlayers = 32;
+                if (m_strSelectedMap.empty())
+                {
+                    Warning("MainMenu: no map selected\n");
+                    return;
+                }
 
-            int maxBots = atoi(m_strMaxBots.c_str());
-            if (maxBots < 0) maxBots = 0;
+                int maxPlayers = atoi(m_strMaxPlayers.c_str());
+                if (maxPlayers < 1)  maxPlayers = 1;
+                if (maxPlayers > 32) maxPlayers = 32;
 
-            int botDifficulty = 1;
-            if (m_strDifficulty == "easy")   botDifficulty = 0;
-            else if (m_strDifficulty == "normal") botDifficulty = 1;
-            else if (m_strDifficulty == "hard")   botDifficulty = 2;
-            else if (m_strDifficulty == "expert") botDifficulty = 3;
+                int maxBots = atoi(m_strMaxBots.c_str());
+                if (maxBots < 0) maxBots = 0;
 
-            const char* sv_lan = (m_strVisibility == "local") ? "1" : "0";
+                int botDifficulty = 1;
+                if (m_strDifficulty == "easy")   botDifficulty = 0;
+                else if (m_strDifficulty == "normal") botDifficulty = 1;
+                else if (m_strDifficulty == "hard")   botDifficulty = 2;
+                else if (m_strDifficulty == "expert") botDifficulty = 3;
 
-            char cmd[1024];
-            snprintf(cmd, sizeof(cmd),
-                "sv_lan %s\n"
-                "hostname \"%s\"\n"
-                "sv_password \"%s\"\n"
-                "maxplayers %d\n"
-                "bot_quota %d\n"
-                "bot_difficulty %d\n"
-                "map %s\n",
-                sv_lan,
-                m_strServerName.c_str(),
-                m_strServerPassword.c_str(),
-                maxPlayers,
-                maxBots,
-                botDifficulty,
-                m_strSelectedMap.c_str());
+                const char* sv_lan = (m_strVisibility == "local") ? "1" : "0";
 
-            engine->ClientCmd_Unrestricted(cmd);
+                char cmd[1024];
+                snprintf(cmd, sizeof(cmd),
+                    "sv_lan %s\n"
+                    "hostname \"%s\"\n"
+                    "sv_password \"%s\"\n"
+                    "maxplayers %d\n"
+                    "bot_quota %d\n"
+                    "bot_difficulty %d\n"
+                    "map %s\n",
+                    sv_lan,
+                    m_strServerName.c_str(),
+                    m_strServerPassword.c_str(),
+                    maxPlayers,
+                    maxBots,
+                    botDifficulty,
+                    m_strSelectedMap.c_str());
 
-            menustate = Main;
-            SyncState();
-        });
+                engine->ClientCmd_Unrestricted(cmd);
+
+                menustate = Main;
+                SyncState();
+            });
+
+        cons.BindEventCallback("set_settings_tab",
+            [](Rml::DataModelHandle handle, Rml::Event&, const Rml::VariantList& args)
+            {
+                if (args.empty()) return;
+                m_strSettingsTab = args[0].Get<Rml::String>();
+                if (handle)
+                {
+                    handle.DirtyVariable("settings_tab");
+                }
+            });
 
     m_MainMenuHandle = cons.GetModelHandle();
 

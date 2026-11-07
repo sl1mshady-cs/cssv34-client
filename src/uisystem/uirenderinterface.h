@@ -5,12 +5,27 @@
 #pragma once
 #endif
 
+#include <materialsystem/imesh.h>
+#include <materialsystem/imaterialsystem.h>
+#include <materialsystem/itexture.h>
+#include <materialsystem/imaterial.h>
+#include <materialsystem/imaterialvar.h>
+#include <vtf/vtf.h>
+#include <vector>
 #include <RmlUi/Core.h>
 #include <RmlUi/Core/Span.h>
 
 class RenderInterface_SrcEng : public Rml::RenderInterface
 {
 public:
+	void Initialize();
+
+	void Shutdown();
+
+	void BeginFrame(int w, int h);
+
+	void EndFrame();
+
 	virtual Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices);
 
 	virtual void RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture);
@@ -55,6 +70,8 @@ public:
 	virtual void RenderShader(Rml::CompiledShaderHandle shader, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture);
 
 	virtual void ReleaseShader(Rml::CompiledShaderHandle shader);
+private:
+	IMaterial* m_pUIMaterial;
 };
 
 extern RenderInterface_SrcEng renderinterface;

@@ -45,6 +45,8 @@ bool CUISystem::Start(CreateInterfaceFn* factorylist, int nFactories)
 	if (g_pDefaultUIMaterial)
 		g_pDefaultUIMaterial->IncrementReferenceCount();
 
+    renderinterface.Initialize();
+
     Rml::SetFileInterface(&fileinterface);
     Rml::SetRenderInterface(&renderinterface);
     Rml::SetSystemInterface(&sysinterface);

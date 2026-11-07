@@ -24,11 +24,14 @@ def build(bld):
         'uirenderinterface.cpp',
         'uisystem.cpp',
         'mainmenu.cpp',
+        'uiimage.cpp',
+        'stb_image_Impl.cpp',
         'uisysteminterface.cpp'
     ]
 
     includes = [
         '.',
+        '../thirdparty',
         '../public',
         '../public/tier0',
         '../public/tier1',
@@ -37,7 +40,7 @@ def build(bld):
 
     defines = []
 
-    libs = ['tier0', 'tier1', 'tier2', 'rmlui', 'FT2', 'LEGACY_STDIO_DEFINITIONS']
+    libs = ['tier0', 'tier1', 'tier2', 'vstdlib', 'vtf', 'bitmap', 'mathlib', 'rmlui', 'FT2', 'LEGACY_STDIO_DEFINITIONS']
 
     if bld.env.DEST_OS == 'android':
         libs += ['ANDROID_SUPPORT']
