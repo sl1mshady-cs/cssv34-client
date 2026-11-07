@@ -1,5 +1,5 @@
 #include <uirenderinterface.h>
-#include <keyvalues.h>
+#include <KeyValues.h>
 #include <uiimage.h>
 
 struct SourceCompiledMesh {
