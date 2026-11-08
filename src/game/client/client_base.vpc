@@ -109,43 +109,12 @@ $Project
 			}
 		}
 		
-		$Folder "UI"	[$BUILD_REPLAY]
+		$Folder "UI"
 		{
-			$File	"replay\vgui\replaybrowserbasepage.cpp"
-			$File	"replay\vgui\replaybrowserbasepage.h"
-			$File	"replay\vgui\replaybrowserbasepanel.cpp"
-			$File	"replay\vgui\replaybrowserbasepanel.h"
-			$File	"replay\vgui\replayconfirmquitdlg.cpp"
-			$File	"replay\vgui\replayconfirmquitdlg.h"
-			$File	"replay\vgui\replaybrowserdetailspanel.cpp"
-			$File	"replay\vgui\replaybrowserdetailspanel.h"
-			$File	"replay\vgui\replaybrowseritemmanager.cpp"
-			$File	"replay\vgui\replaybrowseritemmanager.h"
-			$File	"replay\vgui\replaybrowserlistitempanel.cpp"
-			$File	"replay\vgui\replaybrowserlistitempanel.h"
-			$File	"replay\vgui\replaybrowserlistpanel.cpp"
-			$File	"replay\vgui\replaybrowserlistpanel.h"
-			$File	"replay\vgui\replaybrowsermainpanel.cpp"
-			$File	"replay\vgui\replaybrowsermainpanel.h"
-			$File	"replay\vgui\replaybrowsermovieplayerpanel.cpp"
-			$File	"replay\vgui\replaybrowsermovieplayerpanel.h"
-			$File	"replay\vgui\replaybrowserpreviewpanel.cpp"
-			$File	"replay\vgui\replaybrowserpreviewpanel.h"
-			$File	"replay\vgui\replaybrowserrenderdialog.cpp"
-			$File	"replay\vgui\replaybrowserrenderdialog.h"
-			$File	"replay\vgui\replayinputpanel.cpp"
-			$File	"replay\vgui\replayinputpanel.h"
-			$File	"replay\vgui\replaymessagepanel.cpp"
-			$File	"replay\vgui\replaymessagepanel.h"
-			$File	"replay\vgui\replayperformanceeditor.cpp"
-			$File	"replay\vgui\replayperformanceeditor.h"
-			$File	"replay\vgui\replayperformancesavedlg.cpp"
-			$File	"replay\vgui\replayperformancesavedlg.h"
-			$File	"replay\vgui\replayrenderoverlay.cpp"
-			$File	"replay\vgui\replayrenderoverlay.h"
-			$File	"replay\vgui\replayreminderpanel.cpp"
-			$File	"replay\vgui\replayreminderpanel.h"
-			
+			$File	"hudmanager\uihudmgr.cpp"
+			$File	"hudmanager\hud_radar.cpp"
+			$File	"hudmanager\hud_health.cpp"
+
 			$File	"game_controls\slideshowpanel.cpp"
 			$File	"game_controls\slideshowpanel.h"
 			

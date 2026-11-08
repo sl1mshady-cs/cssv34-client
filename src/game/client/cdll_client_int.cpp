@@ -146,6 +146,7 @@
 #include "fbxsystem/fbxsystem.h"
 #endif
 
+#include "hudmanager/uihudmgr.h"
 #include "touch.h"
 
 extern vgui::IInputInternal *g_InputInternal;
@@ -228,6 +229,8 @@ AchievementsAndStatsInterface* g_pAchievementsAndStatsInterface = NULL;
 //=============================================================================
 // HPE_END
 //=============================================================================
+
+CHudMgr hudmgr;
 
 IGameSystem *SoundEmitterSystem();
 IGameSystem *ToolFrameworkClientSystem();
@@ -1094,6 +1097,7 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	HookHapticMessages(); // Always hook the messages
 #endif
 
+	hudmgr.Init();
 	return true;
 }
 
@@ -1168,6 +1172,8 @@ void CHLClient::PostInit()
 //-----------------------------------------------------------------------------
 void CHLClient::Shutdown( void )
 {
+	hudmgr.Shutdown();
+
     if (g_pAchievementsAndStatsInterface)
     {
         g_pAchievementsAndStatsInterface->ReleasePanel();
@@ -1271,6 +1277,8 @@ void CHLClient::HudUpdate( bool bActive )
 #if defined( TF_CLIENT_DLL )
 	CRTime::UpdateRealTime();
 #endif
+
+	hudmgr.Think();
 
 	GetClientVoiceMgr()->Frame( frametime );
 

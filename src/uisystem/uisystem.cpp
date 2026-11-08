@@ -158,7 +158,6 @@ void CUISystem::Draw()
     }
 
     mainmenu.Think();
-
     StateToContext(m_CurrentUIState)->Update();
     StateToContext(m_CurrentUIState)->Render();
 

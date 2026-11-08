@@ -12,6 +12,11 @@ RenderInterface_SrcEng renderinterface;
 static Rml::Matrix4f g_currentTransform;
 static bool          g_bTransformEnabled = false;
 
+static bool g_bClipMaskEnabled = false;
+
+static Rml::Rectanglei g_lastScissorRegion = Rml::Rectanglei::FromCorners(Rml::Vector2i(0, 0), Rml::Vector2i(0, 0)); // или другой инициализатор
+static bool g_bScissorEnabled = false;
+
 void RenderInterface_SrcEng::Initialize()
 {
     m_pUIMaterial = g_pMaterialSystem->FindMaterial("vgui/white", TEXTURE_GROUP_VGUI);
@@ -35,14 +40,30 @@ void RenderInterface_SrcEng::BeginFrame(int w, int h)
     pRenderContext->PushMatrix();
     pRenderContext->LoadIdentity();
 
+    pRenderContext->MatrixMode(MATERIAL_PROJECTION);
+    pRenderContext->PushMatrix();
+    pRenderContext->LoadIdentity();
+
     pRenderContext->Ortho(0.0f, (float)h, (float)w, 0.0f, -1.0f, 1.0f);
+
+    pRenderContext->MatrixMode(MATERIAL_MODEL);
+    pRenderContext->PushMatrix();
+    pRenderContext->LoadIdentity();
+
     pRenderContext->CullMode(MATERIAL_CULLMODE_CW);
 }
 
 void RenderInterface_SrcEng::EndFrame()
 {
     CMatRenderContextPtr pRenderContext(g_pMaterialSystem->GetRenderContext());
+
     pRenderContext->CullMode(MATERIAL_CULLMODE_CCW);
+
+    pRenderContext->MatrixMode(MATERIAL_MODEL);
+    pRenderContext->PopMatrix();
+
+    pRenderContext->MatrixMode(MATERIAL_PROJECTION);
+    pRenderContext->PopMatrix();
 
     pRenderContext->MatrixMode(MATERIAL_VIEW);
     pRenderContext->PopMatrix();
@@ -183,7 +204,19 @@ void RenderInterface_SrcEng::EnableScissorRegion(bool enable)
 {
     CMatRenderContextPtr pRenderContext(g_pMaterialSystem->GetRenderContext());
 
-    if (!enable)
+    g_bScissorEnabled = enable;
+
+    if (enable)
+    {
+        pRenderContext->SetScissorRect(
+            g_lastScissorRegion.Left(),
+            g_lastScissorRegion.Top(),
+            g_lastScissorRegion.Right(),
+            g_lastScissorRegion.Bottom(),
+            true
+        );
+    }
+    else
     {
         pRenderContext->SetScissorRect(0, 0, 0, 0, false);
     }
@@ -191,15 +224,20 @@ void RenderInterface_SrcEng::EnableScissorRegion(bool enable)
 
 void RenderInterface_SrcEng::SetScissorRegion(Rml::Rectanglei region)
 {
+    g_lastScissorRegion = region;
+
     CMatRenderContextPtr pRenderContext(g_pMaterialSystem->GetRenderContext());
 
-    pRenderContext->SetScissorRect(
-        region.Left(),
-        region.Top(),
-        region.Right(),
-        region.Bottom(),
-        true
-    );
+    if (g_bScissorEnabled)
+    {
+        pRenderContext->SetScissorRect(
+            region.Left(),
+            region.Top(),
+            region.Right(),
+            region.Bottom(),
+            true
+        );
+    }
 }
 
 void RenderInterface_SrcEng::SetTransform(const Rml::Matrix4f* transform)
@@ -215,9 +253,90 @@ void RenderInterface_SrcEng::SetTransform(const Rml::Matrix4f* transform)
     }
 }
 
-void RenderInterface_SrcEng::EnableClipMask(bool enable) {}
+void RenderInterface_SrcEng::EnableClipMask(bool enable)
+{
+    g_bClipMaskEnabled = enable;
 
-void RenderInterface_SrcEng::RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation) {}
+    CMatRenderContextPtr pRenderContext(g_pMaterialSystem->GetRenderContext());
+
+    if (enable)
+    {
+        pRenderContext->SetStencilEnable(true);
+    }
+    else
+    {
+        pRenderContext->SetStencilEnable(false);
+
+        pRenderContext->SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_ALWAYS);
+        pRenderContext->SetStencilPassOperation(STENCILOPERATION_KEEP);
+        pRenderContext->SetStencilFailOperation(STENCILOPERATION_KEEP);
+        pRenderContext->SetStencilZFailOperation(STENCILOPERATION_KEEP);
+        pRenderContext->SetStencilReferenceValue(0);
+    }
+}
+
+void RenderInterface_SrcEng::RenderToClipMask(Rml::ClipMaskOperation operation,
+    Rml::CompiledGeometryHandle geometry,
+    Rml::Vector2f translation)
+{
+    CMatRenderContextPtr pRenderContext(g_pMaterialSystem->GetRenderContext());
+
+    pRenderContext->OverrideColorWriteEnable(true, false);
+    pRenderContext->OverrideDepthEnable(true, false);
+
+    pRenderContext->SetStencilEnable(true);
+    pRenderContext->SetStencilTestMask(0xFF);
+    pRenderContext->SetStencilWriteMask(0xFF);
+
+    switch (operation)
+    {
+    case Rml::ClipMaskOperation::Set:
+        pRenderContext->ClearBuffers(false, false, true);
+        pRenderContext->SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_ALWAYS);
+        pRenderContext->SetStencilReferenceValue(1);
+        pRenderContext->SetStencilPassOperation(STENCILOPERATION_REPLACE);
+        pRenderContext->SetStencilFailOperation(STENCILOPERATION_KEEP);
+        pRenderContext->SetStencilZFailOperation(STENCILOPERATION_KEEP);
+        break;
+
+    case Rml::ClipMaskOperation::SetInverse:
+        pRenderContext->ClearBuffers(false, false, true);
+        pRenderContext->SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_ALWAYS);
+        pRenderContext->SetStencilReferenceValue(1);
+        pRenderContext->SetStencilPassOperation(STENCILOPERATION_REPLACE);
+        pRenderContext->SetStencilFailOperation(STENCILOPERATION_KEEP);
+        pRenderContext->SetStencilZFailOperation(STENCILOPERATION_KEEP);
+        break;
+
+    case Rml::ClipMaskOperation::Intersect:
+        pRenderContext->SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_EQUAL);
+        pRenderContext->SetStencilReferenceValue(1);
+        pRenderContext->SetStencilPassOperation(STENCILOPERATION_KEEP);
+        pRenderContext->SetStencilFailOperation(STENCILOPERATION_KEEP);
+        pRenderContext->SetStencilZFailOperation(STENCILOPERATION_KEEP);
+        break;
+    }
+
+    RenderGeometry(geometry, translation, 0);
+
+    pRenderContext->OverrideColorWriteEnable(false, false);
+    pRenderContext->OverrideDepthEnable(false, false);
+
+    pRenderContext->SetStencilPassOperation(STENCILOPERATION_KEEP);
+    pRenderContext->SetStencilFailOperation(STENCILOPERATION_KEEP);
+    pRenderContext->SetStencilZFailOperation(STENCILOPERATION_KEEP);
+
+    if (operation == Rml::ClipMaskOperation::SetInverse)
+    {
+        pRenderContext->SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_NOTEQUAL);
+        pRenderContext->SetStencilReferenceValue(1);
+    }
+    else
+    {
+        pRenderContext->SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_EQUAL);
+        pRenderContext->SetStencilReferenceValue(1);
+    }
+}
 
 Rml::LayerHandle RenderInterface_SrcEng::PushLayer() { return 0; }
 
