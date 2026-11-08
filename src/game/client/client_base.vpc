@@ -114,6 +114,9 @@ $Project
 			$File	"hudmanager\uihudmgr.cpp"
 			$File	"hudmanager\hud_radar.cpp"
 			$File	"hudmanager\hud_health.cpp"
+			$File	"hudmanager\hud_roundtimer.cpp"
+			$File	"hudmanager\hud_account.cpp"
+			$File	"hudmanager\hud_scoreboard.cpp"
 
 			$File	"game_controls\slideshowpanel.cpp"
 			$File	"game_controls\slideshowpanel.h"
