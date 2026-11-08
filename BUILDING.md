@@ -1,6 +1,6 @@
 # Building instructions:
 ## Linux:
-### Ubuntu 18.04 (bionic) / Debian 10 (buster)
+### Ubuntu 26.04 (bionic) / Debian 12 (buster)
 #### Preparing
 - Install `git` and clone this repository with `git clone --recursive --depth 1` command. `--recursive` key for init and update submodules on clone, and `--depth 1` key for clone only one last commit from branch.
 - Add `i386` architecture to dpkg with `dpkg --add-architecture i386` command.
@@ -34,7 +34,6 @@ Using a WAF build system you need to install python. I've recommend to use Pytho
 - If waf says something like `/usr/bin/env: 'python': No such file or directory` use `python3 ` prefix before `./waf`.
 - If you need a 32 bit build add `-4` or `--32bits` argument to WAF.
 - Add `--prefix=DIRECTORY` where `DIRECTORY` is output installation directory for game binaries. 
-Default `__build__` if you don't specify a prefix.
 - Configure build games using `--build-games=GAME`, `GAME` can be one of those:
     > cstrike = Counter-Strike: Source // Default - This will be selected if you don't specify a game<br>
     > hl2 = Half-Life 2<br>
@@ -44,15 +43,14 @@ Default `__build__` if you don't specify a prefix.
     > portal = Portal<br>
 - To supress all the warnings during compilation add `--disable-warns`.
 - Want voice chat? Add `--enable-speex` `--enable-opus` arguments to WAF.
-- **Want dedicated server?** Just add `-d` argument to WAF.
+- **Want dedicated server?** Just add `-d` or `--dedicated` argument to WAF.
 
 ### Building (Manual)
 - Run `./waf install` to build the engine and place all the binaries in directory that was specified in `--prefix`.
 - Windows Alternative: simply run `build_projects.bat`.
 
 ### Simplified configuration and building on Windows:
-- Run any of the `configure_cstrike_**.bat` scripts for the configuration you want .
-- Run `create_visualstudio_solution.bat` to create Visual Studio solution and simplify your coding experience.
+- Run `configure.bat` script and you would have 9 options to use for configuration.
 - Inside of Visual Studio you can manually build each one of the projects.
 - Or use `build_all_projects` or `install_all_projects` shortcuts in `build aliases` folder.
 
