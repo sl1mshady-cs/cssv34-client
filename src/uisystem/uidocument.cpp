@@ -19,7 +19,7 @@ void CUIDocument::SetVisible(bool state)
 {
 	if (m_pDocument == nullptr)
 	{
-		Warning("Tried to SetVisible() on uninitialized panel\n");
+		//Warning("Tried to SetVisible() on uninitialized panel\n");
 		return;
 	}
 
