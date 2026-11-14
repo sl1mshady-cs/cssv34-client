@@ -3,12 +3,16 @@
 #include <cdll_int.h>
 #include "mainmenu.h"
 
+#include <string>
+
 CUISystem uisys;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CUISystem, IUISystem, UISYSTEM_INTERFACE_VERSION, uisys);
 
 IMaterial* g_pDefaultUIMaterial = nullptr;
 
 IVEngineClient* engine = nullptr;
+
+static std::string sLastLevel = "";
 
 Rml::Context* g_pMainMenuCtx = nullptr;
 Rml::Context* g_pLoadingDialogCtx = nullptr;
@@ -155,6 +159,21 @@ void CUISystem::Draw()
         for (int i = 0; i < nEventCount; ++i) {
             InputHandleInputEvent(pEvents[i]);
         }
+    }
+
+    const char* levelName = engine->GetLevelName();
+    if (levelName && sLastLevel != levelName)
+    {
+        sLastLevel = levelName;
+
+        std::string map = levelName;
+        size_t slash = map.find_last_of("/\\");
+        if (slash != std::string::npos) map = map.substr(slash + 1);
+        size_t dot = map.find_last_of('.');
+        if (dot != std::string::npos) map = map.substr(0, dot);
+
+        m_strMapName = map;
+        m_LoadingDialogModel.DirtyVariable("map");
     }
 
     mainmenu.Think();
