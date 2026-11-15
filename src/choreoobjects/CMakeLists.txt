@@ -13,7 +13,6 @@ target_sources(choreoobjects PRIVATE
     ../game/shared/sceneimage.cpp
 )
 
-
 target_include_directories(choreoobjects PRIVATE
     .
     ../game/shared
@@ -23,5 +22,4 @@ target_include_directories(choreoobjects PRIVATE
     ../public
     ../common
 )
-
 

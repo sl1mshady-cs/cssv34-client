@@ -20,24 +20,18 @@ target_sources(togl PRIVATE
     linuxwin/decompress.c
 )
 
-if(DARWIN)
-target_sources(togl PRIVATE
-    linuxwin/glmgrcocoa.mm
-)
-
+if(APPLE)
+    target_sources(togl PRIVATE
+        linuxwin/glmgrcocoa.mm
+    )
 endif()
-
 target_include_directories(togl PRIVATE
     .
     ../public
     ../public/tier0
     ../public/tier1
-)
-
-target_include_directories(togl PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
-
 
 target_link_libraries(togl PRIVATE
     tier0
@@ -47,11 +41,9 @@ target_link_libraries(togl PRIVATE
     mathlib
 )
 
-if(DARWIN)
-target_link_libraries(togl PRIVATE
-    OPENGL
-    CARBON
-)
-
+if(APPLE)
+    target_link_libraries(togl PRIVATE
+        ${OPENGL_LIBRARY}
+        ${CARBON_LIBRARY}
+    )
 endif()
-

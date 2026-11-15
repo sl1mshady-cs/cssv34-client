@@ -85,14 +85,12 @@ target_sources(GameUI PRIVATE
 )
 
 if(WIN32)
-target_sources(GameUI PRIVATE
-    LogoFile.cpp
-    ChangeGameDialog.cpp
-    OptionsSubHaptics.cpp
-)
-
+    target_sources(GameUI PRIVATE
+        LogoFile.cpp
+        ChangeGameDialog.cpp
+        OptionsSubHaptics.cpp
+    )
 endif()
-
 target_include_directories(GameUI PRIVATE
     .
     ../public
@@ -102,7 +100,6 @@ target_include_directories(GameUI PRIVATE
     ../common/GameUI
     ../thirdparty
 )
-
 
 target_link_libraries(GameUI PRIVATE
     tier0
@@ -114,19 +111,17 @@ target_link_libraries(GameUI PRIVATE
     vtf
     bitmap
     mathlib
-    SDL2
+    ${SDL2_LIBRARY}
     steam_api
     matsys_controls
-    JPEG
-    PNG
-    ZLIB
+    ${JPEG_LIBRARY}
+    ${PNG_LIBRARY}
+    ${ZLIB_LIBRARY}
 )
 
 if(WIN32)
-target_link_libraries(GameUI PRIVATE
-    USER32
-    GDI32
-)
-
+    target_link_libraries(GameUI PRIVATE
+        ${USER32_LIBRARY}
+        ${GDI32_LIBRARY}
+    )
 endif()
-

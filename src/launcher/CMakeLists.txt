@@ -13,13 +13,11 @@ target_sources(launcher PRIVATE
 )
 
 if(ANDROID)
-target_sources(launcher PRIVATE
-    android/main.cpp
-    android/crashhandler.cpp
-)
-
+    target_sources(launcher PRIVATE
+        android/main.cpp
+        android/crashhandler.cpp
+    )
 endif()
-
 target_include_directories(launcher PRIVATE
     .
     android/libunwind
@@ -27,12 +25,8 @@ target_include_directories(launcher PRIVATE
     ../public/tier0
     ../public/tier1
     ../common
-)
-
-target_include_directories(launcher PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
-
 
 target_link_libraries(launcher PRIVATE
     tier0
@@ -42,17 +36,15 @@ target_link_libraries(launcher PRIVATE
     vstdlib
     steam_api
     appframework
-    SDL2
+    ${SDL2_LIBRARY}
     togl
-    UNWIND
+    ${UNWIND_LIBRARY}
 )
 
 if(WIN32)
-target_link_libraries(launcher PRIVATE
-    USER32
-    OLE32
-    SHELL32
-)
-
+    target_link_libraries(launcher PRIVATE
+        ${USER32_LIBRARY}
+        ${OLE32_LIBRARY}
+        ${SHELL32_LIBRARY}
+    )
 endif()
-

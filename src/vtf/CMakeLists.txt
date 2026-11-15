@@ -11,12 +11,10 @@ target_sources(vtf PRIVATE
 )
 
 if(WIN32)
-target_sources(vtf PRIVATE
-    s3tc_decode.cpp
-)
-
+    target_sources(vtf PRIVATE
+        s3tc_decode.cpp
+    )
 endif()
-
 target_include_directories(vtf PRIVATE
     .
     ../public
@@ -24,5 +22,4 @@ target_include_directories(vtf PRIVATE
     ../public/tier1
     ../common
 )
-
 

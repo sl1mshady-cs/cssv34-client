@@ -51,7 +51,6 @@ target_sources(ivp_compactbuilder PRIVATE
     3dsimport_co.cxx
 )
 
-
 target_include_directories(ivp_compactbuilder PRIVATE
     .
     havok
@@ -62,5 +61,4 @@ target_include_directories(ivp_compactbuilder PRIVATE
     ../ivp_surface_manager
     ../ivp_collision
 )
-
 

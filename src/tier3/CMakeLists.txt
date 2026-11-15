@@ -13,7 +13,6 @@ target_sources(tier3 PRIVATE
     studiohdrstub.cpp
 )
 
-
 target_include_directories(tier3 PRIVATE
     .
     ../common
@@ -23,5 +22,4 @@ target_include_directories(tier3 PRIVATE
     ../public/tier2
     ../public/tier3
 )
-
 

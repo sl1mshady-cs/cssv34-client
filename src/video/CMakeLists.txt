@@ -10,19 +10,14 @@ target_sources(video_services PRIVATE
     ../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(video_services PRIVATE
     .
     ../public
     ../public/tier0
     ../public/tier1
     ../common
-)
-
-target_include_directories(video_services PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
-
 
 target_link_libraries(video_services PRIVATE
     tier0
@@ -33,15 +28,14 @@ target_link_libraries(video_services PRIVATE
 )
 
 if(WIN32)
-target_link_libraries(video_services PRIVATE
-    USER32
-)
-
+    target_link_libraries(video_services PRIVATE
+        ${USER32_LIBRARY}
+    )
 endif()
-if(DARWIN)
-target_link_libraries(video_services PRIVATE
-    COREGRAPHICS
-)
-
+if(NOT WIN32)
+    if(APPLE)
+        target_link_libraries(video_services PRIVATE
+            ${COREGRAPHICS_LIBRARY}
+        )
+    endif()
 endif()
-

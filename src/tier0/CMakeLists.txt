@@ -36,55 +36,44 @@ target_sources(tier0 PRIVATE
 )
 
 if(WIN32)
-target_sources(tier0 PRIVATE
-    assert_dialog.rc
-    platform.cpp
-    pme.cpp
-    vcrmode.cpp
-    win32consoleio.cpp
-)
-
-if(AMD64)
-target_sources(tier0 PRIVATE
-    InterlockedCompareExchange128.masm
-)
-
+    target_sources(tier0 PRIVATE
+        assert_dialog.rc
+        platform.cpp
+        pme.cpp
+        vcrmode.cpp
+        win32consoleio.cpp
+    )
+    if(ARCH_X86_64)
+        target_sources(tier0 PRIVATE
+            InterlockedCompareExchange128.masm
+        )
+    endif()
 endif()
+if(NOT WIN32)
+    target_sources(tier0 PRIVATE
+        cpu_posix.cpp
+        platform_posix.cpp
+        pme_posix.cpp
+        vcrmode_posix.cpp
+    )
 endif()
-if(NOT (WIN32))
-target_sources(tier0 PRIVATE
-    cpu_posix.cpp
-    platform_posix.cpp
-    pme_posix.cpp
-    vcrmode_posix.cpp
-)
-
-endif()
-
 target_include_directories(tier0 PRIVATE
     .
     ../public
     ../public/tier0
-)
-
-target_include_directories(tier0 PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
 
-
 if(WIN32)
-target_link_libraries(tier0 PRIVATE
-    ADVAPI32
-    WS2_32
-)
-
+    target_link_libraries(tier0 PRIVATE
+        ${ADVAPI32_LIBRARY}
+        ${WS2_32_LIBRARY}
+    )
 endif()
-if(NOT (WIN32))
-target_link_libraries(tier0 PRIVATE
-    DL
-    M
-    LOG
-)
-
+if(NOT WIN32)
+    target_link_libraries(tier0 PRIVATE
+        ${DL_LIBRARY}
+        ${M_LIBRARY}
+        LOG
+    )
 endif()
-

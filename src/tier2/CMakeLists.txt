@@ -27,7 +27,6 @@ target_sources(tier2 PRIVATE
     keyvaluesmacros.cpp
 )
 
-
 target_include_directories(tier2 PRIVATE
     .
     ../common
@@ -35,10 +34,6 @@ target_include_directories(tier2 PRIVATE
     ../public/tier0
     ../public/tier1
     ../public/tier2
-)
-
-target_include_directories(tier2 PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
-
 

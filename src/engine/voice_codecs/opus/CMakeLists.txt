@@ -12,7 +12,6 @@ target_sources(vaudio_opus PRIVATE
     ../../../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(vaudio_opus PRIVATE
     .
     ../frame_encoder
@@ -25,12 +24,10 @@ target_include_directories(vaudio_opus PRIVATE
     celt
 )
 
-
 target_link_libraries(vaudio_opus PRIVATE
     tier0
     tier1
     vstdlib
-    OPUS
+    ${OPUS_LIBRARY}
 )
-
 

@@ -22,12 +22,10 @@ target_sources(bitmap PRIVATE
 )
 
 if(WIN32)
-target_sources(bitmap PRIVATE
-    float_bm4.cpp
-)
-
+    target_sources(bitmap PRIVATE
+        float_bm4.cpp
+    )
 endif()
-
 target_include_directories(bitmap PRIVATE
     .
     ../public
@@ -35,5 +33,4 @@ target_include_directories(bitmap PRIVATE
     ../public/tier1
     ../thirdparty/stb
 )
-
 

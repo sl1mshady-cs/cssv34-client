@@ -2,119 +2,94 @@
 # generator
 from pathlib import Path
 import logging
-from waftocmake.parser import ProjectType
 
-def quote(v):
-    return '"' + v.replace("\\", "/") + '"'
-
-def emit_block(f, command, target, lists):
-    if not lists:
-        return
-
-    opened = []
-
-    for lst in lists:
-        common = 0
-        while (
-            common < len(opened)
-            and common < len(lst.conditions)
-            and opened[common].expression == lst.conditions[common].expression
-        ):
-            common += 1
-
-        while len(opened) > common:
-            f.write("endif()\n")
-            opened.pop()
-
-        while len(opened) < len(lst.conditions):
-            cond = lst.conditions[len(opened)]
-            f.write(f"if({cond.expression})\n")
-            opened.append(cond)
-
-
-        f.write(f"{command}({target} PRIVATE\n")
-        for item in lst.items:
-            f.write(f"    {item.replace('\\', '/')}\n")
-
-        f.write(")\n\n")
-
-    while opened:
-        f.write("endif()\n")
-        opened.pop()
-
-    f.write("\n")
+from waftocmake.model import ProjectType
+from waftocmake.generators.common import cm_arg, cm_path, emit_conditional, INDENT
 
 logger = logging.getLogger(__name__)
 
+HEADER = (
+    "# ------------------------------------------------- #\n"
+    "# waf2cmake automatically generated CMakeLists.txt,\n"
+    "# Fix if needed before using.\n"
+    "# ------------------------------------------------- #\n\n"
+)
+
+
 def lists2array(lists):
-    array = []
+    return [item for lst in lists for item in lst.items]
+
+
+def emit_block(f, command, target, lists, convert=None, wrap=None):
+    """target_xxx(<target> PRIVATE ...) for every ConditionalList, grouped by conditions."""
+    # merge neighbours that sit under exactly the same conditions
+    merged = []
     for lst in lists:
+        if not lst.items:
+            continue
+        if merged and [c.expression for c in merged[-1].conditions] == [c.expression for c in lst.conditions]:
+            merged[-1] = type(lst)(merged[-1].items + lst.items, merged[-1].conditions)
+        else:
+            merged.append(type(lst)(list(lst.items), lst.conditions))
+    lists = merged
+    if not lists:
+        return
+
+    def render(lst):
+        items, seen = [], set()
         for item in lst.items:
-            array.append(item)
+            item = convert(item) if convert else item
+            if item not in seen:
+                seen.add(item)
+                items.append(wrap(item) if wrap else cm_arg(item))
+        tail = [] if lst.conditions else [""]
+        return [f"{command}({target} PRIVATE", *[INDENT + i for i in items], ")", *tail]
 
-    return array
+    emit_conditional(f, lists, render)
 
-# generate
-def generate(project, outfile):
+
+def generate(projects, outfile, uselib=None):
+    """projects: Project or list[Project]; uselib: waf uselib name -> CMake expression"""
+    if not isinstance(projects, (list, tuple)):
+        projects = [projects]
+    uselib = uselib or {}
 
     Path(outfile).parent.mkdir(parents=True, exist_ok=True)
 
-    with open(outfile, "w", encoding="utf-8") as f:
+    with open(outfile, "w", encoding="utf-8", newline="\n") as f:
+        f.write(HEADER)
 
-        f.write("# ------------------------------------------------- #\n")
-        f.write("# waf2cmake automatically generated CMakeLists.txt,\n")
-        f.write("# Fix if needed before using.\n")
-        f.write("# ------------------------------------------------- #\n\n")
-
-        #
-        # create target
-        #
-
-        if project.type == ProjectType.EXECUTABLE:
-            f.write(f"add_executable({project.name})\n\n")
-
-        elif project.type == ProjectType.SHARED:
-            f.write(f"add_library({project.name} SHARED)\n\n")
-
-        elif project.type == ProjectType.STATIC:
-            f.write(f"add_library({project.name} STATIC)\n\n")
-
-        else:
-            raise RuntimeError(project.type)
-
-        #
-        # properties
-        #
-
-        logger.info(f" --SRC: {lists2array(project.sources)}")
-        logger.info(f" --INCLUDES: {lists2array(project.includes)}")
-        logger.info(f" --LIBS: {lists2array(project.libs)}")
+        for project in projects:
+            write_target(f, project, uselib)
 
 
-        emit_block(
-            f,
-            "target_sources",
-            project.name,
-            project.sources
-        )
+def write_target(f, project, uselib):
+    name = project.name
 
-        emit_block(
-            f,
-            "target_include_directories",
-            project.name,
-            project.includes
-        )
+    if project.type == ProjectType.EXECUTABLE:
+        f.write(f"add_executable({name})\n\n")
+    elif project.type == ProjectType.SHARED:
+        f.write(f"add_library({name} SHARED)\n\n")
+    elif project.type == ProjectType.STATIC:
+        f.write(f"add_library({name} STATIC)\n\n")
+    else:
+        raise RuntimeError(project.type)
 
-        emit_block(
-            f,
-            "target_compile_definitions",
-            project.name,
-            project.defines
-        )
+    logger.info(f" --SRC: {lists2array(project.sources)}")
+    logger.info(f" --INCLUDES: {lists2array(project.includes)}")
+    logger.info(f" --LIBS: {lists2array(project.libs)}")
 
-        emit_block(
-            f,
-            "target_link_libraries",
-            project.name,
-            project.libs
-        )
+    path = lambda s: cm_arg(cm_path(s))
+    lib = lambda s: cm_arg(uselib.get(s, s))
+
+    emit_block(f, "target_sources", name, project.sources, convert=cm_path)
+    emit_block(f, "target_include_directories", name, project.includes, convert=cm_path)
+    emit_block(f, "target_compile_definitions", name, project.defines)
+    emit_block(f, "target_compile_options", name, project.cflags,
+               wrap=lambda s: cm_arg(f"$<$<COMPILE_LANGUAGE:C>:{s}>"))
+    emit_block(f, "target_compile_options", name, project.cxxflags,
+               wrap=lambda s: cm_arg(f"$<$<COMPILE_LANGUAGE:CXX>:{s}>"))
+    emit_block(f, "target_link_directories", name, project.libpath, convert=cm_path)
+    emit_block(f, "target_link_options", name, project.linkflags)
+    emit_block(f, "target_link_libraries", name, project.libs,
+               convert=lambda s: uselib.get(s, s))

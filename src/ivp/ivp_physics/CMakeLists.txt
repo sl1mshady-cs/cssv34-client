@@ -95,7 +95,6 @@ target_sources(ivp_physics PRIVATE
     ../ivp_utility/ivu_vhash.cxx
 )
 
-
 target_include_directories(ivp_physics PRIVATE
     .
     havok
@@ -107,5 +106,4 @@ target_include_directories(ivp_physics PRIVATE
     ../ivp_intern
     ../havana/havok
 )
-
 

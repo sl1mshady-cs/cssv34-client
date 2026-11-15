@@ -13,24 +13,22 @@ target_sources(vgui_surfacelib PRIVATE
 )
 
 if(WIN32)
-target_sources(vgui_surfacelib PRIVATE
-    Win32Font.cpp
-)
-
+    target_sources(vgui_surfacelib PRIVATE
+        Win32Font.cpp
+    )
 endif()
-if(NOT (WIN32))
-target_sources(vgui_surfacelib PRIVATE
-    linuxfont.cpp
-)
-
+if(NOT WIN32)
+    target_sources(vgui_surfacelib PRIVATE
+        linuxfont.cpp
+    )
 endif()
-
 target_include_directories(vgui_surfacelib PRIVATE
     .
     ../../public
     ../../public/tier0
     ../../public/tier1
     ../../common
+    ${FC_INCLUDE_DIRS}
+    ${FT2_INCLUDE_DIRS}
 )
-
 

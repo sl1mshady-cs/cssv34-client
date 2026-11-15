@@ -32,7 +32,6 @@ target_sources(materialsystem PRIVATE
     ../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(materialsystem PRIVATE
     .
     ../public
@@ -40,12 +39,8 @@ target_include_directories(materialsystem PRIVATE
     ../public/tier1
     ../common
     ../
-)
-
-target_include_directories(materialsystem PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
-
 
 target_link_libraries(materialsystem PRIVATE
     tier0
@@ -57,5 +52,4 @@ target_link_libraries(materialsystem PRIVATE
     shaderlib
     vtf
 )
-
 

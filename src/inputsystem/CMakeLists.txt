@@ -15,12 +15,10 @@ target_sources(inputsystem PRIVATE
 )
 
 if(WIN32)
-target_sources(inputsystem PRIVATE
-    novint.cpp
-)
-
+    target_sources(inputsystem PRIVATE
+        novint.cpp
+    )
 endif()
-
 target_include_directories(inputsystem PRIVATE
     .
     ../common
@@ -28,20 +26,17 @@ target_include_directories(inputsystem PRIVATE
     ../public/tier0
 )
 
-
 target_link_libraries(inputsystem PRIVATE
     tier0
     tier1
     tier2
     vstdlib
-    SDL2
+    ${SDL2_LIBRARY}
     steam_api
 )
 
 if(WIN32)
-target_link_libraries(inputsystem PRIVATE
-    USER32
-)
-
+    target_link_libraries(inputsystem PRIVATE
+        ${USER32_LIBRARY}
+    )
 endif()
-

@@ -52,19 +52,16 @@ target_sources(tier1 PRIVATE
 )
 
 if(WIN32)
-target_sources(tier1 PRIVATE
-    processor_detect.cpp
-)
-
+    target_sources(tier1 PRIVATE
+        processor_detect.cpp
+    )
 endif()
-if(NOT (WIN32))
-target_sources(tier1 PRIVATE
-    processor_detect_linux.cpp
-    qsort_s.cpp
-)
-
+if(NOT WIN32)
+    target_sources(tier1 PRIVATE
+        processor_detect_linux.cpp
+        qsort_s.cpp
+    )
 endif()
-
 target_include_directories(tier1 PRIVATE
     .
     ../
@@ -74,17 +71,15 @@ target_include_directories(tier1 PRIVATE
     ../common
 )
 
-
 if(WIN32)
-target_link_libraries(tier1 PRIVATE
-    RPCRT4
-)
-
+    target_link_libraries(tier1 PRIVATE
+        ${RPCRT4_LIBRARY}
+    )
 endif()
-if(DARWIN)
-target_link_libraries(tier1 PRIVATE
-    ICONV
-)
-
+if(NOT WIN32)
+    if(APPLE)
+        target_link_libraries(tier1 PRIVATE
+            ${ICONV_LIBRARY}
+        )
+    endif()
 endif()
-

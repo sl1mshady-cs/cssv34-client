@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 # waf2cmake
 import argparse
+import logging
+import sys
+from contextlib import nullcontext
 from pathlib import Path
 
-import time
-from alive_progress import alive_bar
+try:
+    from alive_progress import alive_bar
+except ImportError:  # progress bar is optional
+    alive_bar = None
 
 from waftocmake.parser import WafParser
+from waftocmake.rootparser import RootWafParser, RootInfo
 from waftocmake.generators.project import generate
 from waftocmake.generators.rootproject import write_rootproject
-import logging
 
 class bcolors:
     HEADER = '\033[95m'
@@ -23,74 +28,117 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 logger = logging.getLogger(__name__)
-projects = []
 
-def convert_project(wscript: Path):
+
+def convert_project(wscript: Path, uselib, dry_run=False):
+    """Converts one wscript, returns the list of warnings."""
     parser = WafParser()
-    project = parser.parse(wscript)
+    projects = parser.parse(wscript, default_name=wscript.parent.name)
     outfile = wscript.parent / "CMakeLists.txt"
 
-    generate(project, outfile)
-    logger.info("*----------------------------------*")
-    logger.info("*")
-    logger.info(f" [+] Converted {wscript}")
+    if projects and not dry_run:
+        generate(projects, outfile, uselib)
 
-def scan_tree(root: Path, count):
-    for wscript in root.rglob("wscript"):
-        if wscript.parent != Path(root):
-            convert_project(wscript)
-            time.sleep(0.01)
-            yield
+    logger.info(" [+] Converted %s (%d target(s))", wscript, len(projects))
+    return parser.warnings
 
-def count_projects(root: Path):
-    count = 0;
-    for wscript in root.rglob("wscript"):
-        if wscript.is_file() and wscript.parent != Path(root):
-            count += 1
-            projects.append(wscript.parent)
 
-    return count
+def find_all_wscripts(root: Path):
+    return sorted(w for w in root.rglob("wscript") if w.is_file() and w.parent != root)
+
 
 def main():
-    ap = argparse.ArgumentParser()
-
+    ap = argparse.ArgumentParser(description="Convert waf wscripts to CMakeLists.txt")
     ap.add_argument("path", help="Root directory or single wscript")
-    ap.add_argument('-v', '--verbose', action='store_true', help="Verbose")  # on/off flag
-    ap.add_argument('-n', '--name', default='cssv34-client', help="APPNAME")
+    ap.add_argument('-v', '--verbose', action='store_true', help="Verbose")
+    ap.add_argument('-n', '--name', default=None, help="project name (default: APPNAME from the root wscript)")
+    ap.add_argument('--root', default=None, help="root wscript (needed for uselib mapping in single-file mode)")
+    ap.add_argument('--all', action='store_true',
+                    help="convert every wscript found in the tree, not only the ones listed in the root wscript")
+    ap.add_argument('--no-root', action='store_true', help="do not parse the root wscript (old behaviour)")
+    ap.add_argument('--dry-run', action='store_true', help="parse everything, write nothing")
     args = ap.parse_args()
 
+    logging.basicConfig(
+        filename='waf2cmake.log', filemode='w',
+        level=logging.DEBUG if args.verbose else logging.INFO)
+    if args.verbose:
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stderr))
+
     path = Path(args.path)
-    count = 1;
+    single = path.is_file()
+    root = path.parent if single else path
+    root_wscript = Path(args.root) if args.root else (None if single else path / "wscript")
 
-    if not path.is_file():
-        count = count_projects(path)
+    warnings = []
 
-    # clear
-    open(Path('waf2cmake.log'), "w", encoding="utf-8")
+    # ---- root wscript
+    info = None
+    if root_wscript and root_wscript.is_file() and not args.no_root:
+        rp = RootWafParser()
+        info = rp.parse(root_wscript)
+        warnings += info.warnings
+        print(f"{bcolors.HEADER}Root wscript: {bcolors.BOLD}'{root_wscript.resolve()}'{bcolors.ENDC}")
+        print(f"  options: {len(info.options)}, directives: {len(info.directives)}, "
+              f"project sets: {', '.join(f'{k}={len(v)}' for k, v in info.project_sets.items())}")
+    elif not single:
+        print(f"{bcolors.WARNING}No root wscript used, adding every converted directory to the build{bcolors.ENDC}")
 
-    # open log
-    logging.basicConfig(filename='waf2cmake.log', level=logging.INFO)
+    uselib = info.uselib if info else {}
 
-    print(f"{bcolors.HEADER}waf2cmake stats: \n{bcolors.OKBLUE}",
-    f"root: {bcolors.BOLD}{path};",
-    f"single: {path.is_file()};", 
-    f"total: {count}",
-    f"{bcolors.ENDC}"
-    )
-    
-    rootWscript = Path(args.path + "/wscript")
-    if path.is_file():
-        convert_project(path)
+    # ---- which wscripts to convert
+    if single:
+        targets = [path]
     else:
-        with alive_bar(count, ctrl_c=0) as bar:
-            for i in scan_tree(path, count):
-                bar()
+        found = find_all_wscripts(root)
+        if info and not args.all:
+            targets = []
+            for sub in info.all_projects():
+                w = root / sub / "wscript"
+                if w.is_file():
+                    targets.append(w)
+            unreferenced = [w for w in found if w not in targets]
+            if unreferenced:
+                print(f"{bcolors.WARNING}{len(unreferenced)} wscript(s) are not referenced by the root "
+                      f"wscript (use --all to convert them too){bcolors.ENDC}")
+                for w in unreferenced:
+                    logger.info("not referenced by root wscript: %s", w)
+        else:
+            targets = found
 
-    print(f"{bcolors.HEADER} Root waifulib script: {bcolors.BOLD}'{rootWscript.resolve()}'{bcolors.ENDC}");
+    print(f"{bcolors.HEADER}waf2cmake stats:{bcolors.OKBLUE}",
+          f"root: {bcolors.BOLD}{path};",
+          f"single: {single};",
+          f"total: {len(targets)}",
+          f"{bcolors.ENDC}")
 
-    outrootproj = rootWscript.parent / "CMakeLists.txt"
-    write_rootproject(outrootproj, args.name, projects)
-    print(f"{bcolors.OKGREEN} Generated Root 'CMakeLists.txt'{bcolors.ENDC}")
+    bar_ctx = alive_bar(len(targets), ctrl_c=0) if alive_bar and targets else nullcontext(lambda: None)
+    with bar_ctx as bar:
+        for w in targets:
+            try:
+                warnings += convert_project(w, uselib, args.dry_run)
+            except SyntaxError as e:
+                warnings.append(f"{w}: syntax error: {e}")
+            bar()
+
+    # ---- root CMakeLists.txt
+    if not single and not args.dry_run:
+        if info is None:
+            info = RootInfo()
+            info.project_sets = {"all": [str(w.parent.relative_to(root).as_posix()) for w in targets]}
+            info.selections = [((), "all")]
+        name = args.name or info.app_name or root.resolve().name
+        write_rootproject(root / "CMakeLists.txt", name, info, root)
+        print(f"{bcolors.OKGREEN}Generated Root 'CMakeLists.txt'{bcolors.ENDC}")
+
+    for w in warnings:
+        logger.warning(w)
+    if warnings:
+        print(f"{bcolors.WARNING}{len(warnings)} warning(s):{bcolors.ENDC}")
+        for w in warnings[:10]:
+            print(f"  {w}")
+        if len(warnings) > 10:
+            print(f"  ... and {len(warnings) - 10} more")
     print(f"{bcolors.HEADER}Full log can be found in 'waf2cmake.log'{bcolors.ENDC}")
 
 

@@ -120,7 +120,6 @@ target_sources(stdshader_dx9 PRIVATE
     ../../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(stdshader_dx9 PRIVATE
     .
     ../../public
@@ -128,12 +127,8 @@ target_include_directories(stdshader_dx9 PRIVATE
     ../../public/tier1
     fxctmp9
     vshtmp9
-)
-
-target_include_directories(stdshader_dx9 PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
-
 
 target_link_libraries(stdshader_dx9 PRIVATE
     tier0
@@ -143,9 +138,7 @@ target_link_libraries(stdshader_dx9 PRIVATE
 )
 
 if(ANDROID)
-target_link_libraries(stdshader_dx9 PRIVATE
-    ANDROID_SUPPORT
-)
-
+    target_link_libraries(stdshader_dx9 PRIVATE
+        ${ANDROID_SUPPORT_LIBRARY}
+    )
 endif()
-

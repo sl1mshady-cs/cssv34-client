@@ -38,13 +38,11 @@ target_sources(libzstd PRIVATE
     dictBuilder/zdict.c
 )
 
-if(UNKNOWN)
-target_sources(libzstd PRIVATE
-    decompress/huf_decompress_amd64.S
-)
-
+if(NOT (ANDROID OR WIN32))
+    target_sources(libzstd PRIVATE
+        decompress/huf_decompress_amd64.S
+    )
 endif()
-
 target_include_directories(libzstd PRIVATE
     .
     ./common
@@ -53,11 +51,8 @@ target_include_directories(libzstd PRIVATE
     ./dictBuilder
 )
 
-
 if(ANDROID)
-target_link_libraries(libzstd PRIVATE
-    ANDROID_SUPPORT
-)
-
+    target_link_libraries(libzstd PRIVATE
+        ${ANDROID_SUPPORT_LIBRARY}
+    )
 endif()
-

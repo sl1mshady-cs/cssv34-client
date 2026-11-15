@@ -10,7 +10,6 @@ target_sources(scenefilecache PRIVATE
     ../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(scenefilecache PRIVATE
     .
     ../public
@@ -19,16 +18,13 @@ target_include_directories(scenefilecache PRIVATE
     ../game/shared
 )
 
-
 target_link_libraries(scenefilecache PRIVATE
     tier0
     tier1
 )
 
 if(ANDROID)
-target_link_libraries(scenefilecache PRIVATE
-    ANDROID_SUPPORT
-)
-
+    target_link_libraries(scenefilecache PRIVATE
+        ${ANDROID_SUPPORT_LIBRARY}
+    )
 endif()
-

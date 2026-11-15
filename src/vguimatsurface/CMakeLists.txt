@@ -20,12 +20,10 @@ target_sources(vguimatsurface PRIVATE
 )
 
 if(WIN32)
-target_sources(vguimatsurface PRIVATE
-    memorybitmap.cpp
-)
-
+    target_sources(vguimatsurface PRIVATE
+        memorybitmap.cpp
+    )
 endif()
-
 target_include_directories(vguimatsurface PRIVATE
     .
     ../public
@@ -33,7 +31,6 @@ target_include_directories(vguimatsurface PRIVATE
     ../public/tier1
     ../common
 )
-
 
 target_link_libraries(vguimatsurface PRIVATE
     bitmap
@@ -45,22 +42,21 @@ target_link_libraries(vguimatsurface PRIVATE
     tier2
     tier3
     vgui_surfacelib
-    FT2
-    FC
-    SDL2
+    ${FT2_LIBRARY}
+    ${FC_LIBRARY}
+    ${SDL2_LIBRARY}
 )
 
 if(ANDROID)
-target_link_libraries(vguimatsurface PRIVATE
-    EXPAT
-)
-
+    target_link_libraries(vguimatsurface PRIVATE
+        EXPAT
+    )
 endif()
-if(WIN32)
-target_link_libraries(vguimatsurface PRIVATE
-    USER32
-    GDI32
-)
-
+if(NOT ANDROID)
+    if(WIN32)
+        target_link_libraries(vguimatsurface PRIVATE
+            ${USER32_LIBRARY}
+            ${GDI32_LIBRARY}
+        )
+    endif()
 endif()
-

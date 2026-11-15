@@ -17,13 +17,11 @@ target_sources(filesystem_stdio PRIVATE
     ../public/tier0/memoverride.cpp
 )
 
-if(NOT (WIN32))
-target_sources(filesystem_stdio PRIVATE
-    linux_support.cpp
-)
-
+if(NOT WIN32)
+    target_sources(filesystem_stdio PRIVATE
+        linux_support.cpp
+    )
 endif()
-
 target_include_directories(filesystem_stdio PRIVATE
     .
     ../public
@@ -31,7 +29,6 @@ target_include_directories(filesystem_stdio PRIVATE
     ../public/tier1
     ../common
 )
-
 
 target_link_libraries(filesystem_stdio PRIVATE
     tier0
@@ -42,9 +39,7 @@ target_link_libraries(filesystem_stdio PRIVATE
 )
 
 if(WIN32)
-target_link_libraries(filesystem_stdio PRIVATE
-    SHELL32
-)
-
+    target_link_libraries(filesystem_stdio PRIVATE
+        ${SHELL32_LIBRARY}
+    )
 endif()
-

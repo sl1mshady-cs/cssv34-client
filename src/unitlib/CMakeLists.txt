@@ -9,7 +9,6 @@ target_sources(unitlib PRIVATE
     unitlib.cpp
 )
 
-
 target_include_directories(unitlib PRIVATE
     .
     ../
@@ -18,5 +17,4 @@ target_include_directories(unitlib PRIVATE
     ../public/tier0
     ../common
 )
-
 

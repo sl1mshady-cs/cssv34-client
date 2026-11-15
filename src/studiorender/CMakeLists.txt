@@ -20,14 +20,12 @@ target_sources(studiorender PRIVATE
     ../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(studiorender PRIVATE
     .
     ../public
     ../public/tier0
     ../public/tier1
 )
-
 
 target_link_libraries(studiorender PRIVATE
     tier0
@@ -38,5 +36,4 @@ target_link_libraries(studiorender PRIVATE
     mathlib
     bitmap
 )
-
 

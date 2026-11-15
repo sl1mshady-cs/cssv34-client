@@ -22,7 +22,6 @@ target_sources(kv3lib PRIVATE
     utltokenizer.cpp
 )
 
-
 target_include_directories(kv3lib PRIVATE
     .
     ../
@@ -31,5 +30,4 @@ target_include_directories(kv3lib PRIVATE
     ../public/tier0
     ../common
 )
-
 

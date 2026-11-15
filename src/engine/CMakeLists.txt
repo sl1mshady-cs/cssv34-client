@@ -176,156 +176,147 @@ target_sources(engine PRIVATE
     masterserver.cpp
 )
 
-if(UNKNOWN)
-target_sources(engine PRIVATE
-    audio/voice_record_sdl.cpp
-)
-
-if(NOT (DARWIN))
-target_sources(engine PRIVATE
-    audio/snd_dev_sdl.cpp
-)
-
-endif()
+if(SDL)
+    target_sources(engine PRIVATE
+        audio/voice_record_sdl.cpp
+    )
+    if(NOT APPLE)
+        target_sources(engine PRIVATE
+            audio/snd_dev_sdl.cpp
+        )
+    endif()
 endif()
 if(WIN32)
-target_sources(engine PRIVATE
-    ../public/tier0/memoverride.cpp
-)
-
+    target_sources(engine PRIVATE
+        ../public/tier0/memoverride.cpp
+    )
 endif()
-if(NOT (WIN32))
-target_sources(engine PRIVATE
-    audio/snd_posix.cpp
-)
-
+if(NOT WIN32)
+    target_sources(engine PRIVATE
+        audio/snd_posix.cpp
+    )
 endif()
-if(UNKNOWN)
-target_sources(engine PRIVATE
-    cl_null.cpp
-    sys_stubwind.cpp
-)
-
+if(DEDICATED)
+    target_sources(engine PRIVATE
+        cl_null.cpp
+        sys_stubwind.cpp
+    )
 endif()
-if(NOT (UNKNOWN))
-target_sources(engine PRIVATE
-    client_pch.cpp
-    cl_rcon.cpp
-    r_efx.cpp
-    view.cpp
-    rpt_engine.cpp
-    cl_steamauth.cpp
-    cdll_engine_int.cpp
-    cl_main.cpp
-    cl_demo.cpp
-    cl_demoaction.cpp
-    cl_demoaction_types.cpp
-    cl_demoactioneditors.cpp
-    cl_demoactionmanager.cpp
-    cl_demoeditorpanel.cpp
-    cl_demosmootherpanel.cpp
-    cl_demouipanel.cpp
-    cl_foguipanel.cpp
-    cl_txviewpanel.cpp
-    cl_entityreport.cpp
-    cl_ents_parse.cpp
-    cl_localnetworkbackdoor.cpp
-    cl_parse_event.cpp
-    cl_pluginhelpers.cpp
-    cl_pred.cpp
-    cl_texturelistpanel.cpp
-    client.cpp
-    colorcorrectionpanel.cpp
-    buildcubemaps.cpp
-    debug_leafvis.cpp
-    debugoverlay.cpp
-    LoadScreenUpdate.cpp
-    enginetool.cpp
-    gl_drawlights.cpp
-    gl_lightmap.cpp
-    gl_matsysiface.cpp
-    gl_rlight.cpp
-    gl_rmain.cpp
-    gl_rmisc.cpp
-    gl_screen.cpp
-    gl_warp.cpp
-    r_areaportal.cpp
-    shadowmgr.cpp
-    cl_bounded_cvars.cpp
-    downloadthread.cpp
-    matchmakinghost.cpp
-    matchmakingqos.cpp
-    matchmakingclient.cpp
-    matchmakingshared.cpp
-    matchmakingmigrate.cpp
-    replaydemoplayer.cpp
-    Session.cpp
-    sys_mainwind.cpp
-    bugreporter.cpp
-    download.cpp
-    host_saverestore.cpp
-    lightcache.cpp
-    saverestore_filesystem.cpp
-    sys_getmodes.cpp
-    vgui_askconnectpanel.cpp
-    xboxsystem.cpp
-    EngineSoundClient.cpp
-    engsoundservice.cpp
-    audio/MPAFile.cpp
-    audio/MPAHeader.cpp
-    audio/circularbuffer.cpp
-    audio/snd_dev_common.cpp
-    audio/snd_dma.cpp
-    audio/snd_dsp.cpp
-    audio/snd_mix.cpp
-    audio/snd_sentence_mixer.cpp
-    audio/snd_wave_data.cpp
-    audio/snd_wave_mixer.cpp
-    audio/snd_wave_mixer_adpcm.cpp
-    audio/snd_wave_source.cpp
-    audio/snd_wave_temp.cpp
-    audio/snd_win.cpp
-    audio/voice_gain.cpp
-    audio/snd_mp3_source.cpp
-    audio/snd_wave_mixer_mp3.cpp
-    audio/VBRHeader.cpp
-    audio/voice.cpp
-    audio/voice_sound_engine_interface.cpp
-    ../public/vgui_controls/vgui_controls.cpp
-    ../common/vgui/vgui_basebudgetpanel.cpp
-    ../common/vgui/vgui_budgetbargraphpanel.cpp
-    ../common/vgui/vgui_budgethistorypanel.cpp
-    ../common/vgui/vgui_budgetpanelshared.cpp
-    perfuipanel.cpp
-    vgui_basepanel.cpp
-    vgui_baseui_interface.cpp
-    vgui_budgetpanel.cpp
-    vgui_DebugSystemPanel.cpp
-    vgui_drawtreepanel.cpp
-    vgui_helpers.cpp
-    vgui_texturebudgetpanel.cpp
-    vgui_vprofgraphpanel.cpp
-    vgui_vprofpanel.cpp
-    toolframework.cpp
-)
-
-if(NOT (WIN32))
-target_sources(engine PRIVATE
-    audio/voice_mixer_controls_openal.cpp
-    audio/voice_record_openal.cpp
-)
-
+if(NOT DEDICATED)
+    target_sources(engine PRIVATE
+        client_pch.cpp
+        cl_rcon.cpp
+        r_efx.cpp
+        view.cpp
+        rpt_engine.cpp
+        cl_steamauth.cpp
+        cdll_engine_int.cpp
+        cl_main.cpp
+        cl_demo.cpp
+        cl_demoaction.cpp
+        cl_demoaction_types.cpp
+        cl_demoactioneditors.cpp
+        cl_demoactionmanager.cpp
+        cl_demoeditorpanel.cpp
+        cl_demosmootherpanel.cpp
+        cl_demouipanel.cpp
+        cl_foguipanel.cpp
+        cl_txviewpanel.cpp
+        cl_entityreport.cpp
+        cl_ents_parse.cpp
+        cl_localnetworkbackdoor.cpp
+        cl_parse_event.cpp
+        cl_pluginhelpers.cpp
+        cl_pred.cpp
+        cl_texturelistpanel.cpp
+        client.cpp
+        colorcorrectionpanel.cpp
+        buildcubemaps.cpp
+        debug_leafvis.cpp
+        debugoverlay.cpp
+        LoadScreenUpdate.cpp
+        enginetool.cpp
+        gl_drawlights.cpp
+        gl_lightmap.cpp
+        gl_matsysiface.cpp
+        gl_rlight.cpp
+        gl_rmain.cpp
+        gl_rmisc.cpp
+        gl_screen.cpp
+        gl_warp.cpp
+        r_areaportal.cpp
+        shadowmgr.cpp
+        cl_bounded_cvars.cpp
+        downloadthread.cpp
+        matchmakinghost.cpp
+        matchmakingqos.cpp
+        matchmakingclient.cpp
+        matchmakingshared.cpp
+        matchmakingmigrate.cpp
+        replaydemoplayer.cpp
+        Session.cpp
+        sys_mainwind.cpp
+        bugreporter.cpp
+        download.cpp
+        host_saverestore.cpp
+        lightcache.cpp
+        saverestore_filesystem.cpp
+        sys_getmodes.cpp
+        vgui_askconnectpanel.cpp
+        xboxsystem.cpp
+        EngineSoundClient.cpp
+        engsoundservice.cpp
+        audio/MPAFile.cpp
+        audio/MPAHeader.cpp
+        audio/circularbuffer.cpp
+        audio/snd_dev_common.cpp
+        audio/snd_dma.cpp
+        audio/snd_dsp.cpp
+        audio/snd_mix.cpp
+        audio/snd_sentence_mixer.cpp
+        audio/snd_wave_data.cpp
+        audio/snd_wave_mixer.cpp
+        audio/snd_wave_mixer_adpcm.cpp
+        audio/snd_wave_source.cpp
+        audio/snd_wave_temp.cpp
+        audio/snd_win.cpp
+        audio/voice_gain.cpp
+        audio/snd_mp3_source.cpp
+        audio/snd_wave_mixer_mp3.cpp
+        audio/VBRHeader.cpp
+        audio/voice.cpp
+        audio/voice_sound_engine_interface.cpp
+        ../public/vgui_controls/vgui_controls.cpp
+        ../common/vgui/vgui_basebudgetpanel.cpp
+        ../common/vgui/vgui_budgetbargraphpanel.cpp
+        ../common/vgui/vgui_budgethistorypanel.cpp
+        ../common/vgui/vgui_budgetpanelshared.cpp
+        perfuipanel.cpp
+        vgui_basepanel.cpp
+        vgui_baseui_interface.cpp
+        vgui_budgetpanel.cpp
+        vgui_DebugSystemPanel.cpp
+        vgui_drawtreepanel.cpp
+        vgui_helpers.cpp
+        vgui_texturebudgetpanel.cpp
+        vgui_vprofgraphpanel.cpp
+        vgui_vprofpanel.cpp
+        toolframework.cpp
+    )
+    if(NOT WIN32)
+        target_sources(engine PRIVATE
+            audio/voice_mixer_controls_openal.cpp
+            audio/voice_record_openal.cpp
+        )
+    endif()
+    if(APPLE)
+        target_sources(engine PRIVATE
+            audio/snd_dev_openal.cpp
+            audio/snd_dev_mac_audioqueue.cpp
+            audio/voice_record_mac_audioqueue.cpp
+        )
+    endif()
 endif()
-if(DARWIN)
-target_sources(engine PRIVATE
-    audio/snd_dev_openal.cpp
-    audio/snd_dev_mac_audioqueue.cpp
-    audio/voice_record_mac_audioqueue.cpp
-)
-
-endif()
-endif()
-
 target_include_directories(engine PRIVATE
     .
     ../common/RmlUi/Include
@@ -337,7 +328,6 @@ target_include_directories(engine PRIVATE
     ../public/engine/audio/
     audio/
 )
-
 
 target_link_libraries(engine PRIVATE
     tier0
@@ -354,40 +344,40 @@ target_link_libraries(engine PRIVATE
     mathlib
     steam_api
     matsys_controls
-    BZ2
-    SDL2
-    JPEG
-    ZLIB
-    OPENAL
-    CURL
+    ${BZ2_LIBRARY}
+    ${SDL2_LIBRARY}
+    ${JPEG_LIBRARY}
+    ${ZLIB_LIBRARY}
+    ${OPENAL_LIBRARY}
+    ${CURL_LIBRARY}
 )
 
 if(ANDROID)
-target_link_libraries(engine PRIVATE
-    SSL
-    CRYPTO
-)
-
+    target_link_libraries(engine PRIVATE
+        ${SSL_LIBRARY}
+        ${CRYPTO_LIBRARY}
+    )
 endif()
-if(WIN32)
-target_link_libraries(engine PRIVATE
-    USER32
-    WINMM
-    WININET
-    DSOUND
-    DXGUID
-    GDI32
-    bzip2
-)
-
+if(NOT ANDROID)
+    if(WIN32)
+        target_link_libraries(engine PRIVATE
+            ${USER32_LIBRARY}
+            ${WINMM_LIBRARY}
+            ${WININET_LIBRARY}
+            ${DSOUND_LIBRARY}
+            ${DXGUID_LIBRARY}
+            ${GDI32_LIBRARY}
+            bzip2
+        )
+    endif()
+    if(NOT WIN32)
+        if(APPLE AND NOT DEDICATED)
+            target_link_libraries(engine PRIVATE
+                ${APPKIT_LIBRARY}
+                ${COREAUDIO_LIBRARY}
+                ${AUDIOTOOLBOX_LIBRARY}
+                ${SYSTEMCONFIGURATION_LIBRARY}
+            )
+        endif()
+    endif()
 endif()
-if((DARWIN) AND (NOT (UNKNOWN)))
-target_link_libraries(engine PRIVATE
-    APPKIT
-    COREAUDIO
-    AUDIOTOOLBOX
-    SYSTEMCONFIGURATION
-)
-
-endif()
-

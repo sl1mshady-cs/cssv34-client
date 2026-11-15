@@ -16,19 +16,16 @@ target_sources(vstdlib PRIVATE
 )
 
 if(WIN32)
-target_sources(vstdlib PRIVATE
-    processutils.cpp
-)
-
-if(AMD64)
-target_sources(vstdlib PRIVATE
-    coroutine_win64.masm
-    GetStackPtr64.masm
-)
-
+    target_sources(vstdlib PRIVATE
+        processutils.cpp
+    )
+    if(ARCH_X86_64)
+        target_sources(vstdlib PRIVATE
+            coroutine_win64.masm
+            GetStackPtr64.masm
+        )
+    endif()
 endif()
-endif()
-
 target_include_directories(vstdlib PRIVATE
     .
     ../public
@@ -37,16 +34,21 @@ target_include_directories(vstdlib PRIVATE
     ../public/vstdlib
 )
 
-
+if(NOT ANDROID)
+    if(APPLE)
+        target_link_options(vstdlib PRIVATE
+            -framework
+            CoreServices
+        )
+    endif()
+endif()
 target_link_libraries(vstdlib PRIVATE
     tier0
     tier1
 )
 
 if(ANDROID)
-target_link_libraries(vstdlib PRIVATE
-    ANDROID_SUPPORT
-)
-
+    target_link_libraries(vstdlib PRIVATE
+        ${ANDROID_SUPPORT_LIBRARY}
+    )
 endif()
-

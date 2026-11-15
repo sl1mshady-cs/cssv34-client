@@ -10,12 +10,10 @@ target_sources(tier0test PRIVATE
     tslisttests.cpp
 )
 
-
 target_include_directories(tier0test PRIVATE
     ../../public
     ../../public/tier0
 )
-
 
 target_link_libraries(tier0test PRIVATE
     tier0
@@ -23,18 +21,15 @@ target_link_libraries(tier0test PRIVATE
     unitlib
 )
 
-if(NOT (WIN32))
-target_link_libraries(tier0test PRIVATE
-    DL
-    LOG
-)
-
+if(NOT WIN32)
+    target_link_libraries(tier0test PRIVATE
+        ${DL_LIBRARY}
+        LOG
+    )
 endif()
-if(NOT (NOT (WIN32)))
-target_link_libraries(tier0test PRIVATE
-    USER32
-    SHELL32
-)
-
+if(WIN32)
+    target_link_libraries(tier0test PRIVATE
+        ${USER32_LIBRARY}
+        ${SHELL32_LIBRARY}
+    )
 endif()
-

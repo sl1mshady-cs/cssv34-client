@@ -12,7 +12,6 @@ target_sources(soundemittersystem PRIVATE
     ../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(soundemittersystem PRIVATE
     .
     ../public
@@ -21,11 +20,9 @@ target_include_directories(soundemittersystem PRIVATE
     ../game/shared
 )
 
-
 target_link_libraries(soundemittersystem PRIVATE
     tier0
     tier1
     vstdlib
 )
-
 

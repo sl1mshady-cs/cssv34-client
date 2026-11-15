@@ -7,12 +7,8 @@ add_library(client SHARED)
 
 target_sources(client PRIVATE
     in_touch.cpp
-)
-
-target_sources(client PRIVATE
     ../../public/tier0/memoverride.cpp
 )
-
 
 target_include_directories(client PRIVATE
     .
@@ -25,7 +21,6 @@ target_include_directories(client PRIVATE
     ../../vgui2/controls
     ../shared
 )
-
 
 target_link_libraries(client PRIVATE
     tier0
@@ -43,14 +38,12 @@ target_link_libraries(client PRIVATE
     bitmap
     vtf
     rmlui
-    RT
-    ZLIB
+    ${RT_LIBRARY}
+    ${ZLIB_LIBRARY}
 )
 
 if(WIN32)
-target_link_libraries(client PRIVATE
-    USER32
-)
-
+    target_link_libraries(client PRIVATE
+        ${USER32_LIBRARY}
+    )
 endif()
-

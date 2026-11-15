@@ -26,11 +26,9 @@ target_sources(hk_math PRIVATE
     transform.cpp
 )
 
-
 target_include_directories(hk_math PRIVATE
     .
     ../
     ../../../ivp_utility/
 )
-
 

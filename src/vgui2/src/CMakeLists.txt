@@ -29,31 +29,24 @@ target_sources(vgui2 PRIVATE
 )
 
 if(WIN32)
-target_sources(vgui2 PRIVATE
-    Surface.cpp
-    System.cpp
-)
-
+    target_sources(vgui2 PRIVATE
+        Surface.cpp
+        System.cpp
+    )
 endif()
-if(NOT (WIN32))
-target_sources(vgui2 PRIVATE
-    system_posix.cpp
-)
-
+if(NOT WIN32)
+    target_sources(vgui2 PRIVATE
+        system_posix.cpp
+    )
 endif()
-
 target_include_directories(vgui2 PRIVATE
     .
     ../../public
     ../../public/tier0
     ../../public/tier1
     ../../common
-)
-
-target_include_directories(vgui2 PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
-
 
 target_link_libraries(vgui2 PRIVATE
     tier0
@@ -61,26 +54,25 @@ target_link_libraries(vgui2 PRIVATE
     tier2
     tier3
     vstdlib
-    SDL2
+    ${SDL2_LIBRARY}
 )
 
 if(WIN32)
-target_link_libraries(vgui2 PRIVATE
-    USER32
-    IMM32
-    GDI32
-    SHELL32
-    OLE32
-    SHLWAPI
-    vgui_surfacelib
-    WINMM
-)
-
+    target_link_libraries(vgui2 PRIVATE
+        ${USER32_LIBRARY}
+        ${IMM32_LIBRARY}
+        ${GDI32_LIBRARY}
+        ${SHELL32_LIBRARY}
+        ${OLE32_LIBRARY}
+        ${SHLWAPI_LIBRARY}
+        vgui_surfacelib
+        ${WINMM_LIBRARY}
+    )
 endif()
-if(DARWIN)
-target_link_libraries(vgui2 PRIVATE
-    APPLICATIONSERVICES
-)
-
+if(NOT WIN32)
+    if(APPLE)
+        target_link_libraries(vgui2 PRIVATE
+            ${APPLICATIONSERVICES_LIBRARY}
+        )
+    endif()
 endif()
-

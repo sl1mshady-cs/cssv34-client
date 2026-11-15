@@ -19,16 +19,12 @@ target_sources(plutovg PRIVATE
     plutovg-surface.c
 )
 
-
 target_include_directories(plutovg PRIVATE
     ../include
 )
 
-
 if(ANDROID)
-target_link_libraries(plutovg PRIVATE
-    ANDROID_SUPPORT
-)
-
+    target_link_libraries(plutovg PRIVATE
+        ${ANDROID_SUPPORT_LIBRARY}
+    )
 endif()
-

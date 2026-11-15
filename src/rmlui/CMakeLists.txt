@@ -147,9 +147,6 @@ target_sources(rmlui PRIVATE
     Core/XMLNodeHandlerTemplate.cpp
     Core/XMLParser.cpp
     Core/XMLParseTools.cpp
-)
-
-target_sources(rmlui PRIVATE
     Core/Elements/ElementForm.cpp
     Core/Elements/ElementFormControl.cpp
     Core/Elements/ElementFormControlInput.cpp
@@ -176,9 +173,6 @@ target_sources(rmlui PRIVATE
     Core/Elements/XMLNodeHandlerSelect.cpp
     Core/Elements/XMLNodeHandlerTabSet.cpp
     Core/Elements/XMLNodeHandlerTextArea.cpp
-)
-
-target_sources(rmlui PRIVATE
     Core/Layout/BlockContainer.cpp
     Core/Layout/BlockFormattingContext.cpp
     Core/Layout/ContainerBox.cpp
@@ -196,9 +190,6 @@ target_sources(rmlui PRIVATE
     Core/Layout/ReplacedFormattingContext.cpp
     Core/Layout/TableFormattingContext.cpp
     Core/Layout/TableFormattingDetails.cpp
-)
-
-target_sources(rmlui PRIVATE
     Core/FontEngineDefault/FontEngineInterfaceDefault.cpp
     Core/FontEngineDefault/FontFace.cpp
     Core/FontEngineDefault/FontFaceHandleDefault.cpp
@@ -206,9 +197,6 @@ target_sources(rmlui PRIVATE
     Core/FontEngineDefault/FontFamily.cpp
     Core/FontEngineDefault/FontProvider.cpp
     Core/FontEngineDefault/FreeTypeInterface.cpp
-)
-
-target_sources(rmlui PRIVATE
     SVG/DecoratorSVG.cpp
     SVG/ElementSVG.cpp
     SVG/SVGCache.cpp
@@ -224,9 +212,6 @@ target_sources(rmlui PRIVATE
     ../thirdparty/lunasvg/source/svgproperty.cpp
     ../thirdparty/lunasvg/source/svgrenderstate.cpp
     ../thirdparty/lunasvg/source/svgtextelement.cpp
-)
-
-target_sources(rmlui PRIVATE
     Lua/Colourb.cpp
     Lua/Colourf.cpp
     Lua/Context.cpp
@@ -266,7 +251,6 @@ target_sources(rmlui PRIVATE
     Lua/Elements/SelectOptionsProxy.cpp
 )
 
-
 target_include_directories(rmlui PRIVATE
     .
     ../public
@@ -280,21 +264,18 @@ target_include_directories(rmlui PRIVATE
     ../game/shared
 )
 
-
 target_link_libraries(rmlui PRIVATE
     tier0
     tier1
     tier2
     plutovg
     lua
-    FT2
-    LEGACY_STDIO_DEFINITIONS
+    ${FT2_LIBRARY}
+    ${LEGACY_STDIO_DEFINITIONS_LIBRARY}
 )
 
 if(ANDROID)
-target_link_libraries(rmlui PRIVATE
-    ANDROID_SUPPORT
-)
-
+    target_link_libraries(rmlui PRIVATE
+        ${ANDROID_SUPPORT_LIBRARY}
+    )
 endif()
-

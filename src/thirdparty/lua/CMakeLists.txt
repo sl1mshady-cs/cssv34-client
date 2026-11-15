@@ -41,21 +41,16 @@ target_sources(lua PRIVATE
     linit.c
 )
 
-
 target_include_directories(lua PRIVATE
     .
 )
-
 
 target_compile_definitions(lua PRIVATE
     LUA_COMPAT_5_2
 )
 
-
 if(ANDROID)
-target_link_libraries(lua PRIVATE
-    ANDROID_SUPPORT
-)
-
+    target_link_libraries(lua PRIVATE
+        ${ANDROID_SUPPORT_LIBRARY}
+    )
 endif()
-

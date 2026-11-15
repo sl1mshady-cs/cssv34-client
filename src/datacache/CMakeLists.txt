@@ -14,7 +14,6 @@ target_sources(datacache PRIVATE
     ../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(datacache PRIVATE
     .
     ../public
@@ -22,7 +21,6 @@ target_include_directories(datacache PRIVATE
     ../public/tier1
     ../common
 )
-
 
 target_link_libraries(datacache PRIVATE
     tier0
@@ -32,9 +30,7 @@ target_link_libraries(datacache PRIVATE
 )
 
 if(ANDROID)
-target_link_libraries(datacache PRIVATE
-    ANDROID_SUPPORT
-)
-
+    target_link_libraries(datacache PRIVATE
+        ${ANDROID_SUPPORT_LIBRARY}
+    )
 endif()
-

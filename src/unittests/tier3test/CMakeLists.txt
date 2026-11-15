@@ -9,12 +9,10 @@ target_sources(tier3test PRIVATE
     tier3test.cpp
 )
 
-
 target_include_directories(tier3test PRIVATE
     ../../public
     ../../public/tier0
 )
-
 
 target_link_libraries(tier3test PRIVATE
     tier0
@@ -25,18 +23,15 @@ target_link_libraries(tier3test PRIVATE
     unitlib
 )
 
-if(NOT (WIN32))
-target_link_libraries(tier3test PRIVATE
-    DL
-    LOG
-)
-
+if(NOT WIN32)
+    target_link_libraries(tier3test PRIVATE
+        ${DL_LIBRARY}
+        LOG
+    )
 endif()
-if(NOT (NOT (WIN32)))
-target_link_libraries(tier3test PRIVATE
-    USER32
-    SHELL32
-)
-
+if(WIN32)
+    target_link_libraries(tier3test PRIVATE
+        ${USER32_LIBRARY}
+        ${SHELL32_LIBRARY}
+    )
 endif()
-

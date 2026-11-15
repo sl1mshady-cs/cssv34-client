@@ -11,7 +11,6 @@ target_sources(shaderlib PRIVATE
     shaderlib_cvar.cpp
 )
 
-
 target_include_directories(shaderlib PRIVATE
     .
     ../../public
@@ -20,5 +19,4 @@ target_include_directories(shaderlib PRIVATE
     ../../common
     ../
 )
-
 

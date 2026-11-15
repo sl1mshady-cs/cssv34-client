@@ -16,7 +16,6 @@ target_sources(bzip2 PRIVATE
     randtable.c
 )
 
-
 target_include_directories(bzip2 PRIVATE
     .
     ../public
@@ -24,5 +23,4 @@ target_include_directories(bzip2 PRIVATE
     ../public/tier1
     ../common
 )
-
 

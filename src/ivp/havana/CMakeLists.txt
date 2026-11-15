@@ -23,7 +23,6 @@ target_sources(havana_constraints PRIVATE
     havok/hk_physics/effector/rigid_body_binary_effector.cpp
 )
 
-
 target_include_directories(havana_constraints PRIVATE
     .
     havok
@@ -31,5 +30,4 @@ target_include_directories(havana_constraints PRIVATE
     ../ivp_utility
     ../ivp_controller
 )
-
 

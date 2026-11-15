@@ -17,7 +17,6 @@ target_sources(uisystem PRIVATE
     uisysteminterface.cpp
 )
 
-
 target_include_directories(uisystem PRIVATE
     .
     ../thirdparty
@@ -26,7 +25,6 @@ target_include_directories(uisystem PRIVATE
     ../public/tier1
     ../game/shared
 )
-
 
 target_link_libraries(uisystem PRIVATE
     tier0
@@ -37,14 +35,12 @@ target_link_libraries(uisystem PRIVATE
     bitmap
     mathlib
     rmlui
-    FT2
-    LEGACY_STDIO_DEFINITIONS
+    ${FT2_LIBRARY}
+    ${LEGACY_STDIO_DEFINITIONS_LIBRARY}
 )
 
 if(ANDROID)
-target_link_libraries(uisystem PRIVATE
-    ANDROID_SUPPORT
-)
-
+    target_link_libraries(uisystem PRIVATE
+        ${ANDROID_SUPPORT_LIBRARY}
+    )
 endif()
-

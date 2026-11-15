@@ -20,7 +20,6 @@ target_sources(datamodel PRIVATE
     undomanager.cpp
 )
 
-
 target_include_directories(datamodel PRIVATE
     .
     ../public
@@ -28,5 +27,4 @@ target_include_directories(datamodel PRIVATE
     ../public/tier1
     ../common
 )
-
 

@@ -12,7 +12,6 @@ target_sources(vaudio_speex PRIVATE
     ../../../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(vaudio_speex PRIVATE
     .
     ../frame_encoder
@@ -25,12 +24,10 @@ target_include_directories(vaudio_speex PRIVATE
     ../../audio
 )
 
-
 target_link_libraries(vaudio_speex PRIVATE
     tier0
     tier1
     vstdlib
-    SPEEX
+    ${SPEEX_LIBRARY}
 )
-
 

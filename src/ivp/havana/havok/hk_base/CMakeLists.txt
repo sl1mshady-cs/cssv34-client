@@ -17,10 +17,8 @@ target_sources(hk_base PRIVATE
     console.cpp
 )
 
-
 target_include_directories(hk_base PRIVATE
     .
     ../
 )
-
 

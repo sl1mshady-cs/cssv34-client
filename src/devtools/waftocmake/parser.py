@@ -1,344 +1,384 @@
 #!/usr/bin/env python3
 # parser
 import ast
-import argparse
 from pathlib import Path
-from dataclasses import dataclass, field
-from typing import List, Optional
-from enum import Enum
 
-@dataclass
-class Condition:
-    expression: str
+from waftocmake.model import (  # noqa: F401  (re-exported for old imports)
+    Blocks, Condition, ConditionalList, Project, ProjectType, rebase,
+)
+from waftocmake.conditions import convert_condition, dotted, env_name, negate
 
+# values of conf.env.X that are not simply "${X}"
+ENV_SPECIAL = {
+    'DEST_OS': '${WAF_DEST_OS}',
+    'DEST_CPU': '${WAF_DEST_CPU}',
+    'PREFIX': '${CMAKE_INSTALL_PREFIX}',
+}
 
-@dataclass
-class ConditionalList:
-    items: List[str]
-    conditions: tuple[Condition, ...] = ()
-
-# project type enum
-class ProjectType(Enum):
-    EXECUTABLE = "exe"
-    STATIC = "static"
-    SHARED = "shared"
+# calls whose result we deliberately do not model (no warning)
+QUIET_CALLS = ('add_option_group', 'run_test', 'check_cc', 'check_cxx', 'check', 'load')
 
 
-@dataclass
-class Project:
-    name: str = ""
-    type: ProjectType | None = None
-    sources: list[ConditionalList] = field(default_factory=list)
-    includes: list[ConditionalList] = field(default_factory=list)
-    defines: list[ConditionalList] = field(default_factory=list)
-    libs: list[ConditionalList] = field(default_factory=list)
+class BaseWafParser(ast.NodeVisitor):
+    """Tiny abstract interpreter for the subset of python used by wscripts.
 
-
-class WafParser(ast.NodeVisitor):
+    Values are either python scalars (str/int/bool) or Blocks (list of ConditionalList,
+    each remembering under which `if` conditions it was created).
+    """
 
     def __init__(self):
-        self.project = Project()
         self.variables = {}
         self.condition_stack = []
+        self.warnings = []
+        self.filename = ""
+        self.functions = {}
 
-    def parse(self, filename):
-        source = Path(filename).read_text(encoding="utf-8")
-        tree = ast.parse(source, filename)
-        self.visit(tree)
+    # ------------------------------------------------------------ helpers
 
-        return self.project
+    def warn(self, node, msg):
+        self.warnings.append(f"{self.filename}:{getattr(node, 'lineno', '?')}: {msg}")
 
-    def visit_Module(self, node):
-        for stmt in node.body:
-            self.visit(stmt)
+    def current(self):
+        return tuple(self.condition_stack)
 
-    def visit_Assign(self, node):
-        if len(node.targets) != 1:
-            return
+    def convert(self, node):
+        return convert_condition(node)
 
-        target = node.targets[0]
-
-        if not isinstance(target, ast.Name):
-            return
-
-        name = target.id
-
-        if name == "PROJECT_NAME":
-            if isinstance(node.value, ast.Constant):
-                self.project.name = node.value.value
-                self.variables["PROJECT_NAME"] = node.value.value
-                return
-
-        self.handle_variable_assignment(name, node.value)
-        
-    def normalize(self, value):
-        if value is None:
-            return []
-
-        if not value:
-            return []
-
-        if isinstance(value[0], ConditionalList):
+    def as_blocks(self, value):
+        if isinstance(value, Blocks):
             return value
+        if value is None:
+            return Blocks()
+        if isinstance(value, (str, int)):
+            return Blocks([ConditionalList([str(value)], self.current())])
+        return Blocks()
 
+    def rebased(self, value):
+        """Blocks of `value` with conditions as seen from the current position."""
         return [
-            ConditionalList(
-                items=value,
-                conditions=self.condition_stack.copy()
-            )
+            ConditionalList(list(b.items), rebase(b.conditions, self.current()))
+            for b in self.as_blocks(value)
         ]
 
-    def handle_variable_assignment(self, name, value):
-        blocks = self.normalize(self.evaluate(value))
-
-        if not self.condition_stack:
-            self.variables[name] = blocks
-        else:
-            self.variables.setdefault(name, []).extend(
-                ConditionalList(
-                    items=b.items,
-                    conditions=self.condition_stack.copy()
-                )
-                for b in blocks
-            )
+    # ------------------------------------------------------------ evaluation
 
     def evaluate(self, node):
         if isinstance(node, ast.Constant):
             return node.value
 
-        if isinstance(node, ast.List):
-            return [self.evaluate(i) for i in node.elts]
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            items = []
+            blocks = Blocks()
+            for e in node.elts:
+                v = self.evaluate(e)
+                if isinstance(v, Blocks):
+                    blocks.extend(v)
+                elif v is not None:
+                    items.append(str(v))
+            if items:
+                blocks.insert(0, ConditionalList(items, self.current()))
+            return blocks
 
         if isinstance(node, ast.Name):
-            return self.variables.get(node.id, [])
+            if node.id in self.variables:
+                return self.variables[node.id]
+            self.warn(node, f"unknown variable '{node.id}'")
+            return None
 
         if isinstance(node, ast.BinOp):
-
-            if isinstance(node.op, ast.Add):
-
-                left = self.normalize(self.evaluate(node.left))
-                right = self.normalize(self.evaluate(node.right))
-
-                return left + right
+            return self.eval_binop(node)
 
         if isinstance(node, ast.Attribute):
+            return self.eval_attribute(node)
 
-            text = self.attribute_to_string(node)
+        if isinstance(node, ast.Call):
+            return self.eval_call(node)
 
-            if text == "bld.env.INCLUDES_SDL2":
+        if isinstance(node, ast.IfExp):
+            self.warn(node, "conditional expression is not supported")
+            return None
 
-                return ["${SDL2_INCLUDE_DIRS}"]
+        self.warn(node, f"unsupported expression: {ast.unparse(node)}")
+        return None
 
-            return []
+    def eval_binop(self, node):
+        left = self.evaluate(node.left)
+        right = self.evaluate(node.right)
 
-    def visit_AugAssign(self, node):
-        if not isinstance(node.target, ast.Name):
-            return
+        if isinstance(node.op, ast.Add):
+            if isinstance(left, Blocks) or isinstance(right, Blocks):
+                return Blocks(list(self.as_blocks(left)) + list(self.as_blocks(right)))
+            if isinstance(left, str) and isinstance(right, str):
+                return left + right
+            self.warn(node, f"cannot evaluate: {ast.unparse(node)}")
+            return None
 
-        if not isinstance(node.op, ast.Add):
-            return
+        if isinstance(node.op, ast.Mod) and isinstance(left, str) and isinstance(right, (str, int)):
+            try:
+                return left % right
+            except (TypeError, ValueError):
+                pass
 
-        rhs = self.evaluate(node.value)
+        self.warn(node, f"cannot evaluate: {ast.unparse(node)}")
+        return None
 
-        if not rhs:
-            return
+    def eval_attribute(self, node):
+        ref = env_name(node)
+        if not ref:
+            self.warn(node, f"unsupported attribute: {ast.unparse(node)}")
+            return None
 
-        if isinstance(rhs[0], ConditionalList):
-            blocks = rhs
-        else:
-            blocks = [
-                ConditionalList(
-                    items=rhs,
-                    conditions=self.condition_stack.copy()
-                )
-            ]
+        name = ref[1]
+        if name.startswith('INCLUDES_'):
+            return Blocks([ConditionalList([f"${{{name[len('INCLUDES_'):]}_INCLUDE_DIRS}}"], self.current())])
 
-        self.variables.setdefault(node.target.id, []).extend(blocks)
+        return ENV_SPECIAL.get(name, f"${{{name}}}")
+
+    def eval_call(self, node):
+        fn = dotted(node.func)
+
+        if fn.endswith(QUIET_CALLS):
+            return None
+
+        args = [self.evaluate(a) for a in node.args]
+
+        if fn == 'list' and args:
+            v = args[0]
+            if isinstance(v, Blocks):
+                return Blocks(ConditionalList(list(b.items), b.conditions) for b in v)
+            return v
+
+        if fn in ('os.path.abspath', 'os.path.normpath') and args and isinstance(args[0], str):
+            rel = args[0].replace('\\', '/').strip()
+            if rel in ('', '.', './'):
+                return '${CMAKE_SOURCE_DIR}'
+            return '${CMAKE_SOURCE_DIR}/' + rel.strip('/')
+
+        if fn == 'os.path.join' and args and all(isinstance(a, str) for a in args):
+            return '/'.join(a.strip('/') if i else a.rstrip('/') for i, a in enumerate(args))
+
+        if fn.endswith(('.filter_cflags', '.filter_cxxflags')) and args:
+            # waf keeps only flags the compiler accepts; '?' marks "check before use"
+            return Blocks(
+                ConditionalList(["?" + i for i in b.items], b.conditions)
+                for b in self.as_blocks(args[0])
+            )
+
+        if fn.endswith('.ant_glob'):
+            self.warn(node, "ant_glob() is not supported, list the sources explicitly")
+            return None
+
+        self.warn(node, f"unsupported call: {ast.unparse(node)}")
+        return None
+
+    # ------------------------------------------------------------ statements
 
     def visit_FunctionDef(self, node):
-        if node.name != "build":
-            return
+        return  # bodies are visited explicitly by subclasses
 
-        for stmt in node.body:
+    def visit_body(self, stmts):
+        """Visit statements; `if X: return` makes the rest of the body conditional on NOT X."""
+        pushed = 0
+        for stmt in stmts:
             self.visit(stmt)
+            if (
+                isinstance(stmt, ast.If)
+                and not stmt.orelse
+                and any(isinstance(s, ast.Return) for s in stmt.body)
+            ):
+                cond = self.convert(stmt.test)
+                self.condition_stack.append(Condition(negate(cond.expression), cond.note))
+                pushed += 1
+        for _ in range(pushed):
+            self.condition_stack.pop()
 
-    def attribute_to_string(self, node):
-        if isinstance(node, ast.Name):
-            return node.id
+    def visit_If(self, node):
+        cond = self.convert(node.test)
 
-        if isinstance(node, ast.Attribute):
-            return self.attribute_to_string(node.value) + "." + node.attr
+        self.condition_stack.append(cond)
+        self.visit_body(node.body)
+        self.condition_stack.pop()
 
-        return ""
+        if node.orelse:
+            # an `elif` is just an If nested in orelse, so it nests naturally
+            self.condition_stack.append(Condition(negate(cond.expression), cond.note))
+            self.visit_body(node.orelse)
+            self.condition_stack.pop()
+
+    def visit_For(self, node):
+        if not isinstance(node.target, ast.Name):
+            self.warn(node, "unsupported for loop")
+            return
+        items = [i for b in self.as_blocks(self.evaluate(node.iter)) for i in b.items]
+        for item in items:
+            self.variables[node.target.id] = item
+            self.visit_body(node.body)
 
     def visit_Expr(self, node):
         if isinstance(node.value, ast.Call):
-
             self.handle_call(node.value)
 
     def handle_call(self, call):
-        if isinstance(call.func, ast.Name):
-            if call.func.id == "bld":
-                self.project.type = ProjectType.EXECUTABLE
-                self.parse_project_arguments(call)
+        pass
 
-        if not isinstance(call.func, ast.Attribute):
+    def visit_Assign(self, node):
+        if len(node.targets) != 1:
             return
+        target = node.targets[0]
 
-        name = call.func.attr
+        if isinstance(target, ast.Name):
+            self.assign_name(target.id, node.value)
+        elif isinstance(target, ast.Tuple):
+            # cflags, linkflags = conf.get_optimization_flags()
+            for elt in target.elts:
+                if isinstance(elt, ast.Name):
+                    self.variables[elt.id] = Blocks()
+        elif isinstance(target, ast.Attribute):
+            self.assign_attr(target, node.value, node)
 
-        if name == "shlib":
-            self.project.type = ProjectType.SHARED
-
-        elif name == "stlib":
-            self.project.type = ProjectType.STATIC
-
-        elif name == "__call__":
-            self.project.type = ProjectType.EXECUTABLE
-
-        elif name == "program":
-            self.project.type = ProjectType.EXECUTABLE
-
+    def assign_name(self, name, value_node):
+        value = self.evaluate(value_node)
+        old = self.variables.get(name)
+        if isinstance(value, Blocks) and self.condition_stack and isinstance(old, Blocks):
+            # assignment inside if/else: keep both alternatives, each with its own conditions
+            self.variables[name] = Blocks(list(old) + list(value))
         else:
+            self.variables[name] = value
+
+    def assign_attr(self, target, value_node, node):
+        pass
+
+    def visit_AugAssign(self, node):
+        if not isinstance(node.op, ast.Add):
             return
 
-        self.parse_project_arguments(call)
-        
-    def parse_project_arguments(self, call):
+        if isinstance(node.target, ast.Name):
+            rhs = self.as_blocks(self.evaluate(node.value))
+            old = self.variables.get(node.target.id)
+            # new list on purpose: `cxxflags = list(cflags)` must stay independent
+            self.variables[node.target.id] = Blocks(list(self.as_blocks(old)) + list(rhs))
+        elif isinstance(node.target, ast.Subscript):
+            self.aug_subscript(node)
+
+    def aug_subscript(self, node):
+        pass
+
+
+# ====================================================================
+# regular (non-root) wscript
+# ====================================================================
+
+class WafParser(BaseWafParser):
+
+    TYPE_BY_METHOD = {
+        'shlib': ProjectType.SHARED,
+        'stlib': ProjectType.STATIC,
+        'program': ProjectType.EXECUTABLE,
+    }
+
+    def __init__(self):
+        super().__init__()
+        self.projects = []
+        self.default_name = ""
+
+    def parse(self, filename, default_name=""):
+        """Returns list[Project] (a wscript may declare several targets)."""
+        self.filename = str(filename)
+        self.default_name = default_name
+        source = Path(filename).read_text(encoding="utf-8")
+        tree = ast.parse(source, self.filename)
+
+        # module level first (PROJECT_NAME etc), then build()
+        for stmt in tree.body:
+            if not isinstance(stmt, ast.FunctionDef):
+                self.visit(stmt)
+        for stmt in tree.body:
+            if isinstance(stmt, ast.FunctionDef) and stmt.name == "build":
+                self.visit_body(stmt.body)
+
+        for p in self.projects:
+            if not p.name:
+                p.name = self.variables.get("PROJECT_NAME") or default_name
+            self.check_conditions(p)
+
+        if not self.projects:
+            self.warnings.append(f"{self.filename}: no shlib/stlib/program target found")
+
+        return self.projects
+
+    def check_conditions(self, project):
+        seen = set()
+        for lists in (project.sources, project.includes, project.defines, project.libs,
+                      project.libpath, project.cflags, project.cxxflags, project.linkflags):
+            for lst in lists:
+                for c in lst.conditions:
+                    if c.note and c.note not in seen:
+                        seen.add(c.note)
+                        self.warnings.append(
+                            f"{self.filename}: unsupported condition '{c.note}' "
+                            f"(target '{project.name}'), its items are disabled with if(FALSE)")
+
+    def handle_call(self, call):
+        ptype = None
+
+        if isinstance(call.func, ast.Name) and call.func.id == "bld":
+            ptype = self.type_from_features(call)
+        elif isinstance(call.func, ast.Attribute):
+            ptype = self.TYPE_BY_METHOD.get(call.func.attr)
+
+        if ptype is not None:
+            self.parse_project_arguments(call, ptype)
+
+    def type_from_features(self, call):
         for kw in call.keywords:
-            value = self.evaluate(kw.value)
+            if kw.arg == "features" and isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str):
+                f = kw.value.value
+                if "shlib" in f:
+                    return ProjectType.SHARED
+                if "stlib" in f:
+                    return ProjectType.STATIC
+                if "program" in f:
+                    return ProjectType.EXECUTABLE
+        if any(kw.arg == "source" for kw in call.keywords):
+            return ProjectType.EXECUTABLE
+        return None
 
-            #print(kw.arg, value)
+    def parse_project_arguments(self, call, ptype):
+        project = Project(type=ptype)
 
-            if kw.arg == "source":
-                self.project.sources.extend(self.normalize(value))
+        for kw in call.keywords:
+            if kw.arg is None:
+                continue
 
-            elif kw.arg == "includes":
-                self.project.includes.extend(self.normalize(value))
+            if kw.arg == "target":
+                value = self.evaluate(kw.value)
+                if isinstance(value, Blocks):
+                    value = value[0].items[0] if value and value[0].items else ""
+                project.name = str(value or "")
+                continue
 
-            elif kw.arg == "defines":
-                self.project.defines.extend(self.normalize(value))
+            target = {
+                "source": project.sources,
+                "includes": project.includes,
+                "defines": project.defines,
+                "use": project.libs,
+                "uselib": project.libs,
+                "lib": project.libs,
+                "libpath": project.libpath,
+                "cflags": project.cflags,
+                "cxxflags": project.cxxflags,
+                "linkflags": project.linkflags,
+            }.get(kw.arg)
 
-            elif kw.arg == "use":
-                self.project.libs.extend(self.normalize(value))
+            if target is None:
+                continue
 
-            elif kw.arg == "target":
-                self.project.name = value
+            target.extend(self.rebased(self.evaluate(kw.value)))
 
-    def visit_If(self, node):
-        #
-        # if
-        #
+        self.projects.append(project)
 
-        self.condition_stack.append(
-            Condition(self.convert_condition(node.test))
-        )
-
-        for stmt in node.body:
-            self.visit(stmt)
-
-        self.condition_stack.pop()
-
-        #
-        # else / elif
-        #
-
-        if not node.orelse:
+    def assign_name(self, name, value_node):
+        if name == "PROJECT_NAME" and isinstance(value_node, ast.Constant):
+            self.variables[name] = value_node.value
             return
-
-        #
-        # elif
-        #
-
-        if len(node.orelse) == 1 and isinstance(node.orelse[0], ast.If):
-            self.visit(node.orelse[0])
-            return
-
-        #
-        # else
-        #
-
-        self.condition_stack.append(
-            Condition(f"NOT ({self.convert_condition(node.test)})")
-        )
-
-        for stmt in node.orelse:
-            self.visit(stmt)
-
-        self.condition_stack.pop()
-
-    def convert_condition(self, node):
-        #
-        # not ...
-        #
-        if isinstance(node, ast.UnaryOp):
-            if isinstance(node.op, ast.Not):
-                return f"NOT ({self.convert_condition(node.operand)})"
-
-        #
-        # and/or
-        #
-        if isinstance(node, ast.BoolOp):
-
-            op = "AND"
-
-            if isinstance(node.op, ast.Or):
-                op = "OR"
-
-            return f" {op} ".join(
-                f"({self.convert_condition(v)})"
-                for v in node.values
-            )
-
-        #
-        # compare
-        #
-        if isinstance(node, ast.Compare):
-
-            left = self.attribute_to_string(node.left)
-            right = self.evaluate(node.comparators[0])
-            op = node.ops[0]
-
-            #
-            # DEST_OS
-            #
-
-            if left == "bld.env.DEST_OS":
-
-                if right == "win32":
-                    right = "WIN32"
-                else:
-                    right = str(right).upper()
-
-                if isinstance(op, ast.Eq):
-                    return right
-
-                if isinstance(op, ast.NotEq):
-                    return f"NOT ({right})"
-
-            #
-            # DEST_CPU
-            #
-
-            if left == "bld.env.DEST_CPU":
-
-                if right == "amd64":
-                    right = "AMD64"
-                else:
-                    right = str(right).upper()
-
-                if isinstance(op, ast.Eq):
-                    return right
-
-                if isinstance(op, ast.NotEq):
-                    return f"NOT {right}"
-
-        #
-        # bld.env.GL
-        #
-
-        if isinstance(node, ast.Attribute):
-            if self.attribute_to_string(node) == "bld.env.GL":
-                return "GL"
-
-        return "UNKNOWN"
+        super().assign_name(name, value_node)

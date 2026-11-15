@@ -26,7 +26,6 @@ target_sources(ServerBrowser PRIVATE
     ../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(ServerBrowser PRIVATE
     .
     ../public
@@ -34,7 +33,6 @@ target_include_directories(ServerBrowser PRIVATE
     ../public/tier1
     ../common
 )
-
 
 target_link_libraries(ServerBrowser PRIVATE
     tier0
@@ -46,5 +44,4 @@ target_link_libraries(ServerBrowser PRIVATE
     vstdlib
     steam_api
 )
-
 

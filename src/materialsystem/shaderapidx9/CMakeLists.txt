@@ -24,20 +24,17 @@ target_sources(shaderapidx9 PRIVATE
     ../../public/tier0/memoverride.cpp
 )
 
-if((WIN32) AND (NOT (GL)))
-target_sources(shaderapidx9 PRIVATE
-    recording.cpp
-    wmi.cpp
-)
-
+if(WIN32 AND NOT GL)
+    target_sources(shaderapidx9 PRIVATE
+        recording.cpp
+        wmi.cpp
+    )
 endif()
-if(NOT (WIN32))
-target_sources(shaderapidx9 PRIVATE
-    winutils.cpp
-)
-
+if(NOT WIN32)
+    target_sources(shaderapidx9 PRIVATE
+        winutils.cpp
+    )
 endif()
-
 target_include_directories(shaderapidx9 PRIVATE
     .
     ../../public
@@ -45,12 +42,8 @@ target_include_directories(shaderapidx9 PRIVATE
     ../../public/tier1
     ../../common
     ../
-)
-
-target_include_directories(shaderapidx9 PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
-
 
 target_link_libraries(shaderapidx9 PRIVATE
     tier0
@@ -63,19 +56,18 @@ target_link_libraries(shaderapidx9 PRIVATE
 )
 
 if(ANDROID)
-target_link_libraries(shaderapidx9 PRIVATE
-    ANDROID_SUPPORT
-)
-
+    target_link_libraries(shaderapidx9 PRIVATE
+        ${ANDROID_SUPPORT_LIBRARY}
+    )
 endif()
-if((WIN32) AND (NOT (GL)))
-target_link_libraries(shaderapidx9 PRIVATE
-    D3D9
-    D3DX9
-    bzip2
-    LEGACY_STDIO_DEFINITIONS
-    GDI32
-)
-
+if(NOT ANDROID)
+    if(WIN32 AND NOT GL)
+        target_link_libraries(shaderapidx9 PRIVATE
+            ${D3D9_LIBRARY}
+            ${D3DX9_LIBRARY}
+            bzip2
+            ${LEGACY_STDIO_DEFINITIONS_LIBRARY}
+            ${GDI32_LIBRARY}
+        )
+    endif()
 endif()
-

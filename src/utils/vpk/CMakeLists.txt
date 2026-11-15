@@ -10,7 +10,6 @@ target_sources(vpk PRIVATE
     ../../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(vpk PRIVATE
     .
     ../../public
@@ -19,7 +18,6 @@ target_include_directories(vpk PRIVATE
     ../../public/tier1
     ../../common
 )
-
 
 target_link_libraries(vpk PRIVATE
     tier0
@@ -31,9 +29,7 @@ target_link_libraries(vpk PRIVATE
 )
 
 if(WIN32)
-target_link_libraries(vpk PRIVATE
-    SHELL32
-)
-
+    target_link_libraries(vpk PRIVATE
+        ${SHELL32_LIBRARY}
+    )
 endif()
-

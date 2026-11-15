@@ -9,11 +9,9 @@ target_sources(unittest PRIVATE
     unittest.cpp
 )
 
-
 target_include_directories(unittest PRIVATE
     ../../public
 )
-
 
 target_link_libraries(unittest PRIVATE
     tier0
@@ -25,18 +23,15 @@ target_link_libraries(unittest PRIVATE
     unitlib
 )
 
-if(NOT (WIN32))
-target_link_libraries(unittest PRIVATE
-    DL
-    LOG
-)
-
+if(NOT WIN32)
+    target_link_libraries(unittest PRIVATE
+        ${DL_LIBRARY}
+        LOG
+    )
 endif()
-if(NOT (NOT (WIN32)))
-target_link_libraries(unittest PRIVATE
-    USER32
-    SHELL32
-)
-
+if(WIN32)
+    target_link_libraries(unittest PRIVATE
+        ${USER32_LIBRARY}
+        ${SHELL32_LIBRARY}
+    )
 endif()
-

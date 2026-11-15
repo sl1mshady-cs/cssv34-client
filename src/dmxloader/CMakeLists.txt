@@ -13,7 +13,6 @@ target_sources(dmxloader PRIVATE
     dmxserializationdictionary.cpp
 )
 
-
 target_include_directories(dmxloader PRIVATE
     .
     ../public
@@ -21,5 +20,4 @@ target_include_directories(dmxloader PRIVATE
     ../public/tier1
     ../common
 )
-
 

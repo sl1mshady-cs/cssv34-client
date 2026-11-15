@@ -85,7 +85,6 @@ target_sources(vgui_controls PRIVATE
     ../src/vgui_key_translation.cpp
 )
 
-
 target_include_directories(vgui_controls PRIVATE
     .
     ../../public
@@ -93,11 +92,8 @@ target_include_directories(vgui_controls PRIVATE
     ../../public/tier1
 )
 
-
 if(WIN32)
-target_link_libraries(vgui_controls PRIVATE
-    SHELL32
-)
-
+    target_link_libraries(vgui_controls PRIVATE
+        ${SHELL32_LIBRARY}
+    )
 endif()
-

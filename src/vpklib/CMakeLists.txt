@@ -10,7 +10,6 @@ target_sources(vpklib PRIVATE
     ../common/simplebitstring.cpp
 )
 
-
 target_include_directories(vpklib PRIVATE
     .
     ../public
@@ -19,9 +18,7 @@ target_include_directories(vpklib PRIVATE
     ../common
 )
 
-
 target_link_libraries(vpklib PRIVATE
     libzstd
 )
-
 

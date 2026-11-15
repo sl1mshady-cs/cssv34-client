@@ -30,7 +30,6 @@ target_sources(vphysics PRIVATE
     ../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(vphysics PRIVATE
     .
     ../public
@@ -47,7 +46,6 @@ target_include_directories(vphysics PRIVATE
     ../ivp/havana
 )
 
-
 target_link_libraries(vphysics PRIVATE
     tier0
     havana_constraints
@@ -60,5 +58,4 @@ target_link_libraries(vphysics PRIVATE
     vstdlib
     mathlib
 )
-
 

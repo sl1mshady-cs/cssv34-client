@@ -18,12 +18,10 @@ target_sources(particles PRIVATE
     psheet.cpp
 )
 
-
 target_include_directories(particles PRIVATE
     .
     ../public
     ../public/tier1
     ../public/tier0
 )
-
 

@@ -10,7 +10,6 @@ target_sources(vaudio_minimp3 PRIVATE
     ../../../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(vaudio_minimp3 PRIVATE
     .
     ../../../public/tier1
@@ -18,11 +17,9 @@ target_include_directories(vaudio_minimp3 PRIVATE
     ../../../thirdparty/minimp3
 )
 
-
 target_link_libraries(vaudio_minimp3 PRIVATE
     tier0
     tier1
     vstdlib
 )
-
 

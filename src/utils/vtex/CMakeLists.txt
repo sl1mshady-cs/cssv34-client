@@ -14,7 +14,6 @@ target_sources(vtex_dll PRIVATE
     ../../common/imageutils.cpp
 )
 
-
 target_include_directories(vtex_dll PRIVATE
     .
     ../../public
@@ -25,7 +24,6 @@ target_include_directories(vtex_dll PRIVATE
     ../../thirdparty
 )
 
-
 target_link_libraries(vtex_dll PRIVATE
     tier0
     tier1
@@ -34,16 +32,14 @@ target_link_libraries(vtex_dll PRIVATE
     vstdlib
     mathlib
     vtf
-    JPEG
-    PNG
-    ZLIB
+    ${JPEG_LIBRARY}
+    ${PNG_LIBRARY}
+    ${ZLIB_LIBRARY}
 )
 
 if(WIN32)
-target_link_libraries(vtex_dll PRIVATE
-    USER32
-    GDI32
-)
-
+    target_link_libraries(vtex_dll PRIVATE
+        ${USER32_LIBRARY}
+        ${GDI32_LIBRARY}
+    )
 endif()
-

@@ -30,7 +30,6 @@ target_sources(mathlib PRIVATE
     almostequal.cpp
 )
 
-
 target_include_directories(mathlib PRIVATE
     .
     ../common
@@ -38,5 +37,4 @@ target_include_directories(mathlib PRIVATE
     ../public/tier0
     ../public/mathlib
 )
-
 

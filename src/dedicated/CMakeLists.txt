@@ -25,33 +25,26 @@ target_sources(dedicated PRIVATE
 )
 
 if(WIN32)
-target_sources(dedicated PRIVATE
-    sys_windows.cpp
-    console/TextConsoleWin32.cpp
-)
-
+    target_sources(dedicated PRIVATE
+        sys_windows.cpp
+        console/TextConsoleWin32.cpp
+    )
 endif()
-if(NOT (WIN32))
-target_sources(dedicated PRIVATE
-    sys_linux.cpp
-    console/TextConsoleUnix.cpp
-    ../filesystem/linux_support.cpp
-)
-
+if(NOT WIN32)
+    target_sources(dedicated PRIVATE
+        sys_linux.cpp
+        console/TextConsoleUnix.cpp
+        ../filesystem/linux_support.cpp
+    )
 endif()
-
 target_include_directories(dedicated PRIVATE
     .
     ../public
     ../public/tier0
     ../public/tier1
     ../common
-)
-
-target_include_directories(dedicated PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
-
 
 target_link_libraries(dedicated PRIVATE
     tier0
@@ -63,14 +56,12 @@ target_link_libraries(dedicated PRIVATE
     steam_api
     appframework
     mathlib
-    EDIT
+    ${EDIT_LIBRARY}
 )
 
 if(WIN32)
-target_link_libraries(dedicated PRIVATE
-    USER32
-    SHELL32
-)
-
+    target_link_libraries(dedicated PRIVATE
+        ${USER32_LIBRARY}
+        ${SHELL32_LIBRARY}
+    )
 endif()
-

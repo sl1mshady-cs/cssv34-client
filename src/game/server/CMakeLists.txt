@@ -9,7 +9,6 @@ target_sources(server PRIVATE
     ../../public/tier0/memoverride.cpp
 )
 
-
 target_include_directories(server PRIVATE
     .
     ../shared
@@ -21,7 +20,6 @@ target_include_directories(server PRIVATE
     ../../public/tier1
     ../../public
 )
-
 
 target_link_libraries(server PRIVATE
     tier0
@@ -37,9 +35,7 @@ target_link_libraries(server PRIVATE
 )
 
 if(WIN32)
-target_link_libraries(server PRIVATE
-    USER32
-)
-
+    target_link_libraries(server PRIVATE
+        ${USER32_LIBRARY}
+    )
 endif()
-
