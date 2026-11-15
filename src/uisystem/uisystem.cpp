@@ -277,6 +277,14 @@ Rml::Input::KeyIdentifier CUISystem::ButtonCodeToRmlKeyID(ButtonCode_t code)
     case KEY_MINUS:      return Rml::Input::KI_OEM_MINUS;
     case KEY_EQUAL:      return Rml::Input::KI_OEM_PLUS;
 
+    case KEY_INSERT:    return Rml::Input::KI_INSERT;
+    case KEY_HOME:      return Rml::Input::KI_HOME;
+    case KEY_END:       return Rml::Input::KI_END;
+    case KEY_PAGEUP:    return Rml::Input::KI_PRIOR;
+    case KEY_PAGEDOWN:  return Rml::Input::KI_NEXT;
+    case KEY_CAPSLOCK:  return Rml::Input::KI_CAPITAL;
+    case KEY_NUMLOCK:   return Rml::Input::KI_NUMLOCK;
+    case KEY_SCROLLLOCK:return Rml::Input::KI_SCROLL;
     default:
         return Rml::Input::KI_UNKNOWN;
     }
@@ -392,7 +400,14 @@ bool CUISystem::DispatchEventToContext(Rml::Context& context, const InputEvent_t
     switch (event.m_nType)
     {
     case IE_FirstVguiEvent + 3:
-        return context.ProcessTextInput(static_cast<Rml::Character>(event.m_nData));
+    {
+        const int ch = event.m_nData;
+        if (ch >= 32 && ch != 127)
+        {
+            return context.ProcessTextInput(static_cast<Rml::Character>(ch));
+        }
+        return false;
+    }
 
     case IE_ButtonPressed:
     {
@@ -401,7 +416,7 @@ bool CUISystem::DispatchEventToContext(Rml::Context& context, const InputEvent_t
         if (IsKeyCode(code))
             return context.ProcessKeyDown(ButtonCodeToRmlKeyID(code), 0);
 
-        if (IsMouseCode(code))
+        if (IsMouseCode(code) && MouseIndexFromCode(code) != -1)
             return context.ProcessMouseButtonDown(MouseIndexFromCode(code), 0);
 
         return false;
@@ -414,7 +429,7 @@ bool CUISystem::DispatchEventToContext(Rml::Context& context, const InputEvent_t
         if (IsKeyCode(code))
             return context.ProcessKeyUp(ButtonCodeToRmlKeyID(code), 0);
 
-        if (IsMouseCode(code))
+        if (IsMouseCode(code) && MouseIndexFromCode(code) != -1)
             return context.ProcessMouseButtonUp(MouseIndexFromCode(code), 0);
 
         return false;

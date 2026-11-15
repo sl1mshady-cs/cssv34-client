@@ -2,8 +2,13 @@
 
 int MouseIndexFromCode(ButtonCode_t code)
 {
-    const int index = code - MOUSE_LEFT;
-    return (index < 0 || index > 2) ? 0 : index;
+    switch (code)
+    {
+    case MOUSE_LEFT:   return 0;
+    case MOUSE_RIGHT:  return 1;
+    case MOUSE_MIDDLE: return 2;
+    default:           return -1; // не кнопка мыши / скролл / неизвестный код
+    }
 }
 
 bool FingerToPixels(const InputEvent_t& event, int& outX, int& outY)
