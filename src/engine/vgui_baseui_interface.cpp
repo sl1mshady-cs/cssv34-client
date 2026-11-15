@@ -1968,8 +1968,6 @@ void CEngineVGui::NotifyOfServerConnect(const char *pchGame, int IP, int connect
 //-----------------------------------------------------------------------------
 void CEngineVGui::NotifyOfServerDisconnect()
 {
-	staticUISystemFuncs->OnDisconnectedFromServer();
-
 	if (g_bVGUIDisabled) return;
 
 	if (!staticGameUIFuncs)
