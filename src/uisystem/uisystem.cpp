@@ -558,5 +558,4 @@ void CUISystem::UpdateProgressBar(float flProgress, const char* desc)
 
 void CUISystem::OnDisconnectedFromServer()
 {
-    ChangeUIState(InMainMenu);
 }
