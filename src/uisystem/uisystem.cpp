@@ -558,14 +558,7 @@ void CUISystem::UpdateProgressBar(float flProgress, const char* desc)
 
 void CUISystem::ActivateGameUI()
 {
-    if (engine->IsInGame())
-    {
-        ChangeUIState(InPauseMenu);
-    }
-    else
-    {
-        ChangeUIState(InMainMenu);
-    }
+    ChangeUIState(InMainMenu);
 }
 
 void CUISystem::HideGameUI()
