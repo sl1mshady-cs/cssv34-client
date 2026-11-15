@@ -37,7 +37,8 @@ public:
     virtual void OnLevelLoadingStarted(bool bShowProgressDialog);
     virtual void OnLevelLoadingFinished(bool bError, const char* failureReason, const char* extendedReason);
     virtual void UpdateProgressBar(float flProgress, const char* desc);
-    virtual void OnDisconnectedFromServer();
+    virtual void ActivateGameUI();
+    virtual void HideGameUI();
 
     virtual Rml::Context* StateToContext(UIState state);
 private:

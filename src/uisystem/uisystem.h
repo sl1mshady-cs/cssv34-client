@@ -63,5 +63,6 @@ public:
 	virtual void OnLevelLoadingFinished(bool bError, const char* failureReason, const char* extendedReason) = 0;
 	virtual void UpdateProgressBar(float flProgress, const char* desc) = 0;
 
-	virtual void OnDisconnectedFromServer() = 0;
+	virtual void ActivateGameUI() = 0;
+	virtual void HideGameUI() = 0;
 };

@@ -556,6 +556,21 @@ void CUISystem::UpdateProgressBar(float flProgress, const char* desc)
     m_LoadingDialogModel.DirtyAllVariables();
 }
 
-void CUISystem::OnDisconnectedFromServer()
+void CUISystem::ActivateGameUI()
 {
+    if (engine->IsInGame())
+    {
+        ChangeUIState(InPauseMenu);
+    }
+    else
+    {
+        ChangeUIState(InMainMenu);
+    }
+}
+
+void CUISystem::HideGameUI()
+{
+    if (!engine->IsInGame()) return;
+
+    ChangeUIState(InGame);
 }

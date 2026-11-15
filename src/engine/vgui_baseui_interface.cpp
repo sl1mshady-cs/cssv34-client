@@ -1073,6 +1073,7 @@ void CEngineVGui::ConfirmQuit()
 //-----------------------------------------------------------------------------
 void CEngineVGui::ActivateGameUI()
 {
+
 	if (g_bVGUIDisabled) return;
 
 	if ( m_bNotAllowedToShowGameUI )
