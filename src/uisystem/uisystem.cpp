@@ -2,6 +2,7 @@
 #include "uihelpers.h"
 #include <cdll_int.h>
 #include "mainmenu.h"
+#include <kv3lib/keyvalues3.h>
 
 #include <string>
 
@@ -60,9 +61,37 @@ bool CUISystem::Start(CreateInterfaceFn* factorylist, int nFactories)
 
     Rml::Lua::Initialise();
 
-    LoadFont("cstrike");
-    LoadFont("LatoLatin");
-    LoadFont("JetBrainsMono");
+    KeyValues3 fonts;
+    CUtlString error;
+    if (!LoadKV3FromFile(&fonts, &error, "fonts/.description.kv3", "RMLUI"))
+    {
+        Warning("[RmlUi] Failed to load font description table file\n");
+    }
+    else
+    {
+        KeyValues3* fts = fonts.FindMember("fonts");
+        if (!fts)
+        {
+            Warning("[RmlUi] Font description table has no entries; ignored\m");
+        }
+
+        Msg("[RmlUi] Found %i entries in font description table\n", fts->GetArrayElementCount());
+
+        for (int i = 0; i < fts->GetArrayElementCount(); i++)
+        {
+            const char* font = fts->GetArrayElement(i)->GetValueString(nullptr);
+
+            if (font)
+            {
+                LoadFont(font);
+            }
+        }
+    }
+    
+
+    //LoadFont("cstrike");
+    //LoadFont("LatoLatin");
+    //LoadFont("JetBrainsMono");
 
     float scaleX = m_iLastWidth / 1366.0f;
     float scaleY = m_iLastHeight / 768.0f;
@@ -330,33 +359,10 @@ void CUISystem::DestroyDocument(IUIDocument* doc)
 
 void CUISystem::LoadFont(const char* name)
 {
-    static const char* s_FontWeights[] = {
-        "Thin",
-        "ThinItalic",
-        "ExtraLight",
-        "ExtraLightItalic",
-        "Light",
-        "LightItalic",
-        "Regular",
-        "Italic",
-        "Medium",
-        "MediumItalic",
-        "SemiBold",
-        "SemiBoldItalic",
-        "Bold",
-        "BoldItalic",
-        "ExtraBold",
-        "ExtraBoldItalic"
-    };
+    static char fontPathFull[256];
+    V_snprintf(fontPathFull, sizeof(fontPathFull), "fonts/%s.ttf", name);
 
-    char fontPathFull[256];
-
-    for (int i = 0; i < ARRAYSIZE(s_FontWeights); ++i)
-    {
-        V_snprintf(fontPathFull, sizeof(fontPathFull), "fonts/%s-%s.ttf", name, s_FontWeights[i]);
-
-        Rml::LoadFontFace(fontPathFull);
-    }
+    Rml::LoadFontFace(fontPathFull);
 }
 
 
