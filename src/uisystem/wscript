@@ -40,7 +40,7 @@ def build(bld):
 
     defines = []
 
-    libs = ['tier0', 'tier1', 'tier2', 'vstdlib', 'vtf', 'bitmap', 'mathlib', 'rmlui', 'FT2', 'LEGACY_STDIO_DEFINITIONS']
+    libs = ['tier0', 'tier1', 'tier2', 'vstdlib', 'vtf', 'bitmap', 'kv3lib', 'mathlib', 'rmlui', 'FT2', 'LEGACY_STDIO_DEFINITIONS']
 
     if bld.env.DEST_OS == 'android':
         libs += ['ANDROID_SUPPORT']
