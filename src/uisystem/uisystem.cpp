@@ -60,7 +60,7 @@ bool CUISystem::Start(CreateInterfaceFn* factorylist, int nFactories)
         return false;
 
     Rml::Lua::Initialise();
-
+	/*
     KeyValues3 fonts;
     CUtlString error;
     if (!LoadKV3FromFile(&fonts, &error, "fonts/.description.kv3", "RMLUI"))
@@ -87,11 +87,11 @@ bool CUISystem::Start(CreateInterfaceFn* factorylist, int nFactories)
             }
         }
     }
-    
+    */
 
-    //LoadFont("cstrike");
-    //LoadFont("LatoLatin");
-    //LoadFont("JetBrainsMono");
+    LoadFont("cstrike");
+    LoadFont("LatoLatin");
+    LoadFont("JetBrainsMono");
 
     float scaleX = m_iLastWidth / 1366.0f;
     float scaleY = m_iLastHeight / 768.0f;
