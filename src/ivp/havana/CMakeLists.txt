@@ -31,3 +31,10 @@ target_include_directories(havana_constraints PRIVATE
     ../ivp_controller
 )
 
+target_compile_definitions(havana_constraints PRIVATE
+    VPHYSICS_EXPORTS
+    HAVANA_CONSTRAINTS
+    HAVOK_MOPP
+    IVP_VERSION_SDK
+)
+

@@ -78,6 +78,10 @@ class RootInfo:
         return out
 
 
+# MSVC switches that only make sense for C++. waf puts them into cflags as well, where /TP makes
+# cl compile .c files as C++ (breaking e.g. implicit void* -> T* conversions in C libraries)
+CXX_ONLY_FLAGS = {"/TP", "/GR", "/EHsc"}
+
 IDEMPOTENT = {"define", "cflag", "cxxflag", "cflag_opt", "cxxflag_opt", "linkflag", "include"}
 # conf.env values that are strings/paths, not booleans
 NON_BOOL = {"PREFIX", "LIBDIR", "BINDIR", "TESTDIR", "GIT_VERSION", "DEST_OS", "DEST_CPU", "COMPILER_CC"}
@@ -319,6 +323,8 @@ class RootWafParser(BaseWafParser):
 
         out, seen = [], set()
         for d in info.directives:
+            if d.kind == "cflag" and d.value in CXX_ONLY_FLAGS:
+                continue
             if d.kind in IDEMPOTENT and any(
                 e.kind == d.kind and e.value == d.value and exprs(e) < exprs(d)
                 for e in info.directives

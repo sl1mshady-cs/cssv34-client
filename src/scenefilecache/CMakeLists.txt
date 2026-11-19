@@ -18,6 +18,10 @@ target_include_directories(scenefilecache PRIVATE
     ../game/shared
 )
 
+target_compile_definitions(scenefilecache PRIVATE
+    _WINDOWS=1
+)
+
 target_link_libraries(scenefilecache PRIVATE
     tier0
     tier1

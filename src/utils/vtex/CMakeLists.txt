@@ -24,6 +24,13 @@ target_include_directories(vtex_dll PRIVATE
     ../../thirdparty
 )
 
+target_compile_definitions(vtex_dll PRIVATE
+    VTEX_DLL=1
+    UTILS=1
+    VTEX_DLL_EXPORTS=1
+    PROTECTED_THINGS_DISABLE=1
+)
+
 target_link_libraries(vtex_dll PRIVATE
     tier0
     tier1

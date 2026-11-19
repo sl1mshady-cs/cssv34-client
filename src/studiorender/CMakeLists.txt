@@ -27,6 +27,10 @@ target_include_directories(studiorender PRIVATE
     ../public/tier1
 )
 
+target_compile_definitions(studiorender PRIVATE
+    STUDIORENDER_EXPORTS
+)
+
 target_link_libraries(studiorender PRIVATE
     tier0
     tier1

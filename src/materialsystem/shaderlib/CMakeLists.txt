@@ -20,3 +20,7 @@ target_include_directories(shaderlib PRIVATE
     ../
 )
 
+target_compile_definitions(shaderlib PRIVATE
+    FAST_MATERIALVAR_ACCESS=1
+)
+

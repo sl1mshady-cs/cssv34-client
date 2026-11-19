@@ -71,6 +71,28 @@ endif()
 
 '''
 
+FLAGS_HELPER = '''\
+# ---- helper for conf.define('X', conf.env.CFLAGS / LINKFLAGS) in child wscripts ----
+# Joins the compile/link options that are active in the calling directory into one string.
+# kind: COMPILE_OPTIONS | LINK_OPTIONS, lang: C | CXX | ALL
+function(waf_flags_string out kind lang)
+    get_directory_property(_opts ${kind})
+    set(_res "")
+    foreach(_o IN LISTS _opts)
+        if(_o MATCHES [[^\\$<\\$<COMPILE_LANGUAGE:([A-Za-z]+)>:(.*)>$]])
+            if(lang STREQUAL "ALL" OR lang STREQUAL CMAKE_MATCH_1)
+                list(APPEND _res "${CMAKE_MATCH_2}")
+            endif()
+        elseif(NOT _o MATCHES [[^\\$<]])
+            list(APPEND _res "${_o}")
+        endif()
+    endforeach()
+    list(JOIN _res " " _joined)
+    set(${out} "${_joined}" PARENT_SCOPE)
+endfunction()
+
+'''
+
 GIT_BLOCK = '''\
 # ---- git revision (replacement for the waf 'gitversion' tool) ----
 set(GIT_VERSION "unknown")
@@ -204,6 +226,8 @@ def write_rootproject(outfile, name, info, root: Path, version=None):
         f.write(f"project({name}{ver} LANGUAGES C CXX)\n\n")
 
         f.write(PLATFORM_BLOCK)
+
+        f.write(FLAGS_HELPER)
 
         if info.needs_git:
             f.write(GIT_BLOCK)

@@ -21,6 +21,10 @@ target_include_directories(server PRIVATE
     ../../public
 )
 
+target_compile_definitions(server PRIVATE
+    DISABLE_STEAM=1
+)
+
 target_link_libraries(server PRIVATE
     tier0
     particles

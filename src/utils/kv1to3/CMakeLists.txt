@@ -19,6 +19,10 @@ if(WIN32)
         ../../public/tier1
     )
 endif()
+target_compile_definitions(kv1to3 PRIVATE
+    DONT_PROTECT_FILEIO_FUNCTIONS=1
+)
+
 if(WIN32)
     target_link_libraries(kv1to3 PRIVATE
         tier0

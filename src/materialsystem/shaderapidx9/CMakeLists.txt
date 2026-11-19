@@ -45,6 +45,17 @@ target_include_directories(shaderapidx9 PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
 
+target_compile_definitions(shaderapidx9 PRIVATE
+    SHADERAPIDX9
+    SHADER_DLL_EXPORT
+    strncpy=use_Q_strncpy_instead
+)
+
+if(WIN32 AND NOT GL)
+    target_compile_definitions(shaderapidx9 PRIVATE
+        USE_ACTUAL_DX
+    )
+endif()
 target_link_libraries(shaderapidx9 PRIVATE
     tier0
     tier1

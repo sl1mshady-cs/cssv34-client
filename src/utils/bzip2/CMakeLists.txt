@@ -24,3 +24,8 @@ target_include_directories(bzip2 PRIVATE
     ../common
 )
 
+if(NOT WIN32)
+    target_compile_options(bzip2 PRIVATE
+        $<$<COMPILE_LANGUAGE:C>:-std=gnu11>
+    )
+endif()

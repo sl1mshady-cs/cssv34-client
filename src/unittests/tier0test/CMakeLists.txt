@@ -15,6 +15,10 @@ target_include_directories(tier0test PRIVATE
     ../../public/tier0
 )
 
+target_compile_definitions(tier0test PRIVATE
+    TIER1TEST_EXPORTS=1
+)
+
 target_link_libraries(tier0test PRIVATE
     tier0
     tier1

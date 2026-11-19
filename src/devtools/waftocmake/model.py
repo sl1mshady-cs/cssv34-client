@@ -40,6 +40,7 @@ class Project:
     cflags: list[ConditionalList] = field(default_factory=list)
     cxxflags: list[ConditionalList] = field(default_factory=list)
     linkflags: list[ConditionalList] = field(default_factory=list)
+    prelude: list[str] = field(default_factory=list)   # raw CMake lines emitted before the target blocks
 
 
 def rebase(block_conditions, use_stack):

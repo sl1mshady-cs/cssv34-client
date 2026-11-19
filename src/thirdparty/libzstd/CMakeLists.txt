@@ -51,6 +51,10 @@ target_include_directories(libzstd PRIVATE
     ./dictBuilder
 )
 
+target_compile_definitions(libzstd PRIVATE
+    ZSTD_STATIC_LINKING_ONLY=1
+)
+
 if(ANDROID)
     target_link_libraries(libzstd PRIVATE
         ${ANDROID_SUPPORT_LIBRARY}

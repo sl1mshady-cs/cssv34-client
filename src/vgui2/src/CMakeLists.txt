@@ -48,6 +48,10 @@ target_include_directories(vgui2 PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
 
+target_compile_definitions(vgui2 PRIVATE
+    DONT_PROTECT_FILEIO_FUNCTIONS=1
+)
+
 target_link_libraries(vgui2 PRIVATE
     tier0
     tier1

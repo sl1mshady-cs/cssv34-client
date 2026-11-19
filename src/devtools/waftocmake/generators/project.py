@@ -75,6 +75,11 @@ def write_target(f, project, uselib):
     else:
         raise RuntimeError(project.type)
 
+    if project.prelude:
+        for line in project.prelude:
+            f.write(line + "\n")
+        f.write("\n")
+
     logger.info(f" --SRC: {lists2array(project.sources)}")
     logger.info(f" --INCLUDES: {lists2array(project.includes)}")
     logger.info(f" --LIBS: {lists2array(project.libs)}")

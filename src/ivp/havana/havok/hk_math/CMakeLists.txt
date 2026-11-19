@@ -32,3 +32,9 @@ target_include_directories(hk_math PRIVATE
     ../../../ivp_utility/
 )
 
+target_compile_definitions(hk_math PRIVATE
+    VPHYSICS_EXPORTS
+    HAVANA_CONSTRAINTS
+    HAVOK_MOPP
+)
+

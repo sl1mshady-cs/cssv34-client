@@ -24,6 +24,10 @@ target_include_directories(vaudio_opus PRIVATE
     celt
 )
 
+target_compile_definitions(vaudio_opus PRIVATE
+    OPUS_EXPORTS=1
+)
+
 target_link_libraries(vaudio_opus PRIVATE
     tier0
     tier1

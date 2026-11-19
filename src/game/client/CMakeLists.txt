@@ -22,6 +22,10 @@ target_include_directories(client PRIVATE
     ../shared
 )
 
+target_compile_definitions(client PRIVATE
+    DISABLE_STEAM=1
+)
+
 target_link_libraries(client PRIVATE
     tier0
     particles

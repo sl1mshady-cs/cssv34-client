@@ -33,6 +33,12 @@ target_include_directories(togl PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
 
+target_compile_definitions(togl PRIVATE
+    TOGL_DLL_EXPORT=1
+    strncpy=use_Q_strncpy_instead
+    _snprintf=use_Q_snprintf_instead
+)
+
 target_link_libraries(togl PRIVATE
     tier0
     tier1

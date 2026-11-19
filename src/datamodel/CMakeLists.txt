@@ -28,3 +28,7 @@ target_include_directories(datamodel PRIVATE
     ../common
 )
 
+target_compile_definitions(datamodel PRIVATE
+    DATAMODEL_LIB=1
+)
+

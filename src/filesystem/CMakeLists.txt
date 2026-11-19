@@ -30,6 +30,12 @@ target_include_directories(filesystem_stdio PRIVATE
     ../common
 )
 
+target_compile_definitions(filesystem_stdio PRIVATE
+    FILESYSTEM_STDIO_EXPORTS=1
+    DONT_PROTECT_FILEIO_FUNCTIONS=1
+    SUPPORT_PACKED_STORE=1
+)
+
 target_link_libraries(filesystem_stdio PRIVATE
     tier0
     vpklib

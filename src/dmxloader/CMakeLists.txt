@@ -21,3 +21,7 @@ target_include_directories(dmxloader PRIVATE
     ../common
 )
 
+target_compile_definitions(dmxloader PRIVATE
+    DMXLOADER_LIB=1
+)
+

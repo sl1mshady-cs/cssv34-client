@@ -107,3 +107,10 @@ target_include_directories(ivp_physics PRIVATE
     ../havana/havok
 )
 
+target_compile_definitions(ivp_physics PRIVATE
+    HAVOK_MOPP
+    IVP_VERSION_SDK
+    VPHYSICS_EXPORTS
+    HAVANA_CONSTRAINTS
+)
+

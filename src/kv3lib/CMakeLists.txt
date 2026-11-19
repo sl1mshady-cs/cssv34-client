@@ -31,3 +31,7 @@ target_include_directories(kv3lib PRIVATE
     ../common
 )
 
+target_compile_definitions(kv3lib PRIVATE
+    KV3LIB=1
+)
+

@@ -71,6 +71,10 @@ target_include_directories(tier1 PRIVATE
     ../common
 )
 
+target_compile_definitions(tier1 PRIVATE
+    TIER1_STATIC_LIB=1
+)
+
 if(WIN32)
     target_link_libraries(tier1 PRIVATE
         ${RPCRT4_LIBRARY}

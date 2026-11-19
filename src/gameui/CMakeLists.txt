@@ -101,6 +101,12 @@ target_include_directories(GameUI PRIVATE
     ../thirdparty
 )
 
+target_compile_definitions(GameUI PRIVATE
+    GAMEUI_EXPORTS=1
+    NO_STEAM=1
+    VERSION_SAFE_STEAM_API_INTERFACES=1
+)
+
 target_link_libraries(GameUI PRIVATE
     tier0
     vgui_controls

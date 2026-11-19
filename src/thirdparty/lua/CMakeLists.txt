@@ -47,6 +47,7 @@ target_include_directories(lua PRIVATE
 
 target_compile_definitions(lua PRIVATE
     LUA_COMPAT_5_2
+    LUA_COMPAT_5_2=1
 )
 
 if(ANDROID)

@@ -46,6 +46,12 @@ target_include_directories(dedicated PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
 
+target_compile_definitions(dedicated PRIVATE
+    LAUNCHERONLY=1
+    SUPPORT_PACKED_STORE=1
+    DEDICATED=1
+)
+
 target_link_libraries(dedicated PRIVATE
     tier0
     vpklib

@@ -268,6 +268,22 @@ class BaseWafParser(ast.NodeVisitor):
 # regular (non-root) wscript
 # ====================================================================
 
+# conf.env.X values that are flag lists: X -> (directory property, language)
+FLAG_ENVS = {
+    'CFLAGS': ('COMPILE_OPTIONS', 'C'),
+    'CXXFLAGS': ('COMPILE_OPTIONS', 'CXX'),
+    'LINKFLAGS': ('LINK_OPTIONS', 'ALL'),
+}
+# conf.env.append_unique('X', ...) in a child configure() -> Project attribute
+ENV_TO_FIELD = {
+    'DEFINES': 'defines',
+    'CFLAGS': 'cflags',
+    'CXXFLAGS': 'cxxflags',
+    'LINKFLAGS': 'linkflags',
+    'INCLUDES': 'includes',
+}
+
+
 class WafParser(BaseWafParser):
 
     TYPE_BY_METHOD = {
@@ -280,6 +296,8 @@ class WafParser(BaseWafParser):
         super().__init__()
         self.projects = []
         self.default_name = ""
+        self.conf_blocks = {f: [] for f in ENV_TO_FIELD.values()}   # from configure()
+        self.prelude = []
 
     def parse(self, filename, default_name=""):
         """Returns list[Project] (a wscript may declare several targets)."""
@@ -288,17 +306,23 @@ class WafParser(BaseWafParser):
         source = Path(filename).read_text(encoding="utf-8")
         tree = ast.parse(source, self.filename)
 
-        # module level first (PROJECT_NAME etc), then build()
+        # module level first (PROJECT_NAME etc), then configure() (conf.define, ...), then build()
         for stmt in tree.body:
             if not isinstance(stmt, ast.FunctionDef):
                 self.visit(stmt)
-        for stmt in tree.body:
-            if isinstance(stmt, ast.FunctionDef) and stmt.name == "build":
-                self.visit_body(stmt.body)
+        for fname in ("configure", "build"):
+            for stmt in tree.body:
+                if isinstance(stmt, ast.FunctionDef) and stmt.name == fname:
+                    self.visit_body(stmt.body)
 
         for p in self.projects:
             if not p.name:
                 p.name = self.variables.get("PROJECT_NAME") or default_name
+            # waf keeps configure() results in the shared env, so they apply to every target
+            # built by this wscript (and, in waf, leak to later ones; we do not model that)
+            for fld, blocks in self.conf_blocks.items():
+                getattr(p, fld).extend(ConditionalList(list(b.items), b.conditions) for b in blocks)
+            p.prelude = list(self.prelude)
             self.check_conditions(p)
 
         if not self.projects:
@@ -321,6 +345,13 @@ class WafParser(BaseWafParser):
     def handle_call(self, call):
         ptype = None
 
+        if isinstance(call.func, ast.Attribute):
+            owner = dotted(call.func.value)
+            if call.func.attr == "define" and owner == "conf":
+                return self.conf_define(call)
+            if call.func.attr == "append_unique" and owner == "conf.env":
+                return self.conf_append_unique(call)
+
         if isinstance(call.func, ast.Name) and call.func.id == "bld":
             ptype = self.type_from_features(call)
         elif isinstance(call.func, ast.Attribute):
@@ -328,6 +359,44 @@ class WafParser(BaseWafParser):
 
         if ptype is not None:
             self.parse_project_arguments(call, ptype)
+
+    def conf_define(self, call):
+        """conf.define('KEY'), conf.define('KEY', 1), conf.define('KEY', 'str'), conf.define('KEY', conf.env.CFLAGS)"""
+        key = call.args[0].value if call.args and isinstance(call.args[0], ast.Constant) else None
+        if not isinstance(key, str):
+            return self.warn(call, f"unsupported define: {ast.unparse(call)}")
+
+        if len(call.args) < 2:
+            text = key
+        else:
+            vnode = call.args[1]
+            ref = env_name(vnode) if isinstance(vnode, ast.Attribute) else None
+            if ref and ref[0] == 'env' and ref[1] in FLAG_ENVS:
+                # the string of flags that are active at this point of the directory
+                prop, lang = FLAG_ENVS[ref[1]]
+                var = f"_waf_{key}"
+                line = f"waf_flags_string({var} {prop} {lang})"
+                if line not in self.prelude:
+                    self.prelude.append(line)
+                text = f'{key}="${{{var}}}"'
+            else:
+                v = self.evaluate(vnode)
+                if isinstance(v, bool) or isinstance(v, int):
+                    text = f"{key}={int(v)}"
+                elif isinstance(v, str):
+                    text = f'{key}="{v}"'     # waf quotes string values
+                else:
+                    self.warn(call, f"cannot evaluate value of define: {ast.unparse(call)}")
+                    text = key
+
+        self.conf_blocks['defines'].append(ConditionalList([text], self.current()))
+
+    def conf_append_unique(self, call):
+        if len(call.args) < 2 or not isinstance(call.args[0], ast.Constant):
+            return
+        fld = ENV_TO_FIELD.get(call.args[0].value)
+        if fld:
+            self.conf_blocks[fld].extend(self.rebased(self.evaluate(call.args[1])))
 
     def type_from_features(self, call):
         for kw in call.keywords:

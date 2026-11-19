@@ -19,6 +19,10 @@ if(WIN32)
         ../public/tier1
     )
 endif()
+target_compile_definitions(unicode PRIVATE
+    UNICODE_EXPORTS=1
+)
+
 if(WIN32)
     target_link_libraries(unicode PRIVATE
         tier0

@@ -15,6 +15,7 @@ from waftocmake.parser import WafParser
 from waftocmake.rootparser import RootWafParser, RootInfo
 from waftocmake.generators.project import generate
 from waftocmake.generators.rootproject import write_rootproject
+from waftocmake.generators.presets import write_presets
 
 class bcolors:
     HEADER = '\033[95m'
@@ -56,6 +57,9 @@ def main():
     ap.add_argument('--all', action='store_true',
                     help="convert every wscript found in the tree, not only the ones listed in the root wscript")
     ap.add_argument('--no-root', action='store_true', help="do not parse the root wscript (old behaviour)")
+    ap.add_argument('--no-presets', action='store_true', help="do not generate CMakePresets.json")
+    ap.add_argument('--overwrite-presets', action='store_true',
+                    help="replace an existing CMakePresets.json (by default it is kept, you may have edited it)")
     ap.add_argument('--dry-run', action='store_true', help="parse everything, write nothing")
     args = ap.parse_args()
 
@@ -130,6 +134,14 @@ def main():
         name = args.name or info.app_name or root.resolve().name
         write_rootproject(root / "CMakeLists.txt", name, info, root)
         print(f"{bcolors.OKGREEN}Generated Root 'CMakeLists.txt'{bcolors.ENDC}")
+
+        if not args.no_presets:
+            if write_presets(root / "CMakePresets.json", args.overwrite_presets):
+                print(f"{bcolors.OKGREEN}Generated 'CMakePresets.json' "
+                      f"(x64/x86 x Debug/Release){bcolors.ENDC}")
+            else:
+                print(f"{bcolors.WARNING}'CMakePresets.json' already exists, kept "
+                      f"(use --overwrite-presets to replace){bcolors.ENDC}")
 
     for w in warnings:
         logger.warning(w)

@@ -42,6 +42,13 @@ target_include_directories(materialsystem PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
 
+target_compile_definitions(materialsystem PRIVATE
+    DEFINE_MATERIALSYSTEM_INTERFACE
+    MATERIALSYSTEM_EXPORTS
+    strncpy=use_Q_strncpy_instead
+    _snprintf=use_Q_snprintf_instead
+)
+
 target_link_libraries(materialsystem PRIVATE
     tier0
     tier1

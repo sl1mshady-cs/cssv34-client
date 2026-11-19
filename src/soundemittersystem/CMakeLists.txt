@@ -20,6 +20,11 @@ target_include_directories(soundemittersystem PRIVATE
     ../game/shared
 )
 
+target_compile_definitions(soundemittersystem PRIVATE
+    SOUNDEMITTERSYSTEM_EXPORTS=1
+    _WINDOWS=1
+)
+
 target_link_libraries(soundemittersystem PRIVATE
     tier0
     tier1

@@ -23,6 +23,10 @@ target_include_directories(plutovg PRIVATE
     ../include
 )
 
+target_compile_definitions(plutovg PRIVATE
+    PLUTOVG_BUILD_STATIC=1
+)
+
 if(ANDROID)
     target_link_libraries(plutovg PRIVATE
         ${ANDROID_SUPPORT_LIBRARY}

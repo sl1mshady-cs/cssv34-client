@@ -38,3 +38,7 @@ target_include_directories(mathlib PRIVATE
     ../public/mathlib
 )
 
+target_compile_definitions(mathlib PRIVATE
+    MATHLIB_LIB=1
+)
+

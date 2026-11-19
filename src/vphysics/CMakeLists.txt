@@ -46,6 +46,12 @@ target_include_directories(vphysics PRIVATE
     ../ivp/havana
 )
 
+target_compile_definitions(vphysics PRIVATE
+    VPHYSICS_EXPORTS
+    HAVANA_CONSTRAINTS
+    HAVOK_MOPP
+)
+
 target_link_libraries(vphysics PRIVATE
     tier0
     havana_constraints

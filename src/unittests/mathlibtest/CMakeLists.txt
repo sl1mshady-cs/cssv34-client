@@ -15,6 +15,10 @@ target_include_directories(mathlibtest PRIVATE
     ../../public/tier0
 )
 
+target_compile_definitions(mathlibtest PRIVATE
+    TIER2TEST_EXPORTS=1
+)
+
 target_link_libraries(mathlibtest PRIVATE
     tier0
     tier1

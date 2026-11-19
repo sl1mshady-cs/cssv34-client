@@ -18,3 +18,7 @@ target_include_directories(unitlib PRIVATE
     ../common
 )
 
+target_compile_definitions(unitlib PRIVATE
+    UNITLIB_DLL_EXPORT=1
+)
+

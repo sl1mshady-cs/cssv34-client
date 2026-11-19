@@ -22,3 +22,9 @@ target_include_directories(hk_base PRIVATE
     ../
 )
 
+target_compile_definitions(hk_base PRIVATE
+    VPHYSICS_EXPORTS
+    HAVANA_CONSTRAINTS
+    HAVOK_MOPP
+)
+

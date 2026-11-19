@@ -130,6 +130,11 @@ target_include_directories(stdshader_dx9 PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
 
+target_compile_definitions(stdshader_dx9 PRIVATE
+    STDSHADER_DX9_DLL_EXPORT
+    FAST_MATERIALVAR_ACCESS
+)
+
 target_link_libraries(stdshader_dx9 PRIVATE
     tier0
     shaderlib

@@ -329,6 +329,21 @@ target_include_directories(engine PRIVATE
     audio/
 )
 
+if(APPLE)
+    target_compile_definitions(engine PRIVATE
+        HAVE_OPENAL=1
+    )
+endif()
+target_compile_definitions(engine PRIVATE
+    __USEA3D
+    _ADD_EAX_
+    ENGINE_DLL
+    VERSION_SAFE_STEAM_API_INTERFACES
+    USE_BREAKPAD_HANDLER
+    USE_CONVARS
+    VOICE_OVER_IP
+)
+
 target_link_libraries(engine PRIVATE
     tier0
     vgui_controls

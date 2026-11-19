@@ -19,6 +19,10 @@ target_include_directories(vpk PRIVATE
     ../../common
 )
 
+target_compile_definitions(vpk PRIVATE
+    DONT_PROTECT_FILEIO_FUNCTIONS=1
+)
+
 target_link_libraries(vpk PRIVATE
     tier0
     vpklib

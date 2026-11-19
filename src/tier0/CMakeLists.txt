@@ -5,6 +5,9 @@
 
 add_library(tier0 SHARED)
 
+waf_flags_string(_waf_WAF_CFLAGS COMPILE_OPTIONS C)
+waf_flags_string(_waf_WAF_LDFLAGS LINK_OPTIONS ALL)
+
 target_sources(tier0 PRIVATE
     assert_dialog.cpp
     commandline.cpp
@@ -62,6 +65,12 @@ target_include_directories(tier0 PRIVATE
     ../public
     ../public/tier0
     ${SDL2_INCLUDE_DIRS}
+)
+
+target_compile_definitions(tier0 PRIVATE
+    "WAF_CFLAGS=\"${_waf_WAF_CFLAGS}\""
+    "WAF_LDFLAGS=\"${_waf_WAF_LDFLAGS}\""
+    TIER0_DLL_EXPORT=1
 )
 
 if(WIN32)

@@ -13,6 +13,10 @@ target_include_directories(unittest PRIVATE
     ../../public
 )
 
+target_compile_definitions(unittest PRIVATE
+    PROTECTED_THINGS_DISABLE=1
+)
+
 target_link_libraries(unittest PRIVATE
     tier0
     appframework

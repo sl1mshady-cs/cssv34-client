@@ -62,3 +62,8 @@ target_include_directories(ivp_compactbuilder PRIVATE
     ../ivp_collision
 )
 
+target_compile_definitions(ivp_compactbuilder PRIVATE
+    IVP_VERSION_SDK
+    HAVOK_MOPP
+)
+

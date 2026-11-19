@@ -24,6 +24,10 @@ target_include_directories(vaudio_speex PRIVATE
     ../../audio
 )
 
+target_compile_definitions(vaudio_speex PRIVATE
+    SPEEX_EXPORTS=1
+)
+
 target_link_libraries(vaudio_speex PRIVATE
     tier0
     tier1

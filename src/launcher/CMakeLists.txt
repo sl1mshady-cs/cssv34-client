@@ -5,6 +5,9 @@
 
 add_library(launcher SHARED)
 
+waf_flags_string(_waf_CFLAGS COMPILE_OPTIONS C)
+waf_flags_string(_waf_LDFLAGS LINK_OPTIONS ALL)
+
 target_sources(launcher PRIVATE
     ../public/filesystem_init.cpp
     launcher.cpp
@@ -26,6 +29,12 @@ target_include_directories(launcher PRIVATE
     ../public/tier1
     ../common
     ${SDL2_INCLUDE_DIRS}
+)
+
+target_compile_definitions(launcher PRIVATE
+    LAUNCHERONLY=1
+    "CFLAGS=\"${_waf_CFLAGS}\""
+    "LDFLAGS=\"${_waf_LDFLAGS}\""
 )
 
 target_link_libraries(launcher PRIVATE

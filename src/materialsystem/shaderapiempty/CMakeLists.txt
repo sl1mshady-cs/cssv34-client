@@ -20,6 +20,11 @@ target_include_directories(shaderapiempty PRIVATE
     ${SDL2_INCLUDE_DIRS}
 )
 
+target_compile_definitions(shaderapiempty PRIVATE
+    SHADER_DLL_EXPORT
+    PROTECTED_THINGS_ENABLE
+)
+
 target_link_libraries(shaderapiempty PRIVATE
     tier0
     tier1

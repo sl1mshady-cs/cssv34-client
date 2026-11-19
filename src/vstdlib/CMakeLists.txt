@@ -34,6 +34,10 @@ target_include_directories(vstdlib PRIVATE
     ../public/vstdlib
 )
 
+target_compile_definitions(vstdlib PRIVATE
+    VSTDLIB_DLL_EXPORT=1
+)
+
 if(NOT ANDROID)
     if(APPLE)
         target_link_options(vstdlib PRIVATE

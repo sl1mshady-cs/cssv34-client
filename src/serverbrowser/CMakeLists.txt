@@ -34,6 +34,12 @@ target_include_directories(ServerBrowser PRIVATE
     ../common
 )
 
+target_compile_definitions(ServerBrowser PRIVATE
+    SERVERBROWSER_EXPORTS=1
+    VERSION_SAFE_STEAM_API_INTERFACES=1
+    GAME_SRC=1
+)
+
 target_link_libraries(ServerBrowser PRIVATE
     tier0
     vgui_controls

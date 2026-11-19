@@ -264,6 +264,17 @@ target_include_directories(rmlui PRIVATE
     ../game/shared
 )
 
+target_compile_definitions(rmlui PRIVATE
+    RMLUI_CORE_EXPORTS=1
+    RMLUI_LUA_EXPORTS=1
+    "RMLUI_FONT_ENGINE=\"freetype\""
+    RMLUI_FONT_ENGINE_FREETYPE=1
+    RMLUI_SVG_PLUGIN=1
+    RMLUI_LUA_BINDINGS=1
+    LUNASVG_BUILD_STATIC=1
+    PLUTOVG_BUILD_STATIC=1
+)
+
 target_link_libraries(rmlui PRIVATE
     tier0
     tier1

@@ -26,6 +26,10 @@ target_include_directories(inputsystem PRIVATE
     ../public/tier0
 )
 
+target_compile_definitions(inputsystem PRIVATE
+    VERSION_SAFE_STEAM_API_INTERFACES=1
+)
+
 target_link_libraries(inputsystem PRIVATE
     tier0
     tier1

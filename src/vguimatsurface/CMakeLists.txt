@@ -32,6 +32,12 @@ target_include_directories(vguimatsurface PRIVATE
     ../common
 )
 
+target_compile_definitions(vguimatsurface PRIVATE
+    VGUIMATSURFACE_DLL_EXPORT=1
+    GAMEUI_EXPORTS=1
+    DONT_PROTECT_FILEIO_FUNCTIONS=1
+)
+
 target_link_libraries(vguimatsurface PRIVATE
     bitmap
     mathlib
