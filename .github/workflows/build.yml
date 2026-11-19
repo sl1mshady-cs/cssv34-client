@@ -92,10 +92,16 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: win32_release
-        path: |
-          src/cssv34_win32_optimized.zip
-          src/cssv34_win32_pdb.7z
+        name: Win32 Release PDBs
+        path: src/cssv34_win32_pdb.7z
+        if-no-files-found: error
+        retention-days: 7
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Win32 Release
+        path: src/cssv34_win32_optimized.zip
         if-no-files-found: error
         retention-days: 7
         
@@ -182,10 +188,16 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: win64_release
-        path: |
-          src/cssv34_win64_optimized.zip
-          src/cssv34_win64_pdb.7z
+        name: Win64 Release PDBs
+        path: src/cssv34_win64_pdb.7z
+        if-no-files-found: error
+        retention-days: 7
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Win64 Release
+        path: src/cssv34_win64_optimized.zip
         if-no-files-found: error
         retention-days: 7
 
