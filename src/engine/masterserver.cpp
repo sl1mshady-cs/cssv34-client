@@ -42,7 +42,7 @@ extern ConVar sv_lan;
 #define IsLan() sv_lan.GetInt()
 #endif
 
-#define MASTER_SERVER "144.31.238.180:27011"
+#define MASTER_SERVER "144.31.238.180:10205"
 
 //-----------------------------------------------------------------------------
 // Purpose: Implements the master server interface
